@@ -128,12 +128,31 @@ npm run typecheck
 npm run fetch-dumps --workspace ingest
 ```
 
-Downloads the latest monthly `artists`, `labels` and `releases` dumps into
-`ingest/data/dumps/`. They stay gzipped. Releases is roughly 11 GB compressed and
-**over 100 GB uncompressed**, so it is only ever read as a stream. Never gunzip it
-to disk.
+Downloads the monthly dumps into `ingest/data/dumps/` and verifies each one
+against the published SHA-256 checksum. As of the August 2026 dump:
 
-Fetch a single one with `-- --only releases`.
+| File | Size |
+|---|---|
+| `discogs_YYYYMMDD_labels.xml.gz` | 86 MB |
+| `discogs_YYYYMMDD_artists.xml.gz` | 472 MB |
+| `discogs_YYYYMMDD_releases.xml.gz` | **10.4 GB** |
+
+The files stay gzipped. Releases is **over 100 GB uncompressed**, so it is only
+ever read as a stream. Nothing in this project ever expands it to disk.
+
+Useful flags:
+
+- `-- --only labels` fetches a single dump. Start here: it is the smallest, and
+  it proves the whole path works before committing to the big one.
+- `-- --date 20260801` pins a specific monthly dump instead of taking the newest.
+
+**Two things to know about the source.** The S3 bucket that used to serve these
+now refuses anonymous access, so downloads go through `data.discogs.com`. That
+host sits behind Cloudflare and rate limits hard: trip it and you are locked out
+for around 45 minutes, downloads included. The script fails immediately with the
+wait time rather than hanging. It also does not honour range requests, so an
+interrupted download restarts from zero rather than resuming. Run the releases
+download when you can leave it alone.
 
 ### 2. Make a sample first
 

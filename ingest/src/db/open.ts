@@ -23,6 +23,10 @@ export function openDb(file: string = paths.db): Database.Database {
   // Ingest is a one-off offline batch job on a regenerable artifact, so the
   // durability trade is worth the write speed.
   db.pragma("synchronous = OFF");
+  // Pass 1 does tens of millions of INSERT OR IGNOREs into label_artist_pairs.
+  // Each one is a B-tree probe, so keeping the working set in memory rather
+  // than paging it off disk is the difference between minutes and hours.
+  db.pragma("cache_size = -262144"); // 256 MB
   db.exec(fs.readFileSync(schemaPath, "utf8"));
 
   return db;

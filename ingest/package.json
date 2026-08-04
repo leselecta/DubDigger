@@ -1,0 +1,22 @@
+{
+  "name": "@dub-digger/ingest",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Offline ingest: Discogs XML dumps -> a small read-only SQLite file.",
+  "type": "module",
+  "scripts": {
+    "fetch-dumps": "tsx src/cli/fetch-dumps.ts",
+    "make-sample": "tsx src/cli/make-sample.ts",
+    "test": "tsx --test test/**/*.test.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "saxes": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.3.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

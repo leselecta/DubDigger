@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<releases>
+<release id="1" status="Accepted">
+  <images><image height="600" type="primary" width="600"/></images>
+  <artists>
+    <artist><id>10</id><name>Basic Channel</name><anv/><join>&amp;</join><role/><tracks/></artist>
+    <artist><id>11</id><name>Maurizio</name><anv/><join/><role/><tracks/></artist>
+  </artists>
+  <title>Quadrant Dub</title>
+  <labels>
+    <label catno="BC-05" name="Basic Channel" id="500"/>
+  </labels>
+  <extraartists>
+    <artist><id>20</id><name>Moritz Von Oswald</name><anv/><join/><role>Producer</role><tracks/></artist>
+    <artist><id>21</id><name>Mark Ernestus</name><anv/><join/><role>Engineer [Recording]</role><tracks/></artist>
+  </extraartists>
+  <formats><format name="Vinyl" qty="1" text="12&quot;"/></formats>
+  <genres><genre>Electronic</genre></genres>
+  <styles>
+    <style>Dub Techno</style>
+    <style>Techno</style>
+  </styles>
+  <country>Germany</country>
+  <released>1994-03-00</released>
+  <notes>Discard me.</notes>
+  <tracklist>
+    <track>
+      <position>A</position>
+      <title>Quadrant Dub I</title>
+      <duration>7:12</duration>
+      <artists>
+        <artist><id>999</id><name>Track Level Artist</name><anv/><join/><role/><tracks/></artist>
+      </artists>
+      <extraartists>
+        <artist><id>998</id><name>Track Level Credit</name><anv/><join/><role>Remix</role><tracks/></artist>
+      </extraartists>
+    </track>
+  </tracklist>
+  <companies><company><id>77</id><name>Dubplates &amp; Mastering</name><entity_type_name>Mastered At</entity_type_name></company></companies>
+</release>
+<release id="2" status="Accepted">
+  <artists>
+    <artist><id>194</id><name>Various</name><anv/><join/><role/><tracks/></artist>
+  </artists>
+  <title>Chain Reaction Compilation</title>
+  <labels>
+    <label catno="CR-01" name="Chain Reaction" id="501"/>
+    <label catno="CR-01-B" name="Reissue Label" id="502"/>
+  </labels>
+  <styles>
+    <style>Dub Techno</style>
+    <style>Minimal</style>
+  </styles>
+  <released>1996</released>
+  <tracklist/>
+</release>
+<release id="3" status="Accepted">
+  <artists>
+    <artist><id>30</id><name>Vainqueur</name><anv>Vainqueur </anv><join/><role/><tracks/></artist>
+  </artists>
+  <title>Elevations</title>
+  <extraartists/>
+  <tracklist/>
+</release>
+<release id="4" status="Accepted">
+  <artists>
+    <artist><id>40</id><name>Björk</name><anv/><join/><role/><tracks/></artist>
+  </artists>
+  <title>Homogénic</title>
+  <labels><label catno="" name="One Little Indian" id="503"/></labels>
+  <styles><style>Ambient</style></styles>
+  <released>1997-09-22</released>
+  <tracklist/>
+</release>
+</releases>

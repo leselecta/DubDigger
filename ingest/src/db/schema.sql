@@ -77,6 +77,20 @@ CREATE TABLE IF NOT EXISTS seed_labels (
   seed_ratio         REAL NOT NULL
 );
 
+-- Working table, pass 1 only. Every (label, main artist) pair in the dump,
+-- deduped by the primary key.
+--
+-- The seed-label ratio has to be measured against a label's whole roster as
+-- captured in this dump, not just its seed releases, or a label with two seed
+-- artists and twenty unrelated acts would look like a pure scene label. That
+-- means collecting pairs across every release scanned, including the ones the
+-- style filter rejects. Emptied once seed_labels has been computed.
+CREATE TABLE IF NOT EXISTS label_artist_pairs (
+  label_id      INTEGER NOT NULL,
+  artist_id     INTEGER NOT NULL,
+  PRIMARY KEY (label_id, artist_id)
+) WITHOUT ROWID;
+
 -- Corpus membership per artist, with the provenance the UI needs.
 CREATE TABLE IF NOT EXISTS corpus_artists (
   artist_id     INTEGER PRIMARY KEY,

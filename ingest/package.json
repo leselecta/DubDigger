@@ -7,6 +7,7 @@
   "scripts": {
     "fetch-dumps": "tsx src/cli/fetch-dumps.ts",
     "make-sample": "tsx src/cli/make-sample.ts",
+    "pass1": "tsx src/cli/pass1.ts",
     "test": "tsx --test test/**/*.test.ts",
     "typecheck": "tsc --noEmit"
   },

@@ -164,9 +164,20 @@ Writes a well formed 5,000 record copy into `ingest/data/samples/`. Prove every
 pass correct against this before pointing anything at the full file. A full
 releases pass is a multi hour commitment. A sample pass takes a second.
 
-### 3. Run the passes
+### 3. Run pass 1
 
-Not built yet. See [Roadmap](#roadmap).
+```sh
+npm run pass1 --workspace ingest            # against the newest sample
+npm run pass1 --workspace ingest -- --full  # against the full dump
+```
+
+Defaults to the sample deliberately, so a stray command cannot start a multi
+hour run. It reports the two steering signals, the seed artist count and the
+seed label count, plus the top seed labels by name.
+
+Read those names before going anywhere near `--full`. If they look like the
+scene, the dials are right. If a major label is sitting at the top, tighten the
+ratio and run it again.
 
 ## Configuration
 
@@ -215,7 +226,7 @@ small VPS running the Next.js process next to the SQLite file.
 
 - [x] Workspaces, SQLite schema, streaming release parser, dump CLIs
 - [x] Web shell, density baseline, honest empty state
-- [ ] Pass 1, style seed: seed artists, then seed labels via floor and ratio
+- [x] Pass 1, style seed: seed artists, then seed labels via floor and ratio
 - [ ] Pass 2, one hop out on both channels, with provenance tagging
 - [ ] Artists and labels dumps into the entity tables
 - [ ] Derived tables: collaborators, labels, rosters, coverage flags

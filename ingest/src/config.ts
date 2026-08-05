@@ -21,18 +21,48 @@ export const paths = {
 };
 
 /**
- * Pass 1 seed styles. A release enters the seed if its <styles> intersect this set.
+ * Pass 1 seed rule.
  *
- * Techno is deliberately absent: it is broad enough to dilute the core, and the
- * one-hop expansion in pass 2 already reaches into it via real connections.
+ * A flat style list does not work. Measured on the 20260801 dump, filtering on
+ * {Dub Techno, Deep Techno, Dub, Ambient, Minimal} produced 702,038 seed
+ * releases and 430,440 seed artists, and the seed label table came out topped by
+ * EMI, Columbia, Sony and Virgin. The styles were the problem, not the label
+ * dials: the core two accounted for only 6.7% of those releases. "Dub" was
+ * pulling in the reggae catalogue, "Minimal" minimalist classical, and "Ambient"
+ * new age and soundtrack work.
+ *
+ * Genre is what separates them. Reggae dub and electronic dub share the style
+ * "Dub" but differ by genre, so the broad styles are gated behind one.
+ *
+ * Techno is deliberately absent from both tiers: too broad, and the one-hop
+ * expansion in pass 2 already reaches into it through real connections.
  */
-export const SEED_STYLES = new Set([
-  "Dub Techno",
-  "Deep Techno",
-  "Dub",
-  "Ambient",
-  "Minimal",
-]);
+export const seedStyles = {
+  /** Unambiguous. Admitted whatever the genre. */
+  core: new Set(["Dub Techno", "Deep Techno"]),
+  /** Real scene styles that are also used far outside it. Gated by genre. */
+  broad: new Set(["Minimal", "Dub"]),
+  /** The gate for the broad tier. */
+  genres: new Set(["Electronic"]),
+  /**
+   * Broad styles needing more than a genre gate: admitted only alongside one of
+   * these. Ambient is the case that forced this, being enormous even within
+   * Electronic.
+   */
+  needsTechno: new Set(["Ambient"]),
+  technoStyles: new Set(["Techno", "Minimal Techno", "Dub Techno", "Deep Techno"]),
+};
+
+export function isSeedRelease(styles: string[], genres: string[]): boolean {
+  if (styles.some((s) => seedStyles.core.has(s))) return true;
+  if (!genres.some((g) => seedStyles.genres.has(g))) return false;
+  if (styles.some((s) => seedStyles.broad.has(s))) return true;
+
+  return (
+    styles.some((s) => seedStyles.needsTechno.has(s)) &&
+    styles.some((s) => seedStyles.technoStyles.has(s))
+  );
+}
 
 /**
  * A label becomes a seed label only if BOTH hold. Flat counts alone don't work:
@@ -76,6 +106,19 @@ export const PLACEHOLDER_ARTIST_NAMES = new Set([
 
 export function isPlaceholderArtist(id: number, name: string): boolean {
   return PLACEHOLDER_ARTIST_IDS.has(id) || PLACEHOLDER_ARTIST_NAMES.has(name.trim());
+}
+
+/**
+ * "Not On Label" is the label equivalent of "Various": a placeholder for
+ * self-released records, not an imprint anyone signed to.
+ *
+ * Discogs mints a separate id per self-releasing artist ("Not On Label (X
+ * Self-released)"), so there is no single id to exclude. Measured on the
+ * 20260801 dump: 19,947 distinct ids share the name, and the generic bucket
+ * alone gathered a 483,207 artist "roster" that topped the seed label table.
+ */
+export function isPlaceholderLabel(name: string): boolean {
+  return name.trimStart().startsWith("Not On Label");
 }
 
 /** Rows to keep when building a development sample from a full dump. */

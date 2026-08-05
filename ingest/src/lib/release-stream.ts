@@ -38,6 +38,11 @@ export interface ParsedRelease {
   credits: ParsedCredit[];
   labels: ParsedLabelRef[];
   styles: string[];
+  /**
+   * Coarser than styles, and the only thing that separates reggae dub from
+   * electronic dub: both carry the style "Dub", but the genre differs.
+   */
+  genres: string[];
 }
 
 /**
@@ -75,7 +80,7 @@ export async function* streamReleases(
     if (release === null) {
       if (name !== "release") return; // the <releases> root, and anything stray
       const id = Number(node.attributes["id"]);
-      release = { id, title: "", year: null, artists: [], credits: [], labels: [], styles: [] };
+      release = { id, title: "", year: null, artists: [], credits: [], labels: [], styles: [], genres: [] };
       releasedRaw = null;
       inTracklist = false;
       pending = null;
@@ -151,6 +156,8 @@ export async function* streamReleases(
     if (depth === 2) {
       if (name === "style" && stack[1] === "styles") {
         release.styles.push(value);
+      } else if (name === "genre" && stack[1] === "genres") {
+        release.genres.push(value);
       } else if (name === "artist" && pending !== null) {
         if (stack[1] === "artists") {
           release.artists.push({

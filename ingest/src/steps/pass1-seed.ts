@@ -1,8 +1,9 @@
 import type Database from "better-sqlite3";
 import {
-  SEED_STYLES,
+  isSeedRelease,
   seedLabel as seedLabelDefaults,
   isPlaceholderArtist,
+  isPlaceholderLabel,
 } from "../config.ts";
 import { startRun } from "../db/open.ts";
 import type { ParsedRelease } from "../lib/release-stream.ts";
@@ -19,7 +20,8 @@ import type { ParsedRelease } from "../lib/release-stream.ts";
  */
 
 export interface Pass1Options {
-  styles?: Set<string>;
+  /** Overrides the configured seed rule. Used by tests. */
+  isSeed?: (styles: string[], genres: string[]) => boolean;
   seedLabel?: { minSeedArtists: number; minSeedArtistRatio: number };
   sourceFile?: string;
   onProgress?: (scanned: number) => void;
@@ -38,6 +40,8 @@ export interface Pass1Stats {
    * entities, but they are counted rather than dropped in silence.
    */
   labelsWithoutId: number;
+  /** "Not On Label" style placeholders, excluded from roster maths. */
+  placeholderLabels: number;
 }
 
 const COMMIT_EVERY = 20_000;
@@ -48,13 +52,10 @@ export async function runPass1(
   releases: Iterable<ParsedRelease> | AsyncIterable<ParsedRelease>,
   options: Pass1Options = {},
 ): Promise<Pass1Stats> {
-  const styles = options.styles ?? SEED_STYLES;
+  const isSeed = options.isSeed ?? isSeedRelease;
   const thresholds = options.seedLabel ?? seedLabelDefaults;
 
-  const run = startRun(db, "pass1", options.sourceFile ?? null, {
-    styles: [...styles],
-    seedLabel: thresholds,
-  });
+  const run = startRun(db, "pass1", options.sourceFile ?? null, { seedLabel: thresholds });
 
   const insert = {
     release: db.prepare(
@@ -75,6 +76,9 @@ export async function runPass1(
     style: db.prepare(
       `INSERT OR IGNORE INTO release_styles (release_id, style) VALUES (?, ?)`,
     ),
+    genre: db.prepare(
+      `INSERT OR IGNORE INTO release_genres (release_id, genre) VALUES (?, ?)`,
+    ),
     pair: db.prepare(
       `INSERT OR IGNORE INTO label_artist_pairs (label_id, artist_id) VALUES (?, ?)`,
     ),
@@ -90,6 +94,7 @@ export async function runPass1(
   let scanned = 0;
   let seedReleases = 0;
   let labelsWithoutId = 0;
+  let placeholderLabels = 0;
 
   db.exec("BEGIN");
   try {
@@ -103,13 +108,18 @@ export async function runPass1(
           labelsWithoutId++;
           continue;
         }
+        // "Not On Label" is the label equivalent of Various.
+        if (isPlaceholderLabel(label.name)) {
+          placeholderLabels++;
+          continue;
+        }
         for (const artist of release.artists) {
           if (isPlaceholderArtist(artist.id, artist.name)) continue;
           insert.pair.run(label.id, artist.id);
         }
       }
 
-      if (release.styles.some((style) => styles.has(style))) {
+      if (isSeed(release.styles, release.genres)) {
         seedReleases++;
         keepRelease(db, insert, release, seedArtistReleases);
       }
@@ -151,6 +161,7 @@ export async function runPass1(
     seedLabels: count("seed_labels"),
     distinctRoles: count("roles_seen"),
     labelsWithoutId,
+    placeholderLabels,
   };
 
   run.finish(stats);
@@ -181,11 +192,12 @@ function keepRelease(
   release.labels.forEach((label, position) => {
     // An unidentified label has no page to pivot to, so it never becomes a row.
     // The position index still reflects the original order on the release.
-    if (label.id === null) return;
+    if (label.id === null || isPlaceholderLabel(label.name)) return;
     insert.label!.run(release.id, position, label.id, label.name, label.catno);
   });
 
   for (const style of release.styles) insert.style!.run(release.id, style);
+  for (const genre of release.genres) insert.genre!.run(release.id, genre);
 
   // Everyone credited counts towards the seed, the artist line and the
   // extraartists alike. A mixing engineer is exactly the kind of thread this

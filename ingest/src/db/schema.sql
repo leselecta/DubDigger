@@ -51,6 +51,14 @@ CREATE TABLE IF NOT EXISTS release_styles (
   PRIMARY KEY (release_id, style)
 ) WITHOUT ROWID;
 
+-- Coarser than styles, and the only thing separating reggae dub from
+-- electronic dub. Kept for tuning and debugging the seed rule.
+CREATE TABLE IF NOT EXISTS release_genres (
+  release_id    INTEGER NOT NULL,
+  genre         TEXT NOT NULL,
+  PRIMARY KEY (release_id, genre)
+) WITHOUT ROWID;
+
 CREATE TABLE IF NOT EXISTS artists (
   id            INTEGER PRIMARY KEY,
   name          TEXT NOT NULL,

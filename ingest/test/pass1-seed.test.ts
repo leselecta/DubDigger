@@ -15,6 +15,7 @@ function release(partial: Partial<ParsedRelease> & { id: number }): ParsedReleas
     credits: [],
     labels: [],
     styles: [],
+    genres: [],
     ...partial,
   };
 }
@@ -39,7 +40,7 @@ test("keeps releases whose styles intersect the seed set", async () => {
       release({ id: 2, styles: ["House", "Disco"] }),
       release({ id: 3, styles: ["Ambient"] }),
     ],
-    { styles: new Set(["Dub Techno", "Ambient"]) },
+    { isSeed: (s: string[]) => ["Dub Techno", "Ambient"].some((x) => s.includes(x)) },
   );
 
   assert.equal(stats.releasesScanned, 3);
@@ -49,7 +50,7 @@ test("keeps releases whose styles intersect the seed set", async () => {
 
 test("marks kept releases as seed", async () => {
   const { db } = await pass1([release({ id: 1, styles: ["Dub"] })], {
-    styles: new Set(["Dub"]),
+    isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)),
   });
   assert.equal(db.prepare("SELECT is_seed FROM releases WHERE id = 1").pluck().get(), 1);
 });
@@ -64,7 +65,7 @@ test("collects seed artists from both the artist line and the credits", async ()
         credits: [credit(20), credit(21, "Engineer")],
       }),
     ],
-    { styles: new Set(["Dub"]) },
+    { isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)) },
   );
 
   assert.equal(stats.seedArtists, 3);
@@ -77,7 +78,7 @@ test("does not take seed artists from releases outside the seed styles", async (
       release({ id: 1, styles: ["Dub"], artists: [artist(10)] }),
       release({ id: 2, styles: ["House"], artists: [artist(99)] }),
     ],
-    { styles: new Set(["Dub"]) },
+    { isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)) },
   );
   assert.deepEqual(ids(db, "SELECT artist_id FROM seed_artists"), [10]);
 });
@@ -92,7 +93,7 @@ test("keeps placeholder artists out of the seed set", async () => {
         artists: [{ id: 194, name: "Various", joinPhrase: null }, artist(10)],
       }),
     ],
-    { styles: new Set(["Dub"]) },
+    { isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)) },
   );
   assert.deepEqual(ids(db, "SELECT artist_id FROM seed_artists"), [10]);
 });
@@ -104,7 +105,7 @@ test("counts a seed artist's releases", async () => {
       release({ id: 2, styles: ["Dub"], artists: [artist(10)] }),
       release({ id: 3, styles: ["Dub"], artists: [artist(11)] }),
     ],
-    { styles: new Set(["Dub"]) },
+    { isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)) },
   );
   assert.equal(
     db.prepare("SELECT seed_releases FROM seed_artists WHERE artist_id = 10").pluck().get(),
@@ -118,7 +119,7 @@ test("logs every distinct role string, with occurrence counts", async () => {
       release({ id: 1, styles: ["Dub"], credits: [credit(20, "Engineer"), credit(21, "Producer")] }),
       release({ id: 2, styles: ["Dub"], credits: [credit(22, "Engineer")] }),
     ],
-    { styles: new Set(["Dub"]) },
+    { isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)) },
   );
 
   assert.equal(stats.distinctRoles, 2);
@@ -130,7 +131,7 @@ test("logs every distinct role string, with occurrence counts", async () => {
 
 test("records the run so the database can explain itself", async () => {
   const { db } = await pass1([release({ id: 1, styles: ["Dub"] })], {
-    styles: new Set(["Dub"]),
+    isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)),
     sourceFile: "sample.xml",
   });
   const run = db.prepare("SELECT step, source_file, finished_at FROM ingest_runs").get() as
@@ -165,7 +166,7 @@ function labelWith(seedArtists: number[], fillerArtists: number[]): ParsedReleas
 
 test("a label with enough seed artists, densely enough, becomes a seed label", async () => {
   const { db, stats } = await pass1(labelWith([1, 2], [3]), {
-    styles: new Set(["Dub"]),
+    isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)),
     seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.05 },
   });
 
@@ -184,7 +185,7 @@ test("one seed artist fails the floor, however concentrated", async () => {
   // 1 of 2 is a 50% ratio, which clears the ratio easily. The floor is what
   // stops a tiny label qualifying on a single coincidence.
   const { db, stats } = await pass1(labelWith([1], [2]), {
-    styles: new Set(["Dub"]),
+    isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)),
     seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.05 },
   });
 
@@ -196,7 +197,7 @@ test("two seed artists on a huge roster fail the ratio", async () => {
   // 2 of 100 is 2%, under the 5% floor. This is the case flat counts get wrong.
   const filler = Array.from({ length: 98 }, (_, i) => 100 + i);
   const { stats } = await pass1(labelWith([1, 2], filler), {
-    styles: new Set(["Dub"]),
+    isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)),
     seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.05 },
   });
 
@@ -211,7 +212,7 @@ test("counts each artist once per label, however many releases they made", async
     release({ id: 4, styles: ["House"], artists: [artist(3)], labels: [label(500)] }),
   ];
   const { db } = await pass1(releases, {
-    styles: new Set(["Dub"]),
+    isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)),
     seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.05 },
   });
 
@@ -228,7 +229,7 @@ test("the roster spans the whole dump, not just the seed releases", async () => 
   // Only counting seed releases would show 2 of 2 and wrongly admit the label.
   const filler = Array.from({ length: 20 }, (_, i) => 100 + i);
   const { stats } = await pass1(labelWith([1, 2], filler), {
-    styles: new Set(["Dub"]),
+    isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)),
     seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.5 },
   });
 
@@ -247,7 +248,7 @@ test("placeholder artists do not pad a label roster", async () => {
     }),
   ];
   const { db } = await pass1(releases, {
-    styles: new Set(["Dub"]),
+    isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)),
     seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.05 },
   });
 
@@ -267,7 +268,7 @@ test("skips labels the dump gives no id for, and counts them", async () => {
       release({ id: 1, styles: ["Dub"], artists: [artist(1)], labels: [unidentified, label(500)] }),
       release({ id: 2, styles: ["House"], artists: [artist(2)], labels: [unidentified] }),
     ],
-    { styles: new Set(["Dub"]) },
+    { isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)) },
   );
 
   assert.equal(stats.labelsWithoutId, 2);
@@ -276,6 +277,6 @@ test("skips labels the dump gives no id for, and counts them", async () => {
 });
 
 test("the working pairs table is cleaned up once the seed labels are computed", async () => {
-  const { db } = await pass1(labelWith([1, 2], [3]), { styles: new Set(["Dub"]) });
+  const { db } = await pass1(labelWith([1, 2], [3]), { isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)) });
   assert.equal(db.prepare("SELECT count(*) FROM label_artist_pairs").pluck().get(), 0);
 });

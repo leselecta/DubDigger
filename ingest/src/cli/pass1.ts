@@ -10,7 +10,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { paths, SEED_STYLES, seedLabel } from "../config.ts";
+import { paths, seedStyles, seedLabel } from "../config.ts";
 import { openDb } from "../db/open.ts";
 import { openDump, streamReleases } from "../lib/release-stream.ts";
 import { runPass1 } from "../steps/pass1-seed.ts";
@@ -57,7 +57,9 @@ const isFull = source.endsWith(".gz");
 
 console.log(`Pass 1, style seed`);
 console.log(`  source   ${source}`);
-console.log(`  styles   ${[...SEED_STYLES].join(", ")}`);
+console.log(`  core     ${[...seedStyles.core].join(", ")}`);
+console.log(`  broad    ${[...seedStyles.broad].join(", ")}` + ` (genre: ${[...seedStyles.genres].join("/")})`);
+console.log(`  gated    ${[...seedStyles.needsTechno].join(", ")}` + ` (needs a techno style alongside)`);
 console.log(`  label    >= ${seedLabel.minSeedArtists} seed artists`
   + ` and >= ${(seedLabel.minSeedArtistRatio * 100).toFixed(1)}% of roster\n`);
 
@@ -85,6 +87,7 @@ console.log(`
   seed labels        ${n(stats.seedLabels)}   <- steering signal
   distinct roles     ${n(stats.distinctRoles)}
   labels with no id  ${n(stats.labelsWithoutId)}   (skipped, cannot be linked)
+  placeholder labels ${n(stats.placeholderLabels)}   (Not On Label, skipped)
 
   elapsed            ${elapsed.toFixed(1)}s
 `);

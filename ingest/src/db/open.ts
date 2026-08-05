@@ -28,8 +28,29 @@ export function openDb(file: string = paths.db): Database.Database {
   // than paging it off disk is the difference between minutes and hours.
   db.pragma("cache_size = -262144"); // 256 MB
   db.exec(fs.readFileSync(schemaPath, "utf8"));
+  addMissingColumns(db);
 
   return db;
+}
+
+/**
+ * CREATE TABLE IF NOT EXISTS silently does nothing when the table already
+ * exists, so a column added to the schema never reaches a database built before
+ * it. These are the columns added after the first schema shipped.
+ */
+function addMissingColumns(db: Database.Database): void {
+  const additions: [table: string, column: string, type: string][] = [
+    ["artists", "profile", "TEXT"],
+    ["artists", "urls", "TEXT"],
+    ["labels", "profile", "TEXT"],
+    ["labels", "urls", "TEXT"],
+  ];
+
+  for (const [table, column, type] of additions) {
+    const existing = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+    if (existing.some((c) => c.name === column)) continue;
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+  }
 }
 
 /**

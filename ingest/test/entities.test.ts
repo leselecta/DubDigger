@@ -5,11 +5,12 @@ import { openDb } from "../src/db/open.ts";
 import { runEntities } from "../src/steps/entities.ts";
 import type { ParsedEntity } from "../src/lib/entity-stream.ts";
 
-const entity = (id: number, name: string, realName: string | null = null): ParsedEntity => ({
-  id,
-  name,
-  realName,
-});
+const entity = (
+  id: number,
+  name: string,
+  realName: string | null = null,
+  profile: string | null = null,
+): ParsedEntity => ({ id, name, realName, profile, urls: [] });
 
 function corpus(artistIds: number[], labelIds: number[]) {
   const db = openDb(":memory:");
@@ -56,6 +57,18 @@ test("builds a search index that finds an artist by name", async () => {
     .pluck()
     .get("Channel");
   assert.equal(hit, 10, "search should resolve straight to the artist id");
+});
+
+test("stores the profile, which is CC0 dump data rather than a live API call", async () => {
+  const db = corpus([10], []);
+  await runEntities(db, {
+    artists: [entity(10, "Basic Channel", null, "Berlin duo. Founded [l=Chain Reaction].")],
+    labels: [],
+  });
+  assert.equal(
+    db.prepare("SELECT profile FROM artists WHERE id = 10").pluck().get(),
+    "Berlin duo. Founded [l=Chain Reaction].",
+  );
 });
 
 test("a second run replaces the first rather than layering on top of it", async () => {

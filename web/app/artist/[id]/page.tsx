@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getArtist, getCollaborators, getArtistLabels } from "@/lib/queries";
-
-export const dynamic = "force-dynamic";
+import { connection } from "next/server";
+import { getArtist, getCollaborators, getArtistLabels, getProfileNames } from "@/lib/queries";
+import { ProfileText } from "@/components/profile-text";
+import { OutboundLinks } from "@/components/outbound-links";
 
 function years(from: number | null, to: number | null): string {
   if (!from && !to) return "";
@@ -11,12 +12,19 @@ function years(from: number | null, to: number | null): string {
 }
 
 export default async function ArtistPage({ params }: { params: Promise<{ id: string }> }) {
+  // The SQLite file is a static artifact regenerated out of band, so every page
+  // must read it per request. connection() is the current way to say that: it
+  // ties dynamic rendering to the incoming request, and supersedes the
+  // deprecated `export const dynamic = "force-dynamic"`.
+  await connection();
+
   const { id } = await params;
   const artist = getArtist(Number(id));
   if (!artist) notFound();
 
   const collaborators = getCollaborators(artist.id);
   const labels = getArtistLabels(artist.id);
+  const names = getProfileNames(artist.profile);
 
   return (
     <div className="max-w-4xl">
@@ -34,7 +42,16 @@ export default async function ArtistPage({ params }: { params: Promise<{ id: str
           )}
           <Provenance artist={artist} />
         </p>
+        <OutboundLinks kind="artist" id={artist.id} urls={artist.urls} />
       </header>
+
+      {artist.profile && (
+        <section className="mb-4 max-w-2xl">
+          <p className="text-ink-dim text-sm leading-relaxed whitespace-pre-line">
+            <ProfileText text={artist.profile} names={names} />
+          </p>
+        </section>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         <section>

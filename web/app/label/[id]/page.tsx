@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getLabel, getRoster } from "@/lib/queries";
-
-export const dynamic = "force-dynamic";
+import { connection } from "next/server";
+import { getLabel, getRoster, getProfileNames } from "@/lib/queries";
+import { ProfileText } from "@/components/profile-text";
+import { OutboundLinks } from "@/components/outbound-links";
 
 function years(from: number | null, to: number | null): string {
   if (!from && !to) return "";
@@ -11,11 +12,18 @@ function years(from: number | null, to: number | null): string {
 }
 
 export default async function LabelPage({ params }: { params: Promise<{ id: string }> }) {
+  // The SQLite file is a static artifact regenerated out of band, so every page
+  // must read it per request. connection() is the current way to say that: it
+  // ties dynamic rendering to the incoming request, and supersedes the
+  // deprecated `export const dynamic = "force-dynamic"`.
+  await connection();
+
   const { id } = await params;
   const label = getLabel(Number(id));
   if (!label) notFound();
 
   const roster = getRoster(label.id);
+  const names = getProfileNames(label.profile);
 
   return (
     <div className="max-w-3xl">
@@ -30,7 +38,16 @@ export default async function LabelPage({ params }: { params: Promise<{ id: stri
             </span>
           )}
         </p>
+        <OutboundLinks kind="label" id={label.id} urls={label.urls} />
       </header>
+
+      {label.profile && (
+        <section className="mb-4 max-w-2xl">
+          <p className="text-ink-dim text-sm leading-relaxed whitespace-pre-line">
+            <ProfileText text={label.profile} names={names} />
+          </p>
+        </section>
+      )}
 
       {!label.isSeed && (
         // The corpus only follows non-seed labels as far as the artists who

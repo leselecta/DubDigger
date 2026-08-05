@@ -59,15 +59,26 @@ CREATE TABLE IF NOT EXISTS release_genres (
   PRIMARY KEY (release_id, genre)
 ) WITHOUT ROWID;
 
+-- profile and urls come straight from the dumps, so they are CC0 like the rest
+-- of it. No API call, no live dependency, no attribution requirement. Images
+-- are the thing that is NOT in here and NOT CC0.
 CREATE TABLE IF NOT EXISTS artists (
   id            INTEGER PRIMARY KEY,
   name          TEXT NOT NULL,
-  real_name     TEXT
+  real_name     TEXT,
+  -- Raw Discogs markup: [a123], [l=Name], [b]bold[/b], [url=..]..[/url].
+  -- Stored verbatim and rendered at display time, since [a] and [l] are typed
+  -- references that become links into this tool's own pages.
+  profile       TEXT,
+  /** The artist's own links, newline separated. */
+  urls          TEXT
 );
 
 CREATE TABLE IF NOT EXISTS labels (
   id            INTEGER PRIMARY KEY,
-  name          TEXT NOT NULL
+  name          TEXT NOT NULL,
+  profile       TEXT,
+  urls          TEXT
 );
 
 -- The definitional core of the corpus, persisted so pass 2 can be re-run with

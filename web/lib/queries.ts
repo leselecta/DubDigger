@@ -10,6 +10,8 @@ export interface Artist {
   id: number;
   name: string;
   realName: string | null;
+  profile: string | null;
+  urls: string[];
   releaseCount: number;
   /** Releases of theirs carrying any credits at all. Zero is meaningful. */
   creditedReleases: number;
@@ -40,6 +42,8 @@ export interface LabelCredit {
 export interface Label {
   id: number;
   name: string;
+  profile: string | null;
+  urls: string[];
   artistCount: number;
   releaseCount: number;
   isSeed: boolean;
@@ -66,6 +70,8 @@ interface ArtistRow {
   id: number;
   name: string;
   real_name: string | null;
+  profile: string | null;
+  urls: string | null;
   release_count: number;
   credited_releases: number;
   collaborator_count: number;
@@ -95,6 +101,8 @@ interface CreditRow {
 interface LabelRow {
   id: number;
   name: string;
+  profile: string | null;
+  urls: string | null;
   artist_count: number;
   release_count: number;
   seed_ratio: number | null;
@@ -112,7 +120,7 @@ export function getArtist(id: number): Artist | null {
 
   const row = db
     .prepare(
-      `SELECT a.id, a.name, a.real_name,
+      `SELECT a.id, a.name, a.real_name, a.profile, a.urls,
               coalesce(c.release_count, 0)      AS release_count,
               coalesce(c.credited_releases, 0)  AS credited_releases,
               coalesce(c.collaborator_count, 0) AS collaborator_count,
@@ -133,6 +141,8 @@ export function getArtist(id: number): Artist | null {
     id: row.id,
     name: row.name,
     realName: row.real_name,
+    profile: row.profile,
+    urls: row.urls ? row.urls.split("\n").filter(Boolean) : [],
     releaseCount: row.release_count,
     creditedReleases: row.credited_releases,
     collaboratorCount: row.collaborator_count,
@@ -197,7 +207,7 @@ export function getLabel(id: number): Label | null {
 
   const row = db
     .prepare(
-      `SELECT l.id, l.name,
+      `SELECT l.id, l.name, l.profile, l.urls,
               (SELECT count(*) FROM label_roster r WHERE r.label_id = l.id) AS artist_count,
               (SELECT count(DISTINCT rl.release_id) FROM release_labels rl WHERE rl.label_id = l.id)
                 AS release_count,
@@ -212,6 +222,8 @@ export function getLabel(id: number): Label | null {
   return {
     id: row.id,
     name: row.name,
+    profile: row.profile,
+    urls: row.urls ? row.urls.split("\n").filter(Boolean) : [],
     artistCount: row.artist_count,
     releaseCount: row.release_count,
     isSeed: row.seed_ratio !== null,
@@ -265,7 +277,7 @@ export function search(query: string, limit = 40): SearchHit[] {
 
   const labels = db
     .prepare(
-      `SELECT l.id, l.name,
+      `SELECT l.id, l.name, l.profile, l.urls,
               (SELECT count(DISTINCT rl.release_id) FROM release_labels rl WHERE rl.label_id = l.id)
                 AS release_count
          FROM label_search s
@@ -282,4 +294,32 @@ export function search(query: string, limit = 40): SearchHit[] {
   ]
     .sort((a, b) => b.releaseCount - a.releaseCount)
     .map(({ id, name, kind, releaseCount }) => ({ id, name, kind, releaseCount }));
+}
+
+/**
+ * Resolves the [a123] and [l456] references inside a profile to real names, so
+ * a bio reads as prose with links rather than as raw ids.
+ */
+export function getProfileNames(profile: string | null): Record<string, string> {
+  const db = getDb();
+  if (!db || !profile) return {};
+
+  const artistIds: number[] = [];
+  const labelIds: number[] = [];
+  for (const m of profile.matchAll(/\[(a|l)(\d+)\]/gi)) {
+    (m[1]!.toLowerCase() === "a" ? artistIds : labelIds).push(Number(m[2]));
+  }
+  if (artistIds.length === 0 && labelIds.length === 0) return {};
+
+  const names: Record<string, string> = {};
+  const lookup = (table: string, ids: number[], prefix: string) => {
+    if (ids.length === 0) return;
+    const rows = db
+      .prepare(`SELECT id, name FROM ${table} WHERE id IN (${ids.map(() => "?").join(",")})`)
+      .all(...ids) as { id: number; name: string }[];
+    for (const r of rows) names[`${prefix}${r.id}`] = r.name;
+  };
+  lookup("artists", artistIds, "a");
+  lookup("labels", labelIds, "l");
+  return names;
 }

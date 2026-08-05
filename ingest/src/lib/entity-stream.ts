@@ -7,6 +7,10 @@ export interface ParsedEntity {
   name: string;
   /** Artists only. Labels never carry one. */
   realName: string | null;
+  /** Raw Discogs markup, rendered at display time. */
+  profile: string | null;
+  /** The entity's own links. */
+  urls: string[];
 }
 
 /**
@@ -36,7 +40,7 @@ export async function* streamEntities(
   parser.on("opentag", (node) => {
     if (entity === null) {
       if (node.name !== kind) return; // the root element, and anything stray
-      entity = { id: 0, name: "", realName: null };
+      entity = { id: 0, name: "", realName: null, profile: null, urls: [] };
       depth = 1;
       text = "";
       return;
@@ -67,6 +71,12 @@ export async function* streamEntities(
       if (node.name === "id") entity.id = Number(value);
       else if (node.name === "name") entity.name = value;
       else if (node.name === "realname") entity.realName = value || null;
+      else if (node.name === "profile") entity.profile = value || null;
+    }
+
+    // <url> sits one level down, under <urls>.
+    if (depth === 2 && node.name === "url" && text.trim()) {
+      entity.urls.push(text.trim());
     }
     text = "";
   });

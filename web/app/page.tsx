@@ -1,16 +1,19 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { getCorpusStats, getDbPath } from "@/lib/db";
 import { search } from "@/lib/queries";
-
-// The SQLite file is a static artifact regenerated out of band, so pages must
-// read it at request time. Prerendering would bake one ingest in permanently.
-export const dynamic = "force-dynamic";
 
 export default async function HomePage({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  // The SQLite file is a static artifact regenerated out of band, so every page
+  // must read it per request. connection() is the current way to say that: it
+  // ties dynamic rendering to the incoming request, and supersedes the
+  // deprecated `export const dynamic = "force-dynamic"`.
+  await connection();
+
   const { q } = await searchParams;
   const stats = getCorpusStats();
   const hits = q ? search(q) : [];

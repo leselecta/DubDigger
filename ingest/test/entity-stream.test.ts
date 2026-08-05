@@ -31,6 +31,21 @@ test("takes the artist's own name, not an alias or a group name", async () => {
   assert.equal(basicChannel!.realName, "Moritz Von Oswald & Mark Ernestus");
 });
 
+test("keeps the profile as raw Discogs markup, to be rendered later", async () => {
+  // [a=] and [l=] are typed references, so a bio can become links into this
+  // tool's own pages. Parsing them here would throw that away.
+  const [basicChannel] = await parse("artist");
+  assert.equal(basicChannel!.profile, "Berlin duo.");
+});
+
+test("collects the entity's own urls without descending into aliases", async () => {
+  const [basicChannel] = await parse("artist");
+  assert.deepEqual(basicChannel!.urls, [
+    "https://basicchannel.com",
+    "https://en.wikipedia.org/wiki/Basic_Channel",
+  ]);
+});
+
 test("does not mistake a group name for the artist's own", async () => {
   const artists = await parse("artist");
   assert.equal(artists[1]!.name, "Moritz Von Oswald");

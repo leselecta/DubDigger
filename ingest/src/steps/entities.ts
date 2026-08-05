@@ -54,25 +54,25 @@ export async function runEntities(
 
   if (sources.artists) {
     const insert = db.prepare(
-      "INSERT OR REPLACE INTO artists (id, name, real_name) VALUES (?, ?, ?)",
+      "INSERT OR REPLACE INTO artists (id, name, real_name, profile, urls) VALUES (?, ?, ?, ?, ?)",
     );
     db.exec("BEGIN");
     for await (const entity of sources.artists) {
       stats.artistsScanned++;
       if (!wantedArtists.has(entity.id)) continue;
-      insert.run(entity.id, entity.name, entity.realName);
+      insert.run(entity.id, entity.name, entity.realName, entity.profile, entity.urls.join("\n") || null);
       stats.artistsKept++;
     }
     db.exec("COMMIT");
   }
 
   if (sources.labels) {
-    const insert = db.prepare("INSERT OR REPLACE INTO labels (id, name) VALUES (?, ?)");
+    const insert = db.prepare("INSERT OR REPLACE INTO labels (id, name, profile, urls) VALUES (?, ?, ?, ?)");
     db.exec("BEGIN");
     for await (const entity of sources.labels) {
       stats.labelsScanned++;
       if (!wantedLabels.has(entity.id)) continue;
-      insert.run(entity.id, entity.name);
+      insert.run(entity.id, entity.name, entity.profile, entity.urls.join("\n") || null);
       stats.labelsKept++;
     }
     db.exec("COMMIT");

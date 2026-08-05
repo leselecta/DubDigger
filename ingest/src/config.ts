@@ -72,8 +72,17 @@ export function isSeedRelease(styles: string[], genres: string[]): boolean {
 export const seedLabel = {
   /** Floor: guards against a tiny label qualifying on one coincidence. */
   minSeedArtists: 2,
-  /** Ratio: guards against a large label qualifying on a single seed artist. */
-  minSeedArtistRatio: 0.05,
+  /**
+   * Ratio: guards against a large label qualifying on a single seed artist.
+   *
+   * Measured against the 20260801 dump there is a clean gap here, so this is
+   * not a finger in the air. Majors land at 6-19% (EMI 6%, Sony 8%, Universal
+   * 10%, Virgin 19%) while the scene labels land at 67-100%: Chain Reaction,
+   * Basic Channel, Burial Mix, Rhythm & Sound, Echocord, Styrax Leaves,
+   * Echospace and Main Street all at 100%, then Ostgut Ton 84%, Kompakt 81%,
+   * Tresor 69%, Modern Love 67%. 0.50 sits in the empty middle.
+   */
+  minSeedArtistRatio: 0.5,
 };
 
 /**
@@ -118,7 +127,9 @@ export function isPlaceholderArtist(id: number, name: string): boolean {
  * alone gathered a 483,207 artist "roster" that topped the seed label table.
  */
 export function isPlaceholderLabel(name: string): boolean {
-  return name.trimStart().startsWith("Not On Label");
+  // Casing is inconsistent in the dump: label 1818 alone appears as
+  // "Not On Label", "Not On label", "Not on Label" and "not on label".
+  return name.trimStart().toLowerCase().startsWith("not on label");
 }
 
 /** Rows to keep when building a development sample from a full dump. */

@@ -307,3 +307,18 @@ test("a second run replaces the first rather than layering on top of it", async 
   assert.deepEqual(ids(db, "SELECT id FROM releases"), [2], "run 1 releases survived");
   assert.equal(db.prepare("SELECT count(*) FROM roles_seen").pluck().get(), 0);
 });
+
+test("recognises the Not On Label placeholder whatever its casing", async () => {
+  // Label 1818 appears as "Not On Label", "Not On label", "Not on Label" and
+  // "not on label" across the dump. A case-sensitive check let it through.
+  const { db } = await pass1(
+    [
+      release({ id: 1, styles: ["Dub"], artists: [artist(1)], labels: [{ id: 1818, name: "Not On label", catno: null }] }),
+      release({ id: 2, styles: ["Dub"], artists: [artist(2)], labels: [{ id: 1818, name: "not on label", catno: null }] }),
+    ],
+    { isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)) },
+  );
+
+  assert.equal(db.prepare("SELECT count(*) FROM label_artist_pairs").pluck().get(), 0);
+  assert.equal(db.prepare("SELECT count(*) FROM release_labels").pluck().get(), 0);
+});

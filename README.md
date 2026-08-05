@@ -186,9 +186,11 @@ tuned by editing a pass script.
 
 | Dial | Default | What it does |
 |---|---|---|
-| `SEED_STYLES` | Dub Techno, Deep Techno, Dub, Ambient, Minimal | The pass 1 seed set. Techno is deliberately left out: it is broad enough to dilute the core, and pass 2 already reaches into it through real connections. |
+| `seedStyles.core` | Dub Techno, Deep Techno | Admitted whatever the genre. |
+| `seedStyles.broad` | Minimal, Dub | Admitted only within genre Electronic. This is what separates electronic dub from reggae dub: the style is identical, only the genre differs. |
+| `seedStyles.needsTechno` | Ambient | Needs Electronic *and* a techno style on the same release. Ambient is 98% Electronic already, so a genre gate alone does nothing for it. |
 | `seedLabel.minSeedArtists` | `2` | Floor. Stops a tiny label qualifying on one coincidence. |
-| `seedLabel.minSeedArtistRatio` | `0.05` | Concentration. Stops a 500 artist label qualifying because one seed artist released there once. |
+| `seedLabel.minSeedArtistRatio` | `0.50` | Concentration. Measured on the 20260801 dump there is a clean gap: majors land at 6-19%, scene labels at 67-100%. |
 | `expansion.channelAMinSharedReleases` | `1` (off) | Raise to `2` only if the one hop corpus balloons. Filters one off guest spots. |
 | `PLACEHOLDER_ARTIST_IDS` / `NAMES` | `194`, "Various" and similar | Keeps Discogs placeholders out of the collaboration logic, where they would otherwise become the most collaborative artist in the database by a mile. Verify the IDs against the artists dump before the first full run. |
 

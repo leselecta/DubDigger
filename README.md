@@ -12,9 +12,9 @@ they released on, then click any of those and keep going. A map of scenes, drawn
 from credits.
 
 > **Status: working end to end.** The full pipeline runs against the 20260801
-> dump and the app serves real data. Built on the August 2026 dump:
-> **1,321,431 releases**, **1,032,580 artists**, **133,960 labels**, in a
-> **1.35 GB** file. See [Roadmap](#roadmap) for what is still open.
+> dump and the app serves real data: **1,321,431 releases**, **561,672
+> artists**, **133,960 labels**, in a **1.05 GB** file. See
+> [Roadmap](#roadmap) for what is still open.
 
 The full design rationale is in
 [case-study-credit-graph.md](case-study-credit-graph.md). The working rules for
@@ -244,10 +244,57 @@ small VPS running the Next.js process next to the SQLite file.
 - [x] Workspaces, SQLite schema, streaming release parser, dump CLIs
 - [x] Web shell, density baseline, honest empty state
 - [x] Pass 1, style seed: seed artists, then seed labels via floor and ratio
-- [ ] Pass 2, one hop out on both channels, with provenance tagging
-- [ ] Artists and labels dumps into the entity tables
-- [ ] Derived tables: collaborators, labels, rosters, coverage flags
-- [ ] Artist, label and search pages
+- [x] Pass 2, one hop out on both channels, with provenance tagging
+- [x] Artists and labels dumps, with bios and outbound links
+- [x] Aliases, members and groups, read straight from the dump
+- [x] Derived tables: collaborators, labels, rosters, coverage flags
+- [x] Artist, label and search pages
+
+### Next up: two seed rules, both measured, neither built
+
+Frank Sinatra and Elvis Presley are in the corpus. They arrived through two
+different doors, and closing either one alone leaves the other open.
+
+**Door one: packaging credits confer seed membership.** Sinatra was admitted by
+"Tribute To Frank Sinatra", vouched for by Otto Bettmann of the Bettmann photo
+archive, credited on 64 releases of which 11 sit in the seed. His 17.2% clears
+the bridge ratio honestly. He is simply not a musician. **23,919 seed artists
+qualify on packaging credits alone**: photography, artwork, design, layout,
+sleeve, liner notes.
+
+Roles stay raw and `roles_seen` keeps logging all 46,033 strings. This is a
+membership rule, not the role normalisation v1 rules out.
+
+**Door two: incidental seed artists.** Luciano re-edited Nina Simone's
+"Sinnerman", correctly tagged Minimal on genre Electronic. That makes Nina
+Simone a seed artist off 4 releases in 5,087, 0.08% of her work. Vintage
+reissue labels then read as 74% scene, clear the 0.50 label ratio, and admit
+their whole catalogues through channel B.
+
+`npm run measure-seed` has already measured the fix:
+
+| floor | seed artists | seed labels |
+|---|---|---|
+| today | 179,416 | 29,397 |
+| 2% | 162,394 | 19,552 |
+| **5%** | **146,416** | **15,544** |
+| 10% | 128,555 | 11,805 |
+| 25% | 97,641 | 6,895 |
+
+The label effect dwarfs the artist effect, because incidental seed artists
+cluster on exactly the reissue labels that should never have qualified. Unlike
+the label ratio and the bridge ratio there is no clean gap here, so the
+threshold is a judgement call. 5% is the proposal, not a reading.
+
+Both are pass 1 rules, so one rebuild covers them: pass 1 through publish,
+roughly 75 minutes. **Keep the dumps until this is done.**
+
+### Also open
+
+- **Release pages.** Releases surface only through artists and labels, as
+  intended, but there is no page for one.
+- **Roles are still raw.** 46,033 distinct strings, logged in `roles_seen` as
+  the record of what a later pass would face.
 
 ## Deliberately out of scope for v1
 

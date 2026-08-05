@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<labels>
+<label>
+  <images><image height="24" type="primary" width="132"/></images>
+  <id>500</id>
+  <name>Chain Reaction</name>
+  <contactinfo>Berlin</contactinfo>
+  <profile>Sublabel of Basic Channel.</profile>
+  <data_quality>Correct</data_quality>
+  <parentLabel id="501">Basic Channel</parentLabel>
+  <sublabels>
+    <label id="502">Imbalance Computer Music</label>
+    <label id="503">Burial Mix</label>
+  </sublabels>
+  <urls><url>http://example.org</url></urls>
+</label>
+<label>
+  <id>501</id>
+  <name>Basic Channel</name>
+  <sublabels>
+    <label id="500">Chain Reaction</label>
+  </sublabels>
+</label>
+<label>
+  <id>504</id>
+  <name>Echocord</name>
+</label>
+</labels>

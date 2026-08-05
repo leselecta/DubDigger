@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<artists>
+<artist>
+  <images><image height="450" type="primary" width="600"/></images>
+  <id>10</id>
+  <name>Basic Channel</name>
+  <realname>Moritz Von Oswald &amp; Mark Ernestus</realname>
+  <profile>Berlin duo.</profile>
+  <data_quality>Correct</data_quality>
+  <namevariations>
+    <name>B.C.</name>
+    <name>Basic Chanel</name>
+  </namevariations>
+  <aliases>
+    <name id="11">Maurizio</name>
+    <name id="12">Rhythm &amp; Sound</name>
+  </aliases>
+  <members>
+    <id>20</id>
+    <name id="20">Moritz Von Oswald</name>
+  </members>
+</artist>
+<artist>
+  <id>20</id>
+  <name>Moritz Von Oswald</name>
+  <realname>Moritz Von Oswald</realname>
+  <groups>
+    <name id="10">Basic Channel</name>
+  </groups>
+</artist>
+<artist>
+  <id>30</id>
+  <name>Vainqueur</name>
+</artist>
+</artists>

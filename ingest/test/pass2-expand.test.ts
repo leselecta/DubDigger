@@ -44,7 +44,7 @@ async function pass2(
   releases: ParsedRelease[],
   options: Pass2Options = {},
 ) {
-  return runPass2(db, releases, options);
+  return runPass2(db, () => releases, options);
 }
 
 test("channel A keeps a release that credits a seed artist", async () => {
@@ -207,4 +207,58 @@ test("rebuilds the bulk-load indexes it drops", async () => {
   ]) {
     assert.ok(indexes.includes(expected), `${expected} was not rebuilt`);
   }
+});
+
+test("a seed artist who barely works in the scene stops acting as a bridge", async () => {
+  // Artist 10 was credited on 1 seed release out of 4 appearances (25%), and
+  // artist 11 on 1 of 1 (100%). At a 50% floor only artist 11 bridges. This is
+  // the Bob Ludwig case: he mastered a few scene records among 60,386, and
+  // every one of the rest walked in behind him.
+  const db = seeded([10, 11], []);
+  db.prepare("UPDATE seed_artists SET seed_releases = 1 WHERE artist_id = 10").run();
+
+  const stats = await pass2(
+    db,
+    [
+      release({ id: 1, credits: [credit(10, "Mastered By")], artists: [artist(90)] }),
+      release({ id: 2, credits: [credit(10, "Mastered By")], artists: [artist(91)] }),
+      release({ id: 3, credits: [credit(10, "Mastered By")], artists: [artist(92)] }),
+      release({ id: 4, artists: [artist(11), artist(93)] }),
+    ],
+    { channelAMinSeedRatio: 0.5 },
+  );
+
+  assert.equal(stats.suppressedBridges, 1, "artist 10 does 25% of their work here");
+  assert.deepEqual(ids(db, "SELECT id FROM releases ORDER BY id"), [4]);
+  assert.ok(!ids(db, "SELECT artist_id FROM corpus_artists").includes(90));
+});
+
+test("a prolific artist who works mostly in the scene keeps bridging", async () => {
+  // Moritz von Oswald has 556 credits, so any flat cap tight enough to stop a
+  // mastering hub would also stop him. 42.8% of his work is in the seed.
+  const db = seeded([10], []);
+  db.prepare("UPDATE seed_artists SET seed_releases = 3 WHERE artist_id = 10").run();
+
+  const stats = await pass2(
+    db,
+    [
+      release({ id: 1, artists: [artist(10), artist(90)] }),
+      release({ id: 2, artists: [artist(10), artist(91)] }),
+      release({ id: 3, artists: [artist(10)] }),
+      release({ id: 4, artists: [artist(10)] }),
+    ],
+    { channelAMinSeedRatio: 0.5 },
+  );
+
+  assert.equal(stats.suppressedBridges, 0, "3 of 4 appearances are in the seed");
+  assert.equal(stats.totalKept, 4);
+});
+
+test("the bridge check can be switched off", async () => {
+  const db = seeded([10], []);
+  const stats = await pass2(db, [release({ id: 1, artists: [artist(10)] })], {
+    channelAMinSeedRatio: null,
+  });
+  assert.equal(stats.suppressedBridges, 0);
+  assert.equal(stats.totalKept, 1);
 });

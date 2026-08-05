@@ -28,8 +28,11 @@ import type { ParsedRelease } from "../lib/release-stream.ts";
 export interface Pass2Options {
   /** Admit a non-seed artist to channel A only after this many seed releases. */
   channelAMinSharedReleases?: number;
+  /** Seed artists doing less than this share of their work in the seed stop bridging. */
+  channelAMinSeedRatio?: number | null;
   sourceFile?: string;
   onProgress?: (scanned: number) => void;
+  onPhase?: (note: string) => void;
 }
 
 export interface Pass2Stats {
@@ -42,18 +45,29 @@ export interface Pass2Stats {
   seedArtists: number;
   /** Artists the hop added on top of the seed set. */
   newArtists: number;
+  /** Seed artists too high-degree to bridge. Still in the corpus themselves. */
+  suppressedBridges: number;
 }
 
 const COMMIT_EVERY = 20_000;
 const PROGRESS_EVERY = 100_000;
 
+/**
+ * Takes a factory rather than an iterable because the dump is read twice: once
+ * to measure how many releases each seed artist appears on, and once to select.
+ * A seed artist's degree cannot be known at the moment it is needed otherwise.
+ */
 export async function runPass2(
   db: Database.Database,
-  releases: Iterable<ParsedRelease> | AsyncIterable<ParsedRelease>,
+  openReleases: () => Iterable<ParsedRelease> | AsyncIterable<ParsedRelease>,
   options: Pass2Options = {},
 ): Promise<Pass2Stats> {
   const minTies =
     options.channelAMinSharedReleases ?? expansionDefaults.channelAMinSharedReleases;
+  const minSeedRatio =
+    options.channelAMinSeedRatio === undefined
+      ? expansionDefaults.channelAMinSeedRatio
+      : options.channelAMinSeedRatio;
 
   reset(db);
   const run = startRun(db, "pass2", options.sourceFile ?? null, {
@@ -66,6 +80,40 @@ export async function runPass2(
   const seedLabels = new Set(
     db.prepare("SELECT label_id FROM seed_labels").pluck().all() as number[],
   );
+
+  // Phase 1. Measure how much of each seed artist's total output sits inside
+  // the seed. Someone who did five of sixty thousand records here is not
+  // evidence that any two of them are related.
+  const bridges = new Set(seedArtists);
+  let suppressedBridges = 0;
+
+  if (minSeedRatio !== null) {
+    const seedWork = new Map(
+      db.prepare("SELECT artist_id, seed_releases FROM seed_artists").raw().all() as [
+        number,
+        number,
+      ][],
+    );
+
+    const total = new Map<number, number>();
+    for await (const release of openReleases()) {
+      for (const person of [...release.artists, ...release.credits]) {
+        if (!seedArtists.has(person.id)) continue;
+        total.set(person.id, (total.get(person.id) ?? 0) + 1);
+      }
+    }
+
+    for (const [id, appearances] of total) {
+      const ratio = (seedWork.get(id) ?? 0) / Math.max(1, appearances);
+      if (ratio >= minSeedRatio) continue;
+      bridges.delete(id);
+      suppressedBridges++;
+    }
+    options.onPhase?.(
+      `measured ${total.size.toLocaleString("en-GB")} seed artists, ` +
+        `stood down ${suppressedBridges.toLocaleString("en-GB")} as bridges`,
+    );
+  }
 
   const insert = {
     release: db.prepare(
@@ -110,7 +158,7 @@ export async function runPass2(
 
   db.exec("BEGIN");
   try {
-    for await (const release of releases) {
+    for await (const release of openReleases()) {
       scanned++;
 
       const people = [...release.artists, ...release.credits].filter(
@@ -120,7 +168,7 @@ export async function runPass2(
         (l) => l.id !== null && !isPlaceholderLabel(l.name),
       );
 
-      const channelA = people.some((p) => seedArtists.has(p.id));
+      const channelA = people.some((p) => bridges.has(p.id));
       const channelB = labels.some((l) => seedLabels.has(l.id!));
 
       if (channelA && channelB) keptBoth++;
@@ -179,6 +227,7 @@ export async function runPass2(
     corpusArtists: count("SELECT count(*) FROM corpus_artists"),
     seedArtists: seedArtists.size,
     newArtists: count("SELECT count(*) FROM corpus_artists WHERE is_seed = 0"),
+    suppressedBridges,
   };
 
   run.finish(stats);

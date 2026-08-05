@@ -61,9 +61,10 @@ console.log(`  min ties      ${minTies}${minTies === 1 ? "  (dial off)" : ""}\n`
 if (source.endsWith(".gz")) console.log(`  Reading the full dump. This takes a while.\n`);
 
 const started = Date.now();
-const stats = await runPass2(db, streamReleases(openDump(source)), {
+const stats = await runPass2(db, () => streamReleases(openDump(source!)), {
   sourceFile: path.basename(source),
   channelAMinSharedReleases: minTies,
+  onPhase: (note) => console.log(`    ${note}`),
   onProgress: (n) => {
     const rate = n / ((Date.now() - started) / 1000);
     console.log(`    ${n.toLocaleString("en-GB")} releases (${Math.round(rate)}/s)`);

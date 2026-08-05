@@ -93,10 +93,37 @@ export const expansion = {
    * Channel A (collaboration) minimum tie strength: admit a non-seed artist only
    * if they appear on at least this many seed-artist releases.
    *
-   * Start at 1 (i.e. off). Raise to 2 only if the one-hop corpus comes out too
-   * large — it filters one-off guest spots.
+   * Note this governs which ARTISTS join the corpus, not which releases are
+   * kept, so it does little to control corpus size on its own.
    */
   channelAMinSharedReleases: 1,
+
+  /**
+   * A seed artist only acts as a channel A bridge if at least this share of
+   * their work sits inside the seed. null disables the check.
+   *
+   * This is the dial that controls corpus size. The first full pass 2 run
+   * expanded 179,416 seed artists into 6,563,471 releases, a third of Discogs,
+   * with 98% arriving through channel A. The cause was degree: the seed set
+   * contains everyone credited on a seed release, including mastering
+   * engineers who also worked on tens of thousands of unrelated records. Bob
+   * Ludwig mastered something adjacent to the scene, and all 60,386 of his
+   * releases walked in behind him.
+   *
+   * A flat cap on credits cannot fix it, because prolific scene producers look
+   * the same as service hubs from the outside. Moritz von Oswald has 556
+   * credits, so any cap tight enough to stop Bob Ludwig would also stop him.
+   *
+   * The share of work is what separates them, and it separates them cleanly.
+   * Measured on the 20260801 corpus: Moritz von Oswald 42.8%, Mark Ernestus
+   * 76.3%, against Bob Ludwig 0.2%, Bernie Grundman 0.3% and Beethoven 0.0%.
+   * Nothing sits in between, so 0.10 has room on both sides.
+   *
+   * Suppressed artists stay in the corpus with their own pages and credits.
+   * They simply stop being treated as evidence that two unrelated records
+   * belong to the same scene.
+   */
+  channelAMinSeedRatio: 0.1 as number | null,
 };
 
 /**
@@ -111,9 +138,16 @@ export const PLACEHOLDER_ARTIST_NAMES = new Set([
   "Various",
   "Unknown Artist",
   "No Artist",
+  // Credited as Written-By on 27,068 releases in the 20260801 corpus. A
+  // stand-in for public-domain authorship, not a person.
+  "Traditional",
 ]);
 
 export function isPlaceholderArtist(id: number, name: string): boolean {
+  // A credit with no usable <id> parses as 0. There were 833,731 of them in the
+  // first full corpus, which would have made "artist 0" the best connected
+  // person in the database.
+  if (id <= 0) return true;
   return PLACEHOLDER_ARTIST_IDS.has(id) || PLACEHOLDER_ARTIST_NAMES.has(name.trim());
 }
 

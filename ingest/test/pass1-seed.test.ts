@@ -322,3 +322,20 @@ test("recognises the Not On Label placeholder whatever its casing", async () => 
   assert.equal(db.prepare("SELECT count(*) FROM label_artist_pairs").pluck().get(), 0);
   assert.equal(db.prepare("SELECT count(*) FROM release_labels").pluck().get(), 0);
 });
+
+test("a credit with no usable id never becomes an artist", async () => {
+  // 833,731 credits in the first full corpus parsed to id 0, which would have
+  // made "artist 0" the best connected person in the database.
+  const { db } = await pass1(
+    [
+      release({
+        id: 1,
+        styles: ["Dub"],
+        artists: [artist(10)],
+        credits: [{ id: 0, name: "Boku & Koibito", role: "Other [Spirits Lifted By]" }],
+      }),
+    ],
+    { isSeed: (s: string[]) => s.includes("Dub") },
+  );
+  assert.deepEqual(ids(db, "SELECT artist_id FROM seed_artists"), [10]);
+});

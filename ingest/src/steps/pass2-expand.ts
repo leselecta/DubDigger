@@ -69,6 +69,11 @@ export async function runPass2(
       ? expansionDefaults.channelAMinSeedRatio
       : options.channelAMinSeedRatio;
 
+  // Before the reset, not after it. The reset deletes tens of millions of
+  // child rows, and with these in place every one pays a random B-tree update
+  // on artist_id or label_id. Deletes need this exactly as much as inserts do.
+  dropBulkIndexes(db);
+
   reset(db);
   const run = startRun(db, "pass2", options.sourceFile ?? null, {
     channelAMinSharedReleases: minTies,
@@ -151,10 +156,6 @@ export async function runPass2(
   let keptChannelA = 0;
   let keptChannelB = 0;
   let keptBoth = 0;
-
-  // Rebuilt after the load. Maintaining them during it means millions of
-  // random writes into a growing B-tree.
-  dropBulkIndexes(db);
 
   db.exec("BEGIN");
   try {
@@ -268,9 +269,6 @@ function keep(
  */
 function reset(db: Database.Database): void {
   const wipe = db.transaction(() => {
-    db.exec("DELETE FROM releases WHERE is_seed = 0");
-    db.exec("UPDATE releases SET channel_a = 0, channel_b = 0");
-    db.exec("DELETE FROM corpus_artists");
     for (const table of [
       "release_artists",
       "release_credits",
@@ -278,8 +276,13 @@ function reset(db: Database.Database): void {
       "release_styles",
       "release_genres",
     ]) {
-      db.exec(`DELETE FROM ${table} WHERE release_id NOT IN (SELECT id FROM releases)`);
+      db.exec(
+        `DELETE FROM ${table} WHERE release_id IN (SELECT id FROM releases WHERE is_seed = 0)`,
+      );
     }
+    db.exec("DELETE FROM releases WHERE is_seed = 0");
+    db.exec("UPDATE releases SET channel_a = 0, channel_b = 0");
+    db.exec("DELETE FROM corpus_artists");
   });
   wipe();
 }

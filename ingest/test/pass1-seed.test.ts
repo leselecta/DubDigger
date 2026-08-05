@@ -282,3 +282,28 @@ test("keeps the pairs table, so the label dials can be retuned without a rescan"
   // a bad trade for the disk this costs.
   assert.equal(db.prepare("SELECT count(*) FROM label_artist_pairs").pluck().get(), 3);
 });
+
+test("a second run replaces the first rather than layering on top of it", async () => {
+  // The bug this covers: INSERT OR REPLACE leaves behind every row the new run
+  // does not happen to overwrite, so seed_artists becomes the union of both
+  // runs and the seed labels are derived from a mixture. The reported counts
+  // stay correct throughout, which is what makes it hard to spot.
+  const db = openDb(":memory:");
+
+  await runPass1(db, [release({ id: 1, styles: ["Ambient"], artists: [artist(10)] })], {
+    isSeed: (s: string[]) => s.includes("Ambient"),
+  });
+  assert.deepEqual(ids(db, "SELECT artist_id FROM seed_artists"), [10]);
+
+  // Now a stricter rule that admits nothing from the first run.
+  const stats = await runPass1(
+    db,
+    [release({ id: 2, styles: ["Dub Techno"], artists: [artist(20)] })],
+    { isSeed: (s: string[]) => s.includes("Dub Techno") },
+  );
+
+  assert.equal(stats.seedArtists, 1);
+  assert.deepEqual(ids(db, "SELECT artist_id FROM seed_artists"), [20], "run 1 artists survived");
+  assert.deepEqual(ids(db, "SELECT id FROM releases"), [2], "run 1 releases survived");
+  assert.equal(db.prepare("SELECT count(*) FROM roles_seen").pluck().get(), 0);
+});

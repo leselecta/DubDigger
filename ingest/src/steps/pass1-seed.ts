@@ -44,6 +44,28 @@ export interface Pass1Stats {
   placeholderLabels: number;
 }
 
+/**
+ * Tables pass 1 owns and rebuilds from scratch.
+ *
+ * Without this, a second run layers on top of the first: INSERT OR REPLACE
+ * leaves every row the new run does not happen to overwrite, so seed_artists
+ * becomes the union of both runs and the seed labels are derived from a
+ * mixture. The reported counts stay correct, which makes it look fine.
+ */
+const OWNED_TABLES = [
+  "releases",
+  "release_artists",
+  "release_credits",
+  "release_labels",
+  "release_styles",
+  "release_genres",
+  "seed_artists",
+  "seed_labels",
+  "label_artist_pairs",
+  "roles_seen",
+  "corpus_artists",
+];
+
 const COMMIT_EVERY = 20_000;
 const PROGRESS_EVERY = 100_000;
 
@@ -54,6 +76,11 @@ export async function runPass1(
 ): Promise<Pass1Stats> {
   const isSeed = options.isSeed ?? isSeedRelease;
   const thresholds = options.seedLabel ?? seedLabelDefaults;
+
+  const reset = db.transaction(() => {
+    for (const table of OWNED_TABLES) db.exec(`DELETE FROM ${table}`);
+  });
+  reset();
 
   const run = startRun(db, "pass1", options.sourceFile ?? null, { seedLabel: thresholds });
 

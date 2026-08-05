@@ -8,9 +8,10 @@
     "fetch-dumps": "tsx src/cli/fetch-dumps.ts",
     "make-sample": "tsx src/cli/make-sample.ts",
     "pass1": "tsx src/cli/pass1.ts",
+    "pass2": "tsx src/cli/pass2.ts",
+    "seed-labels": "tsx src/cli/seed-labels.ts",
     "test": "tsx --test test/**/*.test.ts",
-    "typecheck": "tsc --noEmit",
-    "seed-labels": "tsx src/cli/seed-labels.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",

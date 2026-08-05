@@ -84,6 +84,7 @@ console.log(`
   candidate labels   ${n(stats.candidateLabels)}   (had any seed artist)
   seed labels        ${n(stats.seedLabels)}   <- steering signal
   distinct roles     ${n(stats.distinctRoles)}
+  labels with no id  ${n(stats.labelsWithoutId)}   (skipped, cannot be linked)
 
   elapsed            ${elapsed.toFixed(1)}s
 `);

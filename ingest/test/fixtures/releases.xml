@@ -67,7 +67,10 @@
     <artist><id>40</id><name>Björk</name><anv/><join/><role/><tracks/></artist>
   </artists>
   <title>Homogénic</title>
-  <labels><label catno="" name="One Little Indian" id="503"/></labels>
+  <labels>
+    <label catno="" name="One Little Indian" id="503"/>
+    <label name="Not On Label (Self-released)" catno="NONE-1"/>
+  </labels>
   <styles><style>Ambient</style></styles>
   <released>1997-09-22</released>
   <tracklist/>

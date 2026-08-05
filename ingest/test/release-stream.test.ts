@@ -64,6 +64,17 @@ test("reads labels from attributes, keeping every label on the release", async (
   ]);
 });
 
+test("reports a null id for labels the dump does not identify", async () => {
+  // Real shape from the 20260801 dump: unlinked labels and the "Not On Label"
+  // placeholder carry no id attribute at all. Number(undefined) is NaN, which
+  // SQLite binds as NULL and which blew up pass 1 on the full run.
+  const releases = await parseFixture();
+  assert.deepEqual(releases[3]!.labels, [
+    { id: 503, name: "One Little Indian", catno: null },
+    { id: null, name: "Not On Label (Self-released)", catno: "NONE-1" },
+  ]);
+});
+
 test("collects all styles, since a release carries several at once", async () => {
   const releases = await parseFixture();
   assert.deepEqual(releases[0]!.styles, ["Dub Techno", "Techno"]);

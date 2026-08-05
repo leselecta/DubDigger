@@ -19,7 +19,13 @@ export interface ParsedCredit {
 }
 
 export interface ParsedLabelRef {
-  id: number;
+  /**
+   * null when the dump gives no usable id, which happens on unlinked labels and
+   * on the "Not On Label" placeholder used for self-releases. Such a label has
+   * no Discogs page to pivot to, so it cannot be a corpus entity, but the name
+   * and catalogue number are still real and are kept.
+   */
+  id: number | null;
   name: string;
   catno: string | null;
 }
@@ -91,11 +97,13 @@ export async function* streamReleases(
       return;
     }
 
-    // Labels carry everything in attributes rather than child elements.
+    // Labels carry everything in attributes rather than child elements, and the
+    // id attribute is not always there.
     if (name === "label" && stack.length === 3 && parent === "labels") {
       const catno = (node.attributes["catno"] ?? "").trim();
+      const id = Number(node.attributes["id"]);
       release.labels.push({
-        id: Number(node.attributes["id"]),
+        id: Number.isInteger(id) ? id : null,
         name: node.attributes["name"] ?? "",
         catno: catno || null,
       });

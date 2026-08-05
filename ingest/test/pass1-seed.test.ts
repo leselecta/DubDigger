@@ -257,6 +257,24 @@ test("placeholder artists do not pad a label roster", async () => {
   );
 });
 
+test("skips labels the dump gives no id for, and counts them", async () => {
+  // "Not On Label" and unlinked labels have no id attribute. They cannot be
+  // corpus entities, and bucketing them together would wrongly merge unrelated
+  // self-releases into one label.
+  const unidentified = { id: null, name: "Not On Label", catno: "NONE-1" };
+  const { db, stats } = await pass1(
+    [
+      release({ id: 1, styles: ["Dub"], artists: [artist(1)], labels: [unidentified, label(500)] }),
+      release({ id: 2, styles: ["House"], artists: [artist(2)], labels: [unidentified] }),
+    ],
+    { styles: new Set(["Dub"]) },
+  );
+
+  assert.equal(stats.labelsWithoutId, 2);
+  assert.deepEqual(ids(db, "SELECT label_id FROM release_labels"), [500]);
+  assert.equal(db.prepare("SELECT count(*) FROM seed_labels").pluck().get(), 0);
+});
+
 test("the working pairs table is cleaned up once the seed labels are computed", async () => {
   const { db } = await pass1(labelWith([1, 2], [3]), { styles: new Set(["Dub"]) });
   assert.equal(db.prepare("SELECT count(*) FROM label_artist_pairs").pluck().get(), 0);

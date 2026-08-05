@@ -33,6 +33,11 @@ export interface Pass1Stats {
   candidateLabels: number;
   seedLabels: number;
   distinctRoles: number;
+  /**
+   * Label references the dump gives no id for. They cannot become corpus
+   * entities, but they are counted rather than dropped in silence.
+   */
+  labelsWithoutId: number;
 }
 
 const COMMIT_EVERY = 20_000;
@@ -84,6 +89,7 @@ export async function runPass1(
 
   let scanned = 0;
   let seedReleases = 0;
+  let labelsWithoutId = 0;
 
   db.exec("BEGIN");
   try {
@@ -93,6 +99,10 @@ export async function runPass1(
       // Roster pairs come from EVERY release, not just the seeded ones. The
       // ratio is meaningless if the denominator only covers the seed styles.
       for (const label of release.labels) {
+        if (label.id === null) {
+          labelsWithoutId++;
+          continue;
+        }
         for (const artist of release.artists) {
           if (isPlaceholderArtist(artist.id, artist.name)) continue;
           insert.pair.run(label.id, artist.id);
@@ -140,6 +150,7 @@ export async function runPass1(
     candidateLabels,
     seedLabels: count("seed_labels"),
     distinctRoles: count("roles_seen"),
+    labelsWithoutId,
   };
 
   run.finish(stats);
@@ -168,6 +179,9 @@ function keepRelease(
   });
 
   release.labels.forEach((label, position) => {
+    // An unidentified label has no page to pivot to, so it never becomes a row.
+    // The position index still reflects the original order on the release.
+    if (label.id === null) return;
     insert.label!.run(release.id, position, label.id, label.name, label.catno);
   });
 

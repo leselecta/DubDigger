@@ -9,6 +9,7 @@
     "entities": "tsx src/cli/entities.ts",
     "fetch-dumps": "tsx src/cli/fetch-dumps.ts",
     "make-sample": "tsx src/cli/make-sample.ts",
+    "measure-seed": "tsx src/cli/measure-seed.ts",
     "pass1": "tsx src/cli/pass1.ts",
     "pass2": "tsx src/cli/pass2.ts",
     "publish": "tsx src/cli/publish.ts",

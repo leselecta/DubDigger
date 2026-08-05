@@ -11,9 +11,10 @@ Dub Digger reshapes it. Type an artist, see who they worked with and what labels
 they released on, then click any of those and keep going. A map of scenes, drawn
 from credits.
 
-> **Status: in development.** The ingest foundation and the web shell are built.
-> The corpus passes and the artist and label pages are not. See
-> [Roadmap](#roadmap).
+> **Status: working end to end.** The full pipeline runs against the 20260801
+> dump and the app serves real data. Built on the August 2026 dump:
+> **1,321,431 releases**, **1,032,580 artists**, **133,960 labels**, in a
+> **1.35 GB** file. See [Roadmap](#roadmap) for what is still open.
 
 The full design rationale is in
 [case-study-credit-graph.md](case-study-credit-graph.md). The working rules for
@@ -164,7 +165,7 @@ Writes a well formed 5,000 record copy into `ingest/data/samples/`. Prove every
 pass correct against this before pointing anything at the full file. A full
 releases pass is a multi hour commitment. A sample pass takes a second.
 
-### 3. Run pass 1
+### 3. Run the passes
 
 ```sh
 npm run pass1 --workspace ingest            # against the newest sample
@@ -178,6 +179,20 @@ seed label count, plus the top seed labels by name.
 Read those names before going anywhere near `--full`. If they look like the
 scene, the dials are right. If a major label is sitting at the top, tighten the
 ratio and run it again.
+
+Then the rest of the pipeline, in order:
+
+```sh
+npm run pass2 --workspace ingest -- --full   # one hop out, ~35 min
+npm run entities --workspace ingest          # names, bios, search index
+npm run derive --workspace ingest            # the ranked tables
+npm run publish --workspace ingest           # writes web/data/dubdigger.sqlite
+```
+
+`publish` is not a copy. It drops the raw tables the app never reads and goes
+through `VACUUM INTO`, which matters: copying a `.sqlite` leaves its
+write-ahead log behind, so recent writes go missing without any error. Restart
+the web server afterwards, since it holds the old file open until you do.
 
 ## Configuration
 

@@ -67,25 +67,41 @@ export async function runDerive(
     (db.prepare("SELECT count(*) FROM releases").pluck().get() as number) -
     (db.prepare("SELECT count(*) FROM pairable").pluck().get() as number);
 
+  // Pair counts and pair roles are built as two set-based passes and joined,
+  // never as a subquery per pair. Collecting roles inline runs its own join for
+  // every pair produced, which across tens of millions of them never finishes.
+  step("pairing people who appear together");
+  db.exec(`
+    DROP TABLE IF EXISTS temp.pair_counts;
+    CREATE TEMP TABLE pair_counts AS
+      SELECT a.artist_id AS aid, b.artist_id AS bid, count(DISTINCT a.release_id) AS n
+        FROM release_people a
+        JOIN pairable p      ON p.release_id = a.release_id
+        JOIN release_people b ON b.release_id = a.release_id AND b.artist_id <> a.artist_id
+       GROUP BY a.artist_id, b.artist_id;
+  `);
+
+  step("collecting the roles each collaborator held");
+  db.exec(`
+    DROP TABLE IF EXISTS temp.pair_roles;
+    CREATE TEMP TABLE pair_roles AS
+      SELECT aid, bid, group_concat(role, char(10)) AS roles FROM (
+        SELECT DISTINCT a.artist_id AS aid, b.artist_id AS bid, b.role AS role
+          FROM release_people a
+          JOIN pairable p       ON p.release_id = a.release_id
+          JOIN release_people b ON b.release_id = a.release_id AND b.artist_id <> a.artist_id
+         WHERE b.role IS NOT NULL
+         ORDER BY b.role
+      ) GROUP BY aid, bid;
+    CREATE INDEX temp.idx_pair_roles ON pair_roles (aid, bid);
+  `);
+
   step("ranking collaborators");
   db.exec(`
     INSERT INTO artist_collaborators (artist_id, collaborator_id, shared_releases, roles)
-    SELECT a.artist_id,
-           b.artist_id,
-           count(DISTINCT a.release_id),
-           (SELECT group_concat(role, char(10)) FROM (
-              SELECT DISTINCT c.role
-              FROM release_people c
-              JOIN release_people d ON d.release_id = c.release_id
-              WHERE c.artist_id = b.artist_id
-                AND d.artist_id = a.artist_id
-                AND c.role IS NOT NULL
-              ORDER BY c.role
-            ))
-      FROM release_people a
-      JOIN release_people b ON b.release_id = a.release_id AND b.artist_id <> a.artist_id
-      JOIN pairable p ON p.release_id = a.release_id
-     GROUP BY a.artist_id, b.artist_id;
+    SELECT c.aid, c.bid, c.n, r.roles
+      FROM pair_counts c
+      LEFT JOIN pair_roles r ON r.aid = c.aid AND r.bid = c.bid;
   `);
 
   step("ranking labels per artist");
@@ -108,26 +124,64 @@ export async function runDerive(
     SELECT label_id, artist_id, release_count, first_year, last_year FROM artist_labels;
   `);
 
-  // Coverage last, since it counts what the tables above produced.
+  // Coverage last, since it counts what the tables above produced. Built as
+  // grouped passes for the same reason as the pairs: a subquery per artist,
+  // times a million artists, is not a query anyone finishes waiting for.
   step("recording coverage");
   db.exec(`
+    DROP TABLE IF EXISTS temp.credited;
+    CREATE TEMP TABLE credited AS
+      SELECT DISTINCT release_id FROM release_credits;
+    CREATE INDEX temp.idx_credited ON credited (release_id);
+
+    DROP TABLE IF EXISTS temp.cov;
+    CREATE TEMP TABLE cov AS
+      SELECT p.artist_id,
+             count(DISTINCT p.release_id) AS release_count,
+             count(DISTINCT CASE WHEN cr.release_id IS NOT NULL THEN p.release_id END)
+               AS credited_releases,
+             min(r.year) AS first_year,
+             max(r.year) AS last_year
+        FROM release_people p
+        JOIN releases r      ON r.id = p.release_id
+        LEFT JOIN credited cr ON cr.release_id = p.release_id
+       GROUP BY p.artist_id;
+    CREATE INDEX temp.idx_cov ON cov (artist_id);
+
+    DROP TABLE IF EXISTS temp.collab_n;
+    CREATE TEMP TABLE collab_n AS
+      SELECT artist_id, count(*) AS n FROM artist_collaborators GROUP BY artist_id;
+    CREATE INDEX temp.idx_collab_n ON collab_n (artist_id);
+
+    DROP TABLE IF EXISTS temp.label_n;
+    CREATE TEMP TABLE label_n AS
+      SELECT artist_id, count(*) AS n FROM artist_labels GROUP BY artist_id;
+    CREATE INDEX temp.idx_label_n ON label_n (artist_id);
+
     INSERT INTO artist_coverage
-      (artist_id, release_count, credited_releases, collaborator_count, label_count, first_year, last_year)
+      (artist_id, release_count, credited_releases, collaborator_count, label_count,
+       first_year, last_year)
     SELECT c.artist_id,
-           (SELECT count(DISTINCT release_id) FROM release_people p WHERE p.artist_id = c.artist_id),
-           (SELECT count(DISTINCT p.release_id) FROM release_people p
-              WHERE p.artist_id = c.artist_id
-                AND EXISTS (SELECT 1 FROM release_credits rc WHERE rc.release_id = p.release_id)),
-           (SELECT count(*) FROM artist_collaborators ac WHERE ac.artist_id = c.artist_id),
-           (SELECT count(*) FROM artist_labels al WHERE al.artist_id = c.artist_id),
-           (SELECT min(r.year) FROM release_people p JOIN releases r ON r.id = p.release_id
-              WHERE p.artist_id = c.artist_id),
-           (SELECT max(r.year) FROM release_people p JOIN releases r ON r.id = p.release_id
-              WHERE p.artist_id = c.artist_id)
-      FROM corpus_artists c;
+           coalesce(v.release_count, 0),
+           coalesce(v.credited_releases, 0),
+           coalesce(k.n, 0),
+           coalesce(l.n, 0),
+           v.first_year,
+           v.last_year
+      FROM corpus_artists c
+      LEFT JOIN cov      v ON v.artist_id = c.artist_id
+      LEFT JOIN collab_n k ON k.artist_id = c.artist_id
+      LEFT JOIN label_n  l ON l.artist_id = c.artist_id;
   `);
 
-  db.exec("DROP TABLE IF EXISTS temp.release_people; DROP TABLE IF EXISTS temp.pairable;");
+  db.exec(`DROP TABLE IF EXISTS temp.release_people;
+            DROP TABLE IF EXISTS temp.pairable;
+            DROP TABLE IF EXISTS temp.pair_counts;
+            DROP TABLE IF EXISTS temp.pair_roles;
+            DROP TABLE IF EXISTS temp.credited;
+            DROP TABLE IF EXISTS temp.cov;
+            DROP TABLE IF EXISTS temp.collab_n;
+            DROP TABLE IF EXISTS temp.label_n;`);
 
   const count = (table: string): number =>
     db.prepare(`SELECT count(*) FROM ${table}`).pluck().get() as number;

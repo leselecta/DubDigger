@@ -46,6 +46,31 @@ test("collects the entity's own urls without descending into aliases", async () 
   ]);
 });
 
+test("reads aliases, members and groups with their ids", async () => {
+  // The only place the dump states that an act is a set of people. Basic
+  // Channel's releases credit Moritz von Oswald twice, as a cutting engineer,
+  // and Mark Ernestus not at all, so credits alone cannot say the duo is a duo.
+  const [basicChannel] = await parse("artist");
+  assert.deepEqual(basicChannel!.relations, [
+    { kind: "alias", id: 11, name: "Maurizio" },
+    { kind: "alias", id: 12, name: "Rhythm & Sound" },
+    { kind: "member", id: 20, name: "Moritz Von Oswald" },
+    { kind: "member", id: 21, name: "Mark Ernestus" },
+  ]);
+});
+
+test("a group membership is recorded from the other side too", async () => {
+  const artists = await parse("artist");
+  assert.deepEqual(artists[1]!.relations, [
+    { kind: "group", id: 10, name: "Basic Channel" },
+  ]);
+});
+
+test("namevariations are not relations, having no id to point at", async () => {
+  const [basicChannel] = await parse("artist");
+  assert.ok(!basicChannel!.relations.some((r) => r.name === "B.C."));
+});
+
 test("does not mistake a group name for the artist's own", async () => {
   const artists = await parse("artist");
   assert.equal(artists[1]!.name, "Moritz Von Oswald");

@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import { getArtist, getCollaborators, getArtistLabels, getProfileNames } from "@/lib/queries";
+import {
+  getArtist,
+  getCollaborators,
+  getArtistLabels,
+  getProfileNames,
+  getRelations,
+  type Relation,
+} from "@/lib/queries";
 import { ProfileText } from "@/components/profile-text";
 import { OutboundLinks } from "@/components/outbound-links";
 
@@ -25,6 +32,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ id: str
   const collaborators = getCollaborators(artist.id);
   const labels = getArtistLabels(artist.id);
   const names = getProfileNames(artist.profile);
+  const relations = getRelations(artist.id);
 
   return (
     <div className="max-w-4xl">
@@ -52,6 +60,8 @@ export default async function ArtistPage({ params }: { params: Promise<{ id: str
           </p>
         </section>
       )}
+
+      <Relations relations={relations} />
 
       <div className="grid gap-6 md:grid-cols-2">
         <section>
@@ -103,6 +113,52 @@ export default async function ArtistPage({ params }: { params: Promise<{ id: str
         </section>
       </div>
     </div>
+  );
+}
+
+/**
+ * Aliases, members and groups, kept apart from the collaborator list.
+ *
+ * Basic Channel IS Moritz von Oswald and Mark Ernestus. That is a different
+ * fact from having been co-credited with them, and the credits alone never say
+ * it: their releases credit Moritz twice, as a cutting engineer, and Ernestus
+ * not at all. Showing this as a collaboration would be the same dishonesty as
+ * calling a label mate a collaborator.
+ */
+function Relations({ relations }: { relations: Relation[] }) {
+  if (relations.length === 0) return null;
+
+  const groups: [string, Relation["kind"]][] = [
+    ["Also known as", "alias"],
+    ["Members", "member"],
+    ["Member of", "group"],
+  ];
+
+  return (
+    <section className="mb-4">
+      {groups.map(([label, kind]) => {
+        const of = relations.filter((r) => r.kind === kind);
+        if (of.length === 0) return null;
+        return (
+          <p key={kind} className="mb-1 flex flex-wrap items-baseline gap-x-2 text-sm">
+            <span className="text-ink-faint w-24 shrink-0 text-xs tracking-wide uppercase">
+              {label}
+            </span>
+            {of.map((r, i) => (
+              <span key={r.id}>
+                <Link href={`/artist/${r.id}`} className={r.inCorpus ? "" : "text-ink-faint"}>
+                  {r.name}
+                </Link>
+                {r.releaseCount > 0 && (
+                  <span className="text-ink-faint text-xs tabular-nums"> {r.releaseCount}</span>
+                )}
+                {i < of.length - 1 && <span className="text-ink-faint">,</span>}
+              </span>
+            ))}
+          </p>
+        );
+      })}
+    </section>
   );
 }
 

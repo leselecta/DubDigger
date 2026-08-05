@@ -323,3 +323,68 @@ export function getProfileNames(profile: string | null): Record<string, string> 
   lookup("labels", labelIds, "l");
   return names;
 }
+
+export interface Relation {
+  id: number;
+  name: string;
+  kind: "alias" | "member" | "group";
+  releaseCount: number;
+  inCorpus: boolean;
+}
+
+/**
+ * Aliases, members and groups, as Discogs records them.
+ *
+ * Deliberately not merged into the collaborator list. Basic Channel IS Moritz
+ * von Oswald and Mark Ernestus; that is a different fact from having been
+ * co-credited with them, and presenting one as the other would be the same
+ * dishonesty as calling a label mate a collaborator.
+ *
+ * Read in both directions, since the dump does not always record both sides,
+ * and "member" seen from the other end means "member of".
+ */
+export function getRelations(artistId: number): Relation[] {
+  const db = getDb();
+  if (!db) return [];
+
+  const rows = db
+    .prepare(
+      `SELECT r.related_id AS id, r.kind, a.name,
+              coalesce(c.release_count, 0) AS release_count,
+              m.artist_id IS NOT NULL AS in_corpus
+         FROM artist_relations r
+         JOIN artists a ON a.id = r.related_id
+         LEFT JOIN artist_coverage c ON c.artist_id = r.related_id
+         LEFT JOIN corpus_artists  m ON m.artist_id = r.related_id
+        WHERE r.artist_id = ?
+        UNION
+       SELECT r.artist_id, CASE r.kind WHEN 'member' THEN 'group'
+                                       WHEN 'group'  THEN 'member'
+                                       ELSE 'alias' END,
+              a.name,
+              coalesce(c.release_count, 0),
+              m.artist_id IS NOT NULL
+         FROM artist_relations r
+         JOIN artists a ON a.id = r.artist_id
+         LEFT JOIN artist_coverage c ON c.artist_id = r.artist_id
+         LEFT JOIN corpus_artists  m ON m.artist_id = r.artist_id
+        WHERE r.related_id = ?`,
+    )
+    .all(artistId, artistId) as {
+    id: number;
+    kind: "alias" | "member" | "group";
+    name: string;
+    release_count: number;
+    in_corpus: number;
+  }[];
+
+  return rows
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      kind: r.kind,
+      releaseCount: r.release_count,
+      inCorpus: r.in_corpus === 1,
+    }))
+    .sort((a, b) => b.releaseCount - a.releaseCount);
+}

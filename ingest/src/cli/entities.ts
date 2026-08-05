@@ -58,6 +58,8 @@ console.log(`
   labels kept       ${n(stats.labelsKept)}
   labels missing    ${n(stats.labelsMissing)}
 
+  relations         ${n(stats.relations)}   (aliases, members, groups)
+
   elapsed           ${((Date.now() - started) / 1000).toFixed(1)}s
 `);
 

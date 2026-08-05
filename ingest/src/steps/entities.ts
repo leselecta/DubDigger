@@ -21,6 +21,8 @@ export interface EntitiesStats {
   /** In the corpus but absent from the dump. Should be zero or near it. */
   artistsMissing: number;
   labelsMissing: number;
+  /** Alias, member and group links taken straight from the dump. */
+  relations: number;
 }
 
 export async function runEntities(
@@ -34,6 +36,7 @@ export async function runEntities(
   const run = startRun(db, "entities", options.sourceFile ?? null, {});
 
   db.exec("DELETE FROM artists");
+  db.exec("DELETE FROM artist_relations");
   db.exec("DELETE FROM labels");
 
   const wantedArtists = new Set(
@@ -50,17 +53,24 @@ export async function runEntities(
     labelsKept: 0,
     artistsMissing: 0,
     labelsMissing: 0,
+    relations: 0,
   };
 
   if (sources.artists) {
     const insert = db.prepare(
       "INSERT OR REPLACE INTO artists (id, name, real_name, profile, urls) VALUES (?, ?, ?, ?, ?)",
     );
+    const relate = db.prepare(
+      "INSERT OR IGNORE INTO artist_relations (artist_id, related_id, kind) VALUES (?, ?, ?)",
+    );
     db.exec("BEGIN");
     for await (const entity of sources.artists) {
       stats.artistsScanned++;
       if (!wantedArtists.has(entity.id)) continue;
       insert.run(entity.id, entity.name, entity.realName, entity.profile, entity.urls.join("\n") || null);
+      // Relations are kept whether or not the other side made the corpus: a
+      // dangling one still tells the reader this act has another name.
+      for (const rel of entity.relations) relate.run(entity.id, rel.id, rel.kind);
       stats.artistsKept++;
     }
     db.exec("COMMIT");
@@ -78,6 +88,7 @@ export async function runEntities(
     db.exec("COMMIT");
   }
 
+  stats.relations = db.prepare("SELECT count(*) FROM artist_relations").pluck().get() as number;
   stats.artistsMissing = wantedArtists.size - stats.artistsKept;
   stats.labelsMissing = wantedLabels.size - stats.labelsKept;
 

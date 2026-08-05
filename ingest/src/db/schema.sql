@@ -81,6 +81,29 @@ CREATE TABLE IF NOT EXISTS labels (
   urls          TEXT
 );
 
+-- Aliases, members and groups, exactly as Discogs records them.
+--
+-- Credits alone cannot say that Basic Channel is Moritz von Oswald and Mark
+-- Ernestus: their releases credit Moritz twice, as a cutting engineer, and
+-- Ernestus not at all. The dump states the relationship outright, so this is
+-- using what Discogs gives rather than inferring anything.
+--
+-- Kept separate from artist_collaborators on purpose. Being the same person is
+-- not the same as having worked together, and the interface must not present
+-- one as the other.
+CREATE TABLE IF NOT EXISTS artist_relations (
+  artist_id     INTEGER NOT NULL,
+  related_id    INTEGER NOT NULL,
+  -- 'alias'  : the two names are the same act
+  -- 'member' : related_id is a member of artist_id
+  -- 'group'  : artist_id is a member of related_id
+  kind          TEXT NOT NULL,
+  PRIMARY KEY (artist_id, related_id, kind)
+) WITHOUT ROWID;
+
+CREATE INDEX IF NOT EXISTS idx_artist_relations_related
+  ON artist_relations (related_id);
+
 -- The definitional core of the corpus, persisted so pass 2 can be re-run with
 -- different dials without redoing pass 1.
 

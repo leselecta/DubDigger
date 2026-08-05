@@ -10,7 +10,7 @@ const entity = (
   name: string,
   realName: string | null = null,
   profile: string | null = null,
-): ParsedEntity => ({ id, name, realName, profile, urls: [] });
+): ParsedEntity => ({ id, name, realName, profile, urls: [], relations: [] });
 
 function corpus(artistIds: number[], labelIds: number[]) {
   const db = openDb(":memory:");

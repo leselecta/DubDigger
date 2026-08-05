@@ -147,8 +147,10 @@ export async function runPass1(
 
   const candidateLabels = computeSeedLabels(db, thresholds);
 
-  // The pairs table has done its job and is the biggest thing in the file.
-  db.exec("DELETE FROM label_artist_pairs");
+  // label_artist_pairs is deliberately KEPT. It is the biggest table in the
+  // file, but it is the only thing that lets the label floor and ratio be
+  // re-tuned without re-reading 10.4 GB. Drop it with the seed-labels CLI once
+  // the dials are settled.
 
   const count = (table: string): number =>
     db.prepare(`SELECT count(*) FROM ${table}`).pluck().get() as number;
@@ -212,7 +214,7 @@ function keepRelease(
  * Derives seed labels from the pairs table. Returns how many labels had any
  * seed artist at all, which is the useful denominator when tuning the dials.
  */
-function computeSeedLabels(
+export function computeSeedLabels(
   db: Database.Database,
   thresholds: { minSeedArtists: number; minSeedArtistRatio: number },
 ): number {

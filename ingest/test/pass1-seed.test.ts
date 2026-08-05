@@ -276,7 +276,9 @@ test("skips labels the dump gives no id for, and counts them", async () => {
   assert.equal(db.prepare("SELECT count(*) FROM seed_labels").pluck().get(), 0);
 });
 
-test("the working pairs table is cleaned up once the seed labels are computed", async () => {
+test("keeps the pairs table, so the label dials can be retuned without a rescan", async () => {
   const { db } = await pass1(labelWith([1, 2], [3]), { isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)) });
-  assert.equal(db.prepare("SELECT count(*) FROM label_artist_pairs").pluck().get(), 0);
+  // 3 artists on label 500. Re-reading 10.4 GB to change one threshold would be
+  // a bad trade for the disk this costs.
+  assert.equal(db.prepare("SELECT count(*) FROM label_artist_pairs").pluck().get(), 3);
 });

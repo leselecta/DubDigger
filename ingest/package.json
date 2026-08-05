@@ -9,7 +9,8 @@
     "make-sample": "tsx src/cli/make-sample.ts",
     "pass1": "tsx src/cli/pass1.ts",
     "test": "tsx --test test/**/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed-labels": "tsx src/cli/seed-labels.ts"
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",

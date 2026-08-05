@@ -5,7 +5,7 @@ import {
   isPlaceholderArtist,
   isPlaceholderLabel,
 } from "../config.ts";
-import { startRun } from "../db/open.ts";
+import { startRun, dropBulkIndexes, createBulkIndexes } from "../db/open.ts";
 import type { ParsedRelease } from "../lib/release-stream.ts";
 
 /**
@@ -123,6 +123,10 @@ export async function runPass1(
   let labelsWithoutId = 0;
   let placeholderLabels = 0;
 
+  // Rebuilt after the load. Maintaining them during it means millions of
+  // random writes into a growing B-tree.
+  dropBulkIndexes(db);
+
   db.exec("BEGIN");
   try {
     for await (const release of releases) {
@@ -161,8 +165,11 @@ export async function runPass1(
     db.exec("COMMIT");
   } catch (err) {
     db.exec("ROLLBACK");
+    createBulkIndexes(db);
     throw err;
   }
+
+  createBulkIndexes(db);
 
   const writeSeedArtists = db.transaction(() => {
     const stmt = db.prepare(

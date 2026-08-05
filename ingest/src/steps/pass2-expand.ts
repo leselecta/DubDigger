@@ -4,7 +4,7 @@ import {
   isPlaceholderArtist,
   isPlaceholderLabel,
 } from "../config.ts";
-import { startRun } from "../db/open.ts";
+import { startRun, dropBulkIndexes, createBulkIndexes } from "../db/open.ts";
 import type { ParsedRelease } from "../lib/release-stream.ts";
 
 /**
@@ -104,6 +104,10 @@ export async function runPass2(
   let keptChannelB = 0;
   let keptBoth = 0;
 
+  // Rebuilt after the load. Maintaining them during it means millions of
+  // random writes into a growing B-tree.
+  dropBulkIndexes(db);
+
   db.exec("BEGIN");
   try {
     for await (const release of releases) {
@@ -141,8 +145,11 @@ export async function runPass2(
     db.exec("COMMIT");
   } catch (err) {
     db.exec("ROLLBACK");
+    createBulkIndexes(db);
     throw err;
   }
+
+  createBulkIndexes(db);
 
   const writeCorpus = db.transaction(() => {
     const stmt = db.prepare(

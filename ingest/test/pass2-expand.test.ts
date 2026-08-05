@@ -186,3 +186,25 @@ test("a second run replaces the first rather than layering on top of it", async 
   assert.deepEqual(ids(db, "SELECT id FROM releases ORDER BY id"), [2, 99], "run 1 releases survived");
   assert.ok(!ids(db, "SELECT artist_id FROM corpus_artists").includes(11), "run 1 artists survived");
 });
+
+test("rebuilds the bulk-load indexes it drops", async () => {
+  // The indexes are dropped for the load and recreated after. If that recreate
+  // is ever skipped, every artist page query degrades to a full table scan and
+  // nothing visibly fails.
+  const db = seeded([10], []);
+  await pass2(db, [release({ id: 1, artists: [artist(10)] })]);
+
+  const indexes = db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'idx_release%'")
+    .pluck()
+    .all() as string[];
+
+  for (const expected of [
+    "idx_release_artists_artist",
+    "idx_release_credits_artist",
+    "idx_release_labels_label",
+    "idx_release_styles_style",
+  ]) {
+    assert.ok(indexes.includes(expected), `${expected} was not rebuilt`);
+  }
+});

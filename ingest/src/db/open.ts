@@ -32,6 +32,35 @@ export function openDb(file: string = paths.db): Database.Database {
   return db;
 }
 
+/**
+ * Indexes on the release tables that the passes bulk load into.
+ *
+ * These are keyed by artist_id, label_id and style, none of which arrive in
+ * order, so maintaining them during a load means millions of random writes into
+ * a growing B-tree. Measured on the 20260801 dump that took pass 2 past two
+ * hours. Dropping them first and rebuilding after is the standard trade:
+ * building an index once over settled data is enormously cheaper.
+ *
+ * The rows themselves are keyed by (release_id, position) and arrive in
+ * release_id order, so those writes stay sequential and are not the problem.
+ */
+const BULK_INDEXES: Record<string, string> = {
+  idx_release_artists_artist: "ON release_artists (artist_id)",
+  idx_release_credits_artist: "ON release_credits (artist_id)",
+  idx_release_labels_label: "ON release_labels (label_id)",
+  idx_release_styles_style: "ON release_styles (style)",
+};
+
+export function dropBulkIndexes(db: Database.Database): void {
+  for (const name of Object.keys(BULK_INDEXES)) db.exec(`DROP INDEX IF EXISTS ${name}`);
+}
+
+export function createBulkIndexes(db: Database.Database): void {
+  for (const [name, target] of Object.entries(BULK_INDEXES)) {
+    db.exec(`CREATE INDEX IF NOT EXISTS ${name} ${target}`);
+  }
+}
+
 /** Opens the finished database read-only, the way the web app does. */
 export function openDbReadOnly(file: string = paths.db): Database.Database {
   return new Database(file, { readonly: true, fileMustExist: true });

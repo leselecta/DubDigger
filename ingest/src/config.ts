@@ -132,5 +132,24 @@ export function isPlaceholderLabel(name: string): boolean {
   return name.trimStart().toLowerCase().startsWith("not on label");
 }
 
+/**
+ * Building the derived tables.
+ */
+export const derive = {
+  /**
+   * Releases crediting more than this many people generate no collaboration
+   * pairs.
+   *
+   * Two people co-credited on a record are collaborators. Two people on track 7
+   * and track 31 of a forty-artist compilation are not, and treating them as
+   * such would flood every ranking with strangers. It also matters for cost:
+   * pairs grow with the square of the credit list, so one 200-credit box set
+   * would produce forty thousand of them on its own.
+   *
+   * The release itself is still kept. Only the pairing is skipped.
+   */
+  maxPeoplePerRelease: 20,
+};
+
 /** Rows to keep when building a development sample from a full dump. */
 export const SAMPLE_SIZE = 5000;

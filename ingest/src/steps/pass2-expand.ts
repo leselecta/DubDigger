@@ -30,6 +30,8 @@ export interface Pass2Options {
   channelAMinSharedReleases?: number;
   /** Seed artists doing less than this share of their work in the seed stop bridging. */
   channelAMinSeedRatio?: number | null;
+  /** Releases crediting more than this admit no new artists via channel A. */
+  channelAMaxPeopleToAdmit?: number;
   sourceFile?: string;
   onProgress?: (scanned: number) => void;
   onPhase?: (note: string) => void;
@@ -45,6 +47,8 @@ export interface Pass2Stats {
   seedArtists: number;
   /** Artists the hop added on top of the seed set. */
   newArtists: number;
+  /** Releases kept, but too crowded to imply anyone on them is connected. */
+  crowdedReleases: number;
   /** Seed artists too high-degree to bridge. Still in the corpus themselves. */
   suppressedBridges: number;
 }
@@ -64,6 +68,8 @@ export async function runPass2(
 ): Promise<Pass2Stats> {
   const minTies =
     options.channelAMinSharedReleases ?? expansionDefaults.channelAMinSharedReleases;
+  const maxPeopleToAdmit =
+    options.channelAMaxPeopleToAdmit ?? expansionDefaults.channelAMaxPeopleToAdmit;
   const minSeedRatio =
     options.channelAMinSeedRatio === undefined
       ? expansionDefaults.channelAMinSeedRatio
@@ -156,6 +162,7 @@ export async function runPass2(
   let keptChannelA = 0;
   let keptChannelB = 0;
   let keptBoth = 0;
+  let crowdedReleases = 0;
 
   db.exec("BEGIN");
   try {
@@ -183,8 +190,14 @@ export async function runPass2(
 
       keep(insert, release, channelA, channelB);
 
+      // A crowded release is shelf proximity, not collaboration, so it admits
+      // nobody new through channel A. It is still kept, and everyone already in
+      // the corpus still holds their credit on it.
+      const crowded = people.length > maxPeopleToAdmit;
+      if (crowded) crowdedReleases++;
+
       for (const person of people) {
-        if (channelA) tiesA.set(person.id, (tiesA.get(person.id) ?? 0) + 1);
+        if (channelA && !crowded) tiesA.set(person.id, (tiesA.get(person.id) ?? 0) + 1);
         if (channelB) viaB.add(person.id);
       }
 
@@ -205,7 +218,9 @@ export async function runPass2(
       `INSERT OR REPLACE INTO corpus_artists (artist_id, is_seed, channel_a, channel_b)
        VALUES (?, ?, ?, ?)`,
     );
-    for (const id of new Set([...tiesA.keys(), ...viaB])) {
+    // Seed artists are in the corpus by definition, whether or not this pass
+    // happened to see them outside a crowded release.
+    for (const id of new Set([...seedArtists, ...tiesA.keys(), ...viaB])) {
       // A seed artist is in by definition. Everyone else has to clear the
       // tie-strength dial to count as a collaborator rather than a guest spot.
       const isSeed = seedArtists.has(id);
@@ -229,6 +244,7 @@ export async function runPass2(
     seedArtists: seedArtists.size,
     newArtists: count("SELECT count(*) FROM corpus_artists WHERE is_seed = 0"),
     suppressedBridges,
+    crowdedReleases,
   };
 
   run.finish(stats);

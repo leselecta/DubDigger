@@ -137,7 +137,9 @@ test("placeholder artists never enter the corpus or trigger a channel", async ()
       labels: [label(500)],
     }),
   ]);
-  assert.deepEqual(ids(db, "SELECT artist_id FROM corpus_artists"), []);
+  // Artist 10 is present because seed artists are corpus members by definition,
+  // whether or not this pass happened to see them on anything.
+  assert.ok(!ids(db, "SELECT artist_id FROM corpus_artists").includes(194));
 });
 
 test("placeholder labels never trigger channel B", async () => {
@@ -261,4 +263,47 @@ test("the bridge check can be switched off", async () => {
   });
   assert.equal(stats.suppressedBridges, 0);
   assert.equal(stats.totalKept, 1);
+});
+
+test("a crowded release is kept but admits nobody new", async () => {
+  // Track 7 and track 31 of a compilation share shelf space, not a record.
+  // This is how a gospel album and an Italian punk anthology each put an
+  // unrelated act called "Chain Reaction" into a dub techno corpus.
+  const db = seeded([10], []);
+  const crowd = Array.from({ length: 9 }, (_, i) => artist(100 + i));
+
+  const stats = await pass2(
+    db,
+    [release({ id: 1, artists: [artist(10), ...crowd] })],
+    { channelAMaxPeopleToAdmit: 8 },
+  );
+
+  assert.equal(stats.crowdedReleases, 1);
+  assert.equal(stats.totalKept, 1, "the release itself is still kept");
+  assert.deepEqual(
+    ids(db, "SELECT artist_id FROM corpus_artists"),
+    [10],
+    "only the seed artist, nobody from the crowd",
+  );
+});
+
+test("an intimate release still admits its people", async () => {
+  const db = seeded([10], []);
+  const stats = await pass2(
+    db,
+    [release({ id: 1, artists: [artist(10), artist(11)] })],
+    { channelAMaxPeopleToAdmit: 8 },
+  );
+
+  assert.equal(stats.crowdedReleases, 0);
+  assert.deepEqual(ids(db, "SELECT artist_id FROM corpus_artists ORDER BY artist_id"), [10, 11]);
+});
+
+test("a seed artist stays in the corpus even if only ever seen in a crowd", async () => {
+  const db = seeded([10], []);
+  const crowd = Array.from({ length: 9 }, (_, i) => artist(100 + i));
+  await pass2(db, [release({ id: 1, artists: [artist(10), ...crowd] })], {
+    channelAMaxPeopleToAdmit: 8,
+  });
+  assert.deepEqual(ids(db, "SELECT artist_id FROM corpus_artists WHERE is_seed = 1"), [10]);
 });

@@ -41,13 +41,19 @@ export async function runDerive(
 
   // One row per person per release, whether they were on the artist line or in
   // the credits. Following the engineer is the point, so both count.
+  //
+  // Restricted to corpus artists. Someone pass 2 declined to admit still holds
+  // their credit on a kept release, but they have no page, so ranking them as a
+  // collaborator would produce rows the app can only drop on the floor.
   step("collecting people per release");
   db.exec(`
     DROP TABLE IF EXISTS temp.release_people;
     CREATE TEMP TABLE release_people AS
       SELECT release_id, artist_id, NULL AS role FROM release_artists
+       WHERE artist_id IN (SELECT artist_id FROM corpus_artists)
       UNION ALL
-      SELECT release_id, artist_id, role FROM release_credits;
+      SELECT release_id, artist_id, role FROM release_credits
+       WHERE artist_id IN (SELECT artist_id FROM corpus_artists);
     CREATE INDEX temp.idx_rp_release ON release_people (release_id);
     CREATE INDEX temp.idx_rp_artist  ON release_people (artist_id);
   `);

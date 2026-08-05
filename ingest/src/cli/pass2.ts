@@ -82,6 +82,8 @@ console.log(`
     channel B only    ${n(stats.keptChannelB)}   ${pct(stats.keptChannelB)}  (label mate)
     both              ${n(stats.keptBoth)}   ${pct(stats.keptBoth)}
 
+  crowded releases    ${n(stats.crowdedReleases)}   (kept, but admit nobody new)
+
   corpus artists      ${n(stats.corpusArtists)}   <- steering signal
     seed              ${n(stats.seedArtists)}
     added by the hop  ${n(stats.newArtists)}

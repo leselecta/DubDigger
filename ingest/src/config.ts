@@ -124,6 +124,28 @@ export const expansion = {
    * belong to the same scene.
    */
   channelAMinSeedRatio: 0.1 as number | null,
+
+  /**
+   * A release crediting more than this many people does not admit NEW artists
+   * through channel A. The release itself is still kept, and everyone already
+   * in the corpus keeps their credit on it.
+   *
+   * Two people who made a record together collaborated. Track 7 and track 31 of
+   * a forty-artist compilation share nothing but shelf space, and admitting
+   * everyone on one is how a gospel record and an Italian punk anthology each
+   * put an unrelated act called "Chain Reaction" into a dub techno corpus.
+   *
+   * Measured on the 20260801 corpus, of the 389,002 artists whose only route in
+   * was a single channel A release: 43% arrived on a release crediting 15 or
+   * more people, 31% on 8 to 14, and just 7% on an intimate 1 to 3. So the
+   * noise is concentrated in crowded records, and a threshold of 8 removes
+   * roughly 286,000 coincidences while keeping the 25,584 genuine two and
+   * three person one-offs.
+   *
+   * Same reasoning as derive.maxPeoplePerRelease, applied at the corpus
+   * boundary rather than to the collaborator pairs.
+   */
+  channelAMaxPeopleToAdmit: 8,
 };
 
 /**

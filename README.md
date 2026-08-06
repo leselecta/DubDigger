@@ -295,8 +295,18 @@ it the way the label and bridge ratios could. Real acts pin it instead:
 | Lady Gaga | 0.10% | out |
 | The Beatles | 0.01% | out |
 
-**5%, because 10% would cut The Clash.** Two orders of magnitude separate the
-acts that belong from the ones that do not.
+**2%, because it is the cheapest floor that does the whole job.** Two orders of
+magnitude separate the acts that belong from the ones that do not, and nothing
+a sceptical user would think to type sits in between. Measured against the
+metal labels, 2% and 5% produce identical outcomes, so 5% would remove 16,000
+more artists and 4,000 more seed labels for no visible difference. 10% is ruled
+out outright: it cuts The Clash.
+
+The aim is not maximum pruning. It is that someone testing the tool with
+"Mozart" or "Iron Maiden" gets nothing, because that is the search that decides
+whether they trust it. Everything short of obviously wrong stays in and is
+handled by showing relevance in the interface, where core, collaborator and
+label mate are already distinguished.
 
 The same floor closes the metal. Manowar, Iron Maiden and Black Sabbath sit on
 budget compilation labels whose entire scene credibility is incidental seed

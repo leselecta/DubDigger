@@ -51,9 +51,44 @@ export const seedStyles = {
    */
   needsTechno: new Set(["Ambient"]),
   technoStyles: new Set(["Techno", "Minimal Techno", "Dub Techno", "Deep Techno"]),
+
+  /**
+   * Styles that disqualify a release however it is otherwise tagged.
+   *
+   * The rule was allowlist only, which is not enough. A film score tagged
+   * "Ambient, Minimal, Modern Classical, Soundtrack" on genre Electronic passes
+   * the Minimal gate, and then the chain runs: the score enters the seed, its
+   * sound engineer becomes a seed artist doing 29.7% of his work in scores, he
+   * clears the bridge ratio, the Amadeus soundtrack arrives through channel A,
+   * and Mozart walks in on its artist line. Three symptoms were patched before
+   * the cause was traced.
+   *
+   * 9,078 of 259,415 seed releases carry one of these, so 3.5% of the seed.
+   *
+   * Field Recording is the debatable one, at 2,038 releases: there is a real
+   * ambient and field recording overlap with this scene. Remove that entry if
+   * the loss shows.
+   */
+  disqualifying: new Set([
+    "Modern Classical",
+    "Soundtrack",
+    "Score",
+    "Classical",
+    "Opera",
+    "Baroque",
+    "Romantic",
+    "Musical",
+    "Spoken Word",
+    "Contemporary",
+    "Field Recording",
+  ]),
 };
 
 export function isSeedRelease(styles: string[], genres: string[]): boolean {
+  // Checked first, and it overrides everything. A record tagged both Dub Techno
+  // and Soundtrack is a soundtrack that borrowed the sound.
+  if (styles.some((s) => seedStyles.disqualifying.has(s))) return false;
+
   if (styles.some((s) => seedStyles.core.has(s))) return true;
   if (!genres.some((g) => seedStyles.genres.has(g))) return false;
   if (styles.some((s) => seedStyles.broad.has(s))) return true;

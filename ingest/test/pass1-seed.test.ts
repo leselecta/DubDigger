@@ -413,3 +413,25 @@ test("the seed ratio can be switched off", async () => {
   assert.equal(stats.droppedByRatio, 0);
   assert.equal(stats.seedArtists, 1);
 });
+
+test("a disqualifying style overrides a matching one", async () => {
+  // "Film Music" is tagged Ambient, Minimal, Modern Classical and Soundtrack on
+  // genre Electronic. It passes the Minimal gate, and then its sound engineer
+  // becomes a seed artist, bridges, and brings the Amadeus soundtrack and
+  // Mozart with him. A record tagged both Dub Techno and Soundtrack is a
+  // soundtrack that borrowed the sound.
+  const { db, stats } = await pass1([
+    release({ id: 1, styles: ["Dub Techno"], genres: ["Electronic"], artists: [artist(10)] }),
+    release({
+      id: 2,
+      styles: ["Ambient", "Minimal", "Modern Classical", "Soundtrack"],
+      genres: ["Electronic"],
+      artists: [artist(20)],
+    }),
+    release({ id: 3, styles: ["Dub Techno", "Soundtrack"], genres: ["Electronic"], artists: [artist(21)] }),
+  ]);
+
+  assert.equal(stats.seedReleases, 1);
+  assert.deepEqual(ids(db, "SELECT id FROM releases"), [1]);
+  assert.deepEqual(ids(db, "SELECT artist_id FROM seed_artists"), [10]);
+});

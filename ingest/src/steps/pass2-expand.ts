@@ -3,6 +3,7 @@ import {
   expansion as expansionDefaults,
   isPlaceholderArtist,
   isPlaceholderLabel,
+  isAuthorshipRole,
 } from "../config.ts";
 import { startRun, dropBulkIndexes, createBulkIndexes } from "../db/open.ts";
 import type { ParsedRelease } from "../lib/release-stream.ts";
@@ -169,8 +170,16 @@ export async function runPass2(
     for await (const release of openReleases()) {
       scanned++;
 
+      // Everyone on the record decides whether the RECORD belongs.
       const people = [...release.artists, ...release.credits].filter(
         (p) => !isPlaceholderArtist(p.id, p.name),
+      );
+
+      // A narrower set decides who the record can bring in WITH it. Writing a
+      // piece is not making a record, and Mozart is "Composed By" on 175 of
+      // these, so authorship alone admits nobody.
+      const admissible = people.filter(
+        (p) => !("role" in p) || !isAuthorshipRole(p.role),
       );
       const labels = release.labels.filter(
         (l) => l.id !== null && !isPlaceholderLabel(l.name),
@@ -193,10 +202,10 @@ export async function runPass2(
       // A crowded release is shelf proximity, not collaboration, so it admits
       // nobody new through channel A. It is still kept, and everyone already in
       // the corpus still holds their credit on it.
-      const crowded = people.length > maxPeopleToAdmit;
+      const crowded = admissible.length > maxPeopleToAdmit;
       if (crowded) crowdedReleases++;
 
-      for (const person of people) {
+      for (const person of admissible) {
         if (channelA && !crowded) tiesA.set(person.id, (tiesA.get(person.id) ?? 0) + 1);
         if (channelB) viaB.add(person.id);
       }

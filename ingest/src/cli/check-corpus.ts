@@ -21,11 +21,10 @@ const LABELS_IN = [
   "Main Street Records",
   "Echocord",
   "Styrax Leaves",
-  "Echospace [Detroit]",
+  "echospace [detroit]",
   "Workshop",
   "Purple Print",
-  "Purpose Maker",
-  "Moonshine Music",
+  "Moonshine Recordings",
   "Ostgut Ton",
   "Kompakt",
   "Tresor",
@@ -33,7 +32,23 @@ const LABELS_IN = [
 ];
 
 /** Budget compilation and licensing outfits that only ever looked like scene labels. */
-const LABELS_OUT = ["Sonotec", "E L M", "Top De Luxe", "ARISA", "Stoned Records", "Stars Vintage"];
+const LABELS_OUT = [
+  "Sonotec",
+  "E L M",
+  "Top De Luxe",
+  "ARISA",
+  "Stoned Records",
+  "Stars Vintage",
+  // 23 scene artists of 147, so 16%: electronic, but a different scene.
+  "Moonshine Music",
+];
+
+/**
+ * Purpose Maker is deliberately absent. It is Jeff Mills' own imprint, a one
+ * artist label, and seed label status only governs channel B, which admits
+ * label mates. A one artist label has none. Mills is a seed artist doing 17.1%
+ * of his work here, so he bridges and his catalogue arrives through channel A.
+ */
 
 /** People the tool exists to surface. */
 const ARTISTS_IN = [

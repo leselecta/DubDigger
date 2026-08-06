@@ -307,3 +307,35 @@ test("a seed artist stays in the corpus even if only ever seen in a crowd", asyn
   });
   assert.deepEqual(ids(db, "SELECT artist_id FROM corpus_artists WHERE is_seed = 1"), [10]);
 });
+
+test("writing a piece does not get you into the corpus", async () => {
+  // Mozart is credited "Composed By" on 175 corpus releases, because a record
+  // that samples or performs a piece credits its author. He cannot have
+  // collaborated with a living techno producer.
+  const db = seeded([10], []);
+  const stats = await pass2(db, [
+    release({
+      id: 1,
+      artists: [artist(10)],
+      credits: [credit(900, "Composed By"), credit(901, "Written-By"), credit(20, "Engineer")],
+    }),
+  ]);
+
+  assert.equal(stats.totalKept, 1, "the release is still kept");
+  const admitted = ids(db, "SELECT artist_id FROM corpus_artists ORDER BY artist_id");
+  assert.ok(admitted.includes(20), "the engineer made the record");
+  assert.ok(!admitted.includes(900), "the composer did not");
+  assert.ok(!admitted.includes(901), "nor the writer");
+});
+
+test("a real credit elsewhere on the record still admits you", async () => {
+  const db = seeded([10], []);
+  await pass2(db, [
+    release({
+      id: 1,
+      artists: [artist(10)],
+      credits: [credit(900, "Written-By"), credit(900, "Producer")],
+    }),
+  ]);
+  assert.ok(ids(db, "SELECT artist_id FROM corpus_artists").includes(900));
+});

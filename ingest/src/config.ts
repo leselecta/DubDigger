@@ -124,6 +124,38 @@ export function isPackagingRole(role: string): boolean {
 }
 
 /**
+ * Authorship credits, which say who wrote the piece rather than who made the
+ * record. They confer no corpus membership.
+ *
+ * Mozart is credited "Composed By" on 175 corpus releases and Beethoven on 85,
+ * because a record sampling or performing a piece credits its author. That is
+ * a fact about the composition, not evidence that anyone collaborated: Mozart
+ * cannot have worked with a living techno producer.
+ *
+ * Same shape as the packaging rule, one stage later. Packaging credits are
+ * stopped at the seed boundary, authorship credits at the admission boundary,
+ * and both leave the role strings untouched in storage.
+ *
+ * Anyone holding a real credit elsewhere on the same record still joins on that
+ * credit. This only removes the ones whose sole involvement is having written
+ * something decades earlier.
+ */
+export const AUTHORSHIP_ROLES = [
+  "composed by",
+  "written-by",
+  "written by",
+  "music by",
+  "words by",
+  "text by",
+  "lyrics by",
+];
+
+export function isAuthorshipRole(role: string): boolean {
+  const lower = role.toLowerCase();
+  return AUTHORSHIP_ROLES.some((marker) => lower.includes(marker));
+}
+
+/**
  * A label becomes a seed label only if BOTH hold. Flat counts alone don't work:
  * a 500-artist label clearing "2+ seed artists" is noise, not signal, so the bar
  * has to scale with roster size.

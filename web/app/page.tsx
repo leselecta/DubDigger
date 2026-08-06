@@ -70,7 +70,13 @@ function Results({ query, hits }: { query: string; hits: ReturnType<typeof searc
           <Link href={`/${hit.kind}/${hit.id}`} className="min-w-0 flex-1 truncate">
             {hit.name}
           </Link>
-          <span className="text-ink-faint shrink-0 text-xs">{hit.kind}</span>
+          <span className="text-ink-faint shrink-0 text-xs">
+            {hit.relevance === "core" ? (
+              <span className="text-accent">core</span>
+            ) : (
+              (hit.relevance ?? hit.kind)
+            )}
+          </span>
         </li>
       ))}
     </ul>

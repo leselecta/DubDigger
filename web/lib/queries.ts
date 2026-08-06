@@ -63,6 +63,13 @@ export interface SearchHit {
   name: string;
   kind: "artist" | "label";
   releaseCount: number;
+  /**
+   * How close to the scene. Shown in results because breadth is only an asset
+   * when a distant act looks distant: Mozart is genuinely in the corpus, on 85
+   * releases that really do credit someone here, and saying so is honest where
+   * hiding him would not be.
+   */
+  relevance: "core" | "collaborator" | "label mate" | null;
 }
 
 /** Row shapes as SQLite returns them, snake_case and with 0/1 for booleans. */
@@ -112,6 +119,9 @@ interface HitRow {
   id: number;
   name: string;
   release_count: number;
+  is_seed?: number;
+  channel_a?: number;
+  channel_b?: number;
 }
 
 export function getArtist(id: number): Artist | null {
@@ -265,12 +275,16 @@ export function search(query: string, limit = 40): SearchHit[] {
 
   const artists = db
     .prepare(
-      `SELECT a.id, a.name, coalesce(c.release_count, 0) AS release_count
+      `SELECT a.id, a.name, coalesce(c.release_count, 0) AS release_count,
+              coalesce(m.is_seed, 0) AS is_seed,
+              coalesce(m.channel_a, 0) AS channel_a,
+              coalesce(m.channel_b, 0) AS channel_b
          FROM artist_search s
          JOIN artists a ON a.id = s.rowid
          LEFT JOIN artist_coverage c ON c.artist_id = a.id
+         LEFT JOIN corpus_artists  m ON m.artist_id = a.id
         WHERE artist_search MATCH ?
-        ORDER BY release_count DESC
+        ORDER BY is_seed DESC, release_count DESC
         LIMIT ?`,
     )
     .all(term, limit) as HitRow[];
@@ -288,12 +302,34 @@ export function search(query: string, limit = 40): SearchHit[] {
     )
     .all(term, limit) as HitRow[];
 
+  const relevance = (r: HitRow): SearchHit["relevance"] => {
+    if (r.is_seed === 1) return "core";
+    if (r.channel_a === 1) return "collaborator";
+    if (r.channel_b === 1) return "label mate";
+    return null;
+  };
+
   return [
-    ...artists.map((r) => ({ ...r, kind: "artist" as const, releaseCount: r.release_count })),
-    ...labels.map((r) => ({ ...r, kind: "label" as const, releaseCount: r.release_count })),
-  ]
-    .sort((a, b) => b.releaseCount - a.releaseCount)
-    .map(({ id, name, kind, releaseCount }) => ({ id, name, kind, releaseCount }));
+    ...artists.map((r) => ({
+      id: r.id,
+      name: r.name,
+      kind: "artist" as const,
+      releaseCount: r.release_count,
+      relevance: relevance(r),
+    })),
+    ...labels.map((r) => ({
+      id: r.id,
+      name: r.name,
+      kind: "label" as const,
+      releaseCount: r.release_count,
+      relevance: null,
+    })),
+  ].sort((a, b) => {
+    // Core first, so a sceptic searching "Mozart" sees at a glance that the
+    // scene artists are the answer and he is a footnote.
+    const rank = (h: SearchHit) => (h.relevance === "core" ? 0 : 1);
+    return rank(a) - rank(b) || b.releaseCount - a.releaseCount;
+  });
 }
 
 /**

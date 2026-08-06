@@ -282,9 +282,26 @@ their whole catalogues through channel B.
 | 25% | 97,641 | 6,895 |
 
 The label effect dwarfs the artist effect, because incidental seed artists
-cluster on exactly the reissue labels that should never have qualified. Unlike
-the label ratio and the bridge ratio there is no clean gap here, so the
-threshold is a judgement call. 5% is the proposal, not a reading.
+cluster on exactly the reissue labels that should never have qualified.
+
+There is no clean gap in the distribution, so the threshold cannot be read off
+it the way the label and bridge ratios could. Real acts pin it instead:
+
+| act | share | should be |
+|---|---|---|
+| Massive Attack | 26.92% | core, it made dub records |
+| The Clash | 8.91% | core, Sandinista! is half dub |
+| Spice Girls | 0.46% | out |
+| Lady Gaga | 0.10% | out |
+| The Beatles | 0.01% | out |
+
+**5%, because 10% would cut The Clash.** Two orders of magnitude separate the
+acts that belong from the ones that do not.
+
+The same floor closes the metal. Manowar, Iron Maiden and Black Sabbath sit on
+budget compilation labels whose entire scene credibility is incidental seed
+artists: Sonotec goes from 16 seed artists of 29 to zero, E L M from 11 of 19
+to zero, and every such label sampled drops out.
 
 Both are pass 1 rules, so one rebuild covers them: pass 1 through publish,
 roughly 75 minutes. **Keep the dumps until this is done.**

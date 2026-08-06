@@ -61,7 +61,7 @@ export async function runEntities(
       "INSERT OR REPLACE INTO artists (id, name, real_name, profile, urls) VALUES (?, ?, ?, ?, ?)",
     );
     const relate = db.prepare(
-      "INSERT OR IGNORE INTO artist_relations (artist_id, related_id, kind) VALUES (?, ?, ?)",
+      "INSERT OR IGNORE INTO artist_relations (artist_id, related_id, kind, related_name) VALUES (?, ?, ?, ?)",
     );
     db.exec("BEGIN");
     for await (const entity of sources.artists) {
@@ -70,7 +70,7 @@ export async function runEntities(
       insert.run(entity.id, entity.name, entity.realName, entity.profile, entity.urls.join("\n") || null);
       // Relations are kept whether or not the other side made the corpus: a
       // dangling one still tells the reader this act has another name.
-      for (const rel of entity.relations) relate.run(entity.id, rel.id, rel.kind);
+      for (const rel of entity.relations) relate.run(entity.id, rel.id, rel.kind, rel.name);
       stats.artistsKept++;
     }
     db.exec("COMMIT");
@@ -87,6 +87,23 @@ export async function runEntities(
     }
     db.exec("COMMIT");
   }
+
+  // Some corpus artists and referenced labels are simply absent from their
+  // dumps. Their names are recorded on the releases themselves, so fall back to
+  // those rather than leave derived rows pointing at nothing: a dangling id is
+  // dropped by the app's join, which silently shortens collaborator lists and
+  // label rosters without any error.
+  db.exec(`
+    INSERT OR IGNORE INTO artists (id, name)
+    SELECT p.artist_id, min(p.name) FROM (
+      SELECT artist_id, name FROM release_artists
+      UNION ALL SELECT artist_id, name FROM release_credits) p
+     WHERE p.artist_id IN (SELECT artist_id FROM corpus_artists)
+     GROUP BY p.artist_id;
+
+    INSERT OR IGNORE INTO labels (id, name)
+    SELECT label_id, min(name) FROM release_labels GROUP BY label_id;
+  `);
 
   stats.relations = db.prepare("SELECT count(*) FROM artist_relations").pluck().get() as number;
   stats.artistsMissing = wantedArtists.size - stats.artistsKept;

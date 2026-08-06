@@ -38,6 +38,7 @@ export default async function LabelPage({ params }: { params: Promise<{ id: stri
               core label · {(label.seedRatio * 100).toFixed(0)}% of roster in the scene
             </span>
           )}
+          {label.isImprint && <span className="text-accent">artist-run imprint</span>}
         </p>
         <OutboundLinks kind="label" id={label.id} urls={label.urls} />
       </header>
@@ -50,7 +51,7 @@ export default async function LabelPage({ params }: { params: Promise<{ id: stri
         </section>
       )}
 
-      {!label.isSeed && (
+      {!label.isSeed && !label.isImprint && (
         // The corpus only follows non-seed labels as far as the artists who
         // reached it by another route, so this roster is a slice, not the whole
         // thing. Saying so beats showing 24 of 500 as if it were the answer.

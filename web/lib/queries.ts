@@ -42,6 +42,12 @@ export interface LabelCredit {
 export interface Label {
   id: number;
   name: string;
+  /**
+   * One artist appears on every release. Not a partial roster but a complete
+   * one, which is how an artist-run imprint looks: Purpose Maker is Jeff Mills
+   * on all 66 of its records, with six engineers around him.
+   */
+  isImprint: boolean;
   profile: string | null;
   urls: string[];
   artistCount: number;
@@ -113,6 +119,7 @@ interface LabelRow {
   artist_count: number;
   release_count: number;
   seed_ratio: number | null;
+  top_artist_releases: number | null;
 }
 
 interface HitRow {
@@ -221,7 +228,9 @@ export function getLabel(id: number): Label | null {
               (SELECT count(*) FROM label_roster r WHERE r.label_id = l.id) AS artist_count,
               (SELECT count(DISTINCT rl.release_id) FROM release_labels rl WHERE rl.label_id = l.id)
                 AS release_count,
-              s.seed_ratio
+              s.seed_ratio,
+              (SELECT max(release_count) FROM label_roster r WHERE r.label_id = l.id)
+                AS top_artist_releases
          FROM labels l
          LEFT JOIN seed_labels s ON s.label_id = l.id
         WHERE l.id = ?`,
@@ -238,6 +247,7 @@ export function getLabel(id: number): Label | null {
     releaseCount: row.release_count,
     isSeed: row.seed_ratio !== null,
     seedRatio: row.seed_ratio,
+    isImprint: row.release_count > 1 && row.top_artist_releases === row.release_count,
   };
 }
 
@@ -385,11 +395,11 @@ export function getRelations(artistId: number): Relation[] {
 
   const rows = db
     .prepare(
-      `SELECT r.related_id AS id, r.kind, a.name,
+      `SELECT r.related_id AS id, r.kind, coalesce(a.name, r.related_name) AS name,
               coalesce(c.release_count, 0) AS release_count,
               m.artist_id IS NOT NULL AS in_corpus
          FROM artist_relations r
-         JOIN artists a ON a.id = r.related_id
+         LEFT JOIN artists a ON a.id = r.related_id
          LEFT JOIN artist_coverage c ON c.artist_id = r.related_id
          LEFT JOIN corpus_artists  m ON m.artist_id = r.related_id
         WHERE r.artist_id = ?
@@ -397,7 +407,7 @@ export function getRelations(artistId: number): Relation[] {
        SELECT r.artist_id, CASE r.kind WHEN 'member' THEN 'group'
                                        WHEN 'group'  THEN 'member'
                                        ELSE 'alias' END,
-              a.name,
+              coalesce(a.name, ''),
               coalesce(c.release_count, 0),
               m.artist_id IS NOT NULL
          FROM artist_relations r
@@ -415,6 +425,7 @@ export function getRelations(artistId: number): Relation[] {
   }[];
 
   return rows
+    .filter((r) => r.name !== "")
     .map((r) => ({
       id: r.id,
       name: r.name,

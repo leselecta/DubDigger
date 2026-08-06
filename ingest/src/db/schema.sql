@@ -94,6 +94,10 @@ CREATE TABLE IF NOT EXISTS labels (
 CREATE TABLE IF NOT EXISTS artist_relations (
   artist_id     INTEGER NOT NULL,
   related_id    INTEGER NOT NULL,
+  -- The name as the dump gives it. Most relations point outside the corpus,
+  -- and without a name here they were silently dropped by the join, so an
+  -- artist's aliases appeared shorter than they are.
+  related_name  TEXT NOT NULL DEFAULT '',
   -- 'alias'  : the two names are the same act
   -- 'member' : related_id is a member of artist_id
   -- 'group'  : artist_id is a member of related_id

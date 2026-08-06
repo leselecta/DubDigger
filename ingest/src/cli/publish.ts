@@ -21,13 +21,21 @@ import path from "node:path";
 import { paths } from "../config.ts";
 import { openDb } from "../db/open.ts";
 
-/** Raw tables the ingest needs and the app does not. */
+/**
+ * Raw tables the ingest needs and the app does not.
+ *
+ * release_artists and release_credits are served because the app needs them to
+ * work out which releases an artist appears on, and with what role. Styles and
+ * genres were only ever read by the release page, which v1 does not have:
+ * release rows link straight to Discogs, which holds the fuller picture
+ * including images, and avoids presenting a mostly empty credits list as
+ * though it were an answer.
+ */
 const NOT_SERVED = [
-  "release_artists",
-  "release_credits",
   "release_styles",
   "release_genres",
   "label_artist_pairs",
+  "seed_artist_totals",
 ];
 
 const dest =

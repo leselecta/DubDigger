@@ -7,6 +7,7 @@ import {
   getArtistLabels,
   getProfileNames,
   getRelations,
+  getArtistReleases,
   type Relation,
 } from "@/lib/queries";
 import { ProfileText } from "@/components/profile-text";
@@ -33,6 +34,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ id: str
   const labels = getArtistLabels(artist.id);
   const names = getProfileNames(artist.profile);
   const relations = getRelations(artist.id);
+  const releases = getArtistReleases(artist.id);
 
   return (
     <div className="max-w-4xl">
@@ -112,6 +114,38 @@ export default async function ArtistPage({ params }: { params: Promise<{ id: str
           )}
         </section>
       </div>
+
+      <section className="mt-6">
+        <Heading>Releases</Heading>
+        {releases.length > 0 ? (
+          <ul className="divide-line border-line divide-y border-y">
+            {releases.map((r) => (
+              <li key={r.id} className="flex gap-2 py-1 text-sm">
+                <span className="text-ink-faint w-9 shrink-0 text-right text-xs tabular-nums">
+                  {r.year ?? ""}
+                </span>
+                <span className="min-w-0 flex-1 truncate">
+                  <a
+                    href={`https://www.discogs.com/release/${r.id}`}
+                    rel="noreferrer"
+                    className="underline-offset-2 hover:underline"
+                  >
+                    {r.title}
+                  </a>
+                  {r.roles.length > 0 && (
+                    <span className="text-ink-faint text-xs"> {r.roles.join(", ")}</span>
+                  )}
+                </span>
+                {r.label && (
+                  <span className="text-ink-faint shrink-0 truncate text-xs">{r.label}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <Empty>No releases in this corpus.</Empty>
+        )}
+      </section>
     </div>
   );
 }

@@ -424,3 +424,81 @@ export function getRelations(artistId: number): Relation[] {
     }))
     .sort((a, b) => b.releaseCount - a.releaseCount);
 }
+
+export interface ArtistRelease {
+  id: number;
+  title: string;
+  year: number | null;
+  label: string | null;
+  /** What this artist did on it. Empty means they were on the artist line. */
+  roles: string[];
+}
+
+/** An artist's releases, newest first, with what they did on each. */
+export function getArtistReleases(artistId: number, limit = 300): ArtistRelease[] {
+  const db = getDb();
+  if (!db) return [];
+
+  const rows = db
+    .prepare(
+      `SELECT r.id, r.title, r.year,
+              group_concat(DISTINCT c.role) AS roles,
+              (SELECT l.name FROM release_labels l WHERE l.release_id = r.id LIMIT 1) AS label
+         FROM releases r
+         JOIN (SELECT release_id FROM release_artists WHERE artist_id = ?
+               UNION SELECT release_id FROM release_credits WHERE artist_id = ?) mine
+           ON mine.release_id = r.id
+         LEFT JOIN release_credits c ON c.release_id = r.id AND c.artist_id = ?
+        GROUP BY r.id
+        ORDER BY r.year IS NULL, r.year DESC, r.title
+        LIMIT ?`,
+    )
+    .all(artistId, artistId, artistId, limit) as {
+    id: number;
+    title: string;
+    year: number | null;
+    roles: string | null;
+    label: string | null;
+  }[];
+
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    year: r.year,
+    label: r.label,
+    roles: r.roles ? r.roles.split(",").filter(Boolean) : [],
+  }));
+}
+
+/** A label's releases, newest first. */
+export function getLabelReleases(labelId: number, limit = 300): ArtistRelease[] {
+  const db = getDb();
+  if (!db) return [];
+
+  const rows = db
+    .prepare(
+      `SELECT r.id, r.title, r.year, rl.catno,
+              (SELECT group_concat(ra.name, ' ') FROM release_artists ra
+                WHERE ra.release_id = r.id) AS by_line
+         FROM release_labels rl
+         JOIN releases r ON r.id = rl.release_id
+        WHERE rl.label_id = ?
+        ORDER BY r.year IS NULL, r.year DESC, r.title
+        LIMIT ?`,
+    )
+    .all(labelId, limit) as {
+    id: number;
+    title: string;
+    year: number | null;
+    catno: string | null;
+    by_line: string | null;
+  }[];
+
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    year: r.year,
+    label: r.catno,
+    roles: r.by_line ? [r.by_line] : [],
+  }));
+}

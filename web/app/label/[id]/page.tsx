@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import { getLabel, getRoster, getProfileNames } from "@/lib/queries";
+import { getLabel, getRoster, getProfileNames, getLabelReleases } from "@/lib/queries";
 import { ProfileText } from "@/components/profile-text";
 import { OutboundLinks } from "@/components/outbound-links";
 
@@ -24,6 +24,7 @@ export default async function LabelPage({ params }: { params: Promise<{ id: stri
 
   const roster = getRoster(label.id);
   const names = getProfileNames(label.profile);
+  const releases = getLabelReleases(label.id);
 
   return (
     <div className="max-w-3xl">
@@ -83,6 +84,38 @@ export default async function LabelPage({ params }: { params: Promise<{ id: stri
           No roster recorded for this label.
         </p>
       )}
+
+      <section className="mt-6">
+        <h2 className="text-ink-faint mb-1 text-xs font-semibold tracking-wide uppercase">Releases</h2>
+        {releases.length > 0 ? (
+          <ul className="divide-line border-line divide-y border-y">
+            {releases.map((r) => (
+              <li key={r.id} className="flex gap-2 py-1 text-sm">
+                <span className="text-ink-faint w-9 shrink-0 text-right text-xs tabular-nums">
+                  {r.year ?? ""}
+                </span>
+                <span className="min-w-0 flex-1 truncate">
+                  <a
+                    href={`https://www.discogs.com/release/${r.id}`}
+                    rel="noreferrer"
+                    className="underline-offset-2 hover:underline"
+                  >
+                    {r.title}
+                  </a>
+                  {r.roles.length > 0 && (
+                    <span className="text-ink-faint text-xs"> {r.roles.join(", ")}</span>
+                  )}
+                </span>
+                {r.label && (
+                  <span className="text-ink-faint shrink-0 truncate text-xs">{r.label}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-ink-faint border-line border-y py-2 text-sm">No releases recorded.</p>
+        )}
+      </section>
     </div>
   );
 }

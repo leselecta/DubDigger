@@ -5,6 +5,7 @@
   "description": "Offline ingest: Discogs XML dumps -> a small read-only SQLite file.",
   "type": "module",
   "scripts": {
+    "check-corpus": "tsx src/cli/check-corpus.ts",
     "derive": "tsx src/cli/derive.ts",
     "entities": "tsx src/cli/entities.ts",
     "fetch-dumps": "tsx src/cli/fetch-dumps.ts",

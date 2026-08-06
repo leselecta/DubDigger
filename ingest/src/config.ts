@@ -65,6 +65,65 @@ export function isSeedRelease(styles: string[], genres: string[]): boolean {
 }
 
 /**
+ * Becoming a seed artist. Two rules, both learned from the corpus rather than
+ * guessed at.
+ */
+export const seedArtist = {
+  /**
+   * At least this share of an artist's total output must sit inside the seed.
+   *
+   * Luciano re-edited Nina Simone's "Sinnerman", a record correctly tagged
+   * Minimal on genre Electronic. That made Nina Simone a seed artist off 4
+   * releases in 5,087, and vintage reissue labels then read as 74% scene,
+   * cleared the label ratio and admitted their whole catalogues, Frank Sinatra
+   * included.
+   *
+   * The distribution has no gap to read a threshold from, so real acts pin it.
+   * Massive Attack does 26.92% of its work here and The Clash 8.91%, both of
+   * which belong. Spice Girls 0.46%, Lady Gaga 0.10%, The Beatles 0.01% and
+   * Mozart 0.00%, none of which do. 10% is ruled out because it cuts The Clash.
+   *
+   * 2% rather than 5% because they are indistinguishable on every case that
+   * matters, including the budget compilation labels carrying Manowar and Iron
+   * Maiden, and 5% would remove 16,000 more artists for no visible difference.
+   * The aim is that a sceptic typing "Mozart" gets nothing, not a smaller
+   * corpus. Everything short of obviously wrong stays and is handled by showing
+   * relevance in the interface.
+   */
+  minSeedRatio: 0.02 as number | null,
+
+  /**
+   * Roles that do not make someone part of the scene.
+   *
+   * A photographer is not a musician. Otto Bettmann of the Bettmann archive is
+   * credited on 64 releases, 11 of them in the seed, so his 17.2% clears the
+   * bridge ratio honestly and he vouched a Frank Sinatra tribute into the
+   * corpus. 23,919 seed artists qualified on packaging credits alone.
+   *
+   * Deliberately narrow: visual and text work only. Mastering and lacquer
+   * cutting are audio work and stay, since the bridge ratio already handles the
+   * engineers who work everywhere.
+   *
+   * This is a membership rule, not the role normalisation v1 rules out. Roles
+   * are still stored raw and roles_seen still logs every distinct string.
+   */
+  packagingRoles: [
+    "photograph",
+    "artwork",
+    "design",
+    "illustration",
+    "layout",
+    "sleeve",
+    "liner notes",
+  ],
+};
+
+export function isPackagingRole(role: string): boolean {
+  const lower = role.toLowerCase();
+  return seedArtist.packagingRoles.some((marker) => lower.includes(marker));
+}
+
+/**
  * A label becomes a seed label only if BOTH hold. Flat counts alone don't work:
  * a 500-artist label clearing "2+ seed artists" is noise, not signal, so the bar
  * has to scale with roster size.

@@ -2,8 +2,10 @@ import type Database from "better-sqlite3";
 import {
   isSeedRelease,
   seedLabel as seedLabelDefaults,
+  seedArtist as seedArtistDefaults,
   isPlaceholderArtist,
   isPlaceholderLabel,
+  isPackagingRole,
 } from "../config.ts";
 import { startRun, dropBulkIndexes, createBulkIndexes } from "../db/open.ts";
 import type { ParsedRelease } from "../lib/release-stream.ts";
@@ -22,6 +24,8 @@ import type { ParsedRelease } from "../lib/release-stream.ts";
 export interface Pass1Options {
   /** Overrides the configured seed rule. Used by tests. */
   isSeed?: (styles: string[], genres: string[]) => boolean;
+  /** Share of an artist's output that must sit in the seed. null disables. */
+  minSeedRatio?: number | null;
   seedLabel?: { minSeedArtists: number; minSeedArtistRatio: number };
   sourceFile?: string;
   onProgress?: (scanned: number) => void;
@@ -42,6 +46,12 @@ export interface Pass1Stats {
   labelsWithoutId: number;
   /** "Not On Label" style placeholders, excluded from roster maths. */
   placeholderLabels: number;
+  /** Candidates before the ratio floor was applied. */
+  seedCandidates: number;
+  /** Dropped for doing too little of their work inside the seed. */
+  droppedByRatio: number;
+  /** Credits that conferred nothing, being photography, artwork and the like. */
+  packagingCredits: number;
 }
 
 /**
@@ -69,12 +79,20 @@ const OWNED_TABLES = [
 const COMMIT_EVERY = 20_000;
 const PROGRESS_EVERY = 100_000;
 
+/**
+ * Takes a factory because the dump is read twice: once to find the seed and its
+ * candidate artists, and once to measure how much of each candidate's total
+ * output actually sits inside it. A candidate's share cannot be known at the
+ * moment it is needed otherwise.
+ */
 export async function runPass1(
   db: Database.Database,
-  releases: Iterable<ParsedRelease> | AsyncIterable<ParsedRelease>,
+  openReleases: () => Iterable<ParsedRelease> | AsyncIterable<ParsedRelease>,
   options: Pass1Options = {},
 ): Promise<Pass1Stats> {
   const isSeed = options.isSeed ?? isSeedRelease;
+  const minSeedRatio =
+    options.minSeedRatio === undefined ? seedArtistDefaults.minSeedRatio : options.minSeedRatio;
   const thresholds = options.seedLabel ?? seedLabelDefaults;
 
   const reset = db.transaction(() => {
@@ -122,6 +140,7 @@ export async function runPass1(
   let seedReleases = 0;
   let labelsWithoutId = 0;
   let placeholderLabels = 0;
+  let packagingCredits = 0;
 
   // Rebuilt after the load. Maintaining them during it means millions of
   // random writes into a growing B-tree.
@@ -129,7 +148,7 @@ export async function runPass1(
 
   db.exec("BEGIN");
   try {
-    for await (const release of releases) {
+    for await (const release of openReleases()) {
       scanned++;
 
       // Roster pairs come from EVERY release, not just the seeded ones. The
@@ -152,7 +171,7 @@ export async function runPass1(
 
       if (isSeed(release.styles, release.genres)) {
         seedReleases++;
-        keepRelease(db, insert, release, seedArtistReleases);
+        packagingCredits += keepRelease(db, insert, release, seedArtistReleases);
       }
 
       if (scanned % COMMIT_EVERY === 0) {
@@ -170,6 +189,29 @@ export async function runPass1(
   }
 
   createBulkIndexes(db);
+
+  // Phase 2. Measure how much of each candidate's total output sits inside the
+  // seed. Four releases in five thousand is not scene membership, it is a
+  // re-edit of somebody's back catalogue.
+  const seedCandidates = seedArtistReleases.size;
+  let droppedByRatio = 0;
+
+  if (minSeedRatio !== null) {
+    const total = new Map<number, number>();
+    for await (const release of openReleases()) {
+      for (const person of [...release.artists, ...release.credits]) {
+        if (!seedArtistReleases.has(person.id)) continue;
+        total.set(person.id, (total.get(person.id) ?? 0) + 1);
+      }
+    }
+
+    for (const [artistId, seedCount] of [...seedArtistReleases]) {
+      const ratio = seedCount / Math.max(1, total.get(artistId) ?? seedCount);
+      if (ratio >= minSeedRatio) continue;
+      seedArtistReleases.delete(artistId);
+      droppedByRatio++;
+    }
+  }
 
   const writeSeedArtists = db.transaction(() => {
     const stmt = db.prepare(
@@ -198,6 +240,9 @@ export async function runPass1(
     distinctRoles: count("roles_seen"),
     labelsWithoutId,
     placeholderLabels,
+    seedCandidates,
+    droppedByRatio,
+    packagingCredits,
   };
 
   run.finish(stats);
@@ -206,12 +251,13 @@ export async function runPass1(
 
 type Statements = Record<string, Database.Statement>;
 
+/** Returns how many credits conferred no seed membership. */
 function keepRelease(
   db: Database.Database,
   insert: Statements,
   release: ParsedRelease,
   seedArtistReleases: Map<number, number>,
-): void {
+): number {
   insert.release!.run(release.id, release.title, release.year);
 
   release.artists.forEach((artist, position) => {
@@ -235,13 +281,24 @@ function keepRelease(
   for (const style of release.styles) insert.style!.run(release.id, style);
   for (const genre of release.genres) insert.genre!.run(release.id, genre);
 
-  // Everyone credited counts towards the seed, the artist line and the
-  // extraartists alike. A mixing engineer is exactly the kind of thread this
-  // tool exists to follow.
-  for (const person of [...release.artists, ...release.credits]) {
+  // The artist line and the extraartists both count: a mixing engineer is
+  // exactly the kind of thread this tool exists to follow. A sleeve designer is
+  // not, so packaging credits confer nothing.
+  let packaging = 0;
+  const musical = [
+    ...release.artists.map((a) => ({ id: a.id, name: a.name, role: "" })),
+    ...release.credits.filter((c) => {
+      if (!isPackagingRole(c.role)) return true;
+      packaging++;
+      return false;
+    }),
+  ];
+
+  for (const person of musical) {
     if (isPlaceholderArtist(person.id, person.name)) continue;
     seedArtistReleases.set(person.id, (seedArtistReleases.get(person.id) ?? 0) + 1);
   }
+  return packaging;
 }
 
 /**

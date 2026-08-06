@@ -25,8 +25,9 @@ const credit = (id: number, role = "Producer") => ({ id, name: `Artist ${id}`, r
 const label = (id: number) => ({ id, name: `Label ${id}`, catno: null });
 
 async function pass1(releases: ParsedRelease[], options: Pass1Options = {}) {
+  options = { minSeedRatio: null, ...options };
   const db = openDb(":memory:");
-  const stats = await runPass1(db, releases, options);
+  const stats = await runPass1(db, () => releases, options);
   return { db, stats };
 }
 
@@ -290,7 +291,7 @@ test("a second run replaces the first rather than layering on top of it", async 
   // stay correct throughout, which is what makes it hard to spot.
   const db = openDb(":memory:");
 
-  await runPass1(db, [release({ id: 1, styles: ["Ambient"], artists: [artist(10)] })], {
+  await runPass1(db, () => [release({ id: 1, styles: ["Ambient"], artists: [artist(10)] })], {
     isSeed: (s: string[]) => s.includes("Ambient"),
   });
   assert.deepEqual(ids(db, "SELECT artist_id FROM seed_artists"), [10]);
@@ -298,7 +299,7 @@ test("a second run replaces the first rather than layering on top of it", async 
   // Now a stricter rule that admits nothing from the first run.
   const stats = await runPass1(
     db,
-    [release({ id: 2, styles: ["Dub Techno"], artists: [artist(20)] })],
+    () => [release({ id: 2, styles: ["Dub Techno"], artists: [artist(20)] })],
     { isSeed: (s: string[]) => s.includes("Dub Techno") },
   );
 
@@ -338,4 +339,77 @@ test("a credit with no usable id never becomes an artist", async () => {
     { isSeed: (s: string[]) => s.includes("Dub") },
   );
   assert.deepEqual(ids(db, "SELECT artist_id FROM seed_artists"), [10]);
+});
+
+test("a packaging credit does not make someone part of the scene", async () => {
+  // Otto Bettmann of the Bettmann photo archive is credited on 64 releases, 11
+  // of them in the seed, so his 17.2% clears the bridge ratio honestly. He then
+  // vouched a Frank Sinatra tribute into a dub techno corpus. He is a
+  // photographer.
+  const { db, stats } = await pass1(
+    [
+      release({
+        id: 1,
+        styles: ["Dub"],
+        artists: [artist(10)],
+        credits: [
+          credit(20, "Photography By"),
+          credit(21, "Artwork, Design"),
+          credit(22, "Engineer"),
+        ],
+      }),
+    ],
+    { isSeed: (s: string[]) => s.includes("Dub") },
+  );
+
+  assert.equal(stats.packagingCredits, 2);
+  assert.deepEqual(
+    ids(db, "SELECT artist_id FROM seed_artists ORDER BY artist_id"),
+    [10, 22],
+    "the engineer belongs, the photographer and the designer do not",
+  );
+});
+
+test("someone who also did musical work keeps their place", async () => {
+  const { db } = await pass1(
+    [
+      release({ id: 1, styles: ["Dub"], credits: [credit(20, "Photography By")] }),
+      release({ id: 2, styles: ["Dub"], credits: [credit(20, "Producer")] }),
+    ],
+    { isSeed: (s: string[]) => s.includes("Dub") },
+  );
+  assert.deepEqual(ids(db, "SELECT artist_id FROM seed_artists"), [20]);
+});
+
+test("an artist who barely works in the seed does not join it", async () => {
+  // Nina Simone has 4 seed releases against a catalogue of 5,087, because
+  // Luciano re-edited "Sinnerman". That is not scene membership.
+  const releases = [
+    release({ id: 1, styles: ["Dub"], artists: [artist(10)] }),
+    ...Array.from({ length: 9 }, (_, i) =>
+      release({ id: 100 + i, styles: ["Pop"], artists: [artist(10)] }),
+    ),
+    release({ id: 2, styles: ["Dub"], artists: [artist(11)] }),
+  ];
+
+  const { db, stats } = await pass1(releases, {
+    isSeed: (s: string[]) => s.includes("Dub"),
+    minSeedRatio: 0.2,
+  });
+
+  assert.equal(stats.seedCandidates, 2);
+  assert.equal(stats.droppedByRatio, 1, "artist 10 does 1 of 10 releases here");
+  assert.deepEqual(ids(db, "SELECT artist_id FROM seed_artists"), [11]);
+});
+
+test("the seed ratio can be switched off", async () => {
+  const { stats } = await pass1(
+    [
+      release({ id: 1, styles: ["Dub"], artists: [artist(10)] }),
+      release({ id: 2, styles: ["Pop"], artists: [artist(10)] }),
+    ],
+    { isSeed: (s: string[]) => s.includes("Dub"), minSeedRatio: null },
+  );
+  assert.equal(stats.droppedByRatio, 0);
+  assert.equal(stats.seedArtists, 1);
 });

@@ -68,7 +68,7 @@ if (isFull) console.log(`  Reading the full dump. This takes a while.\n`);
 const db = openDb();
 const started = Date.now();
 
-const stats = await runPass1(db, streamReleases(openDump(source)), {
+const stats = await runPass1(db, () => streamReleases(openDump(source)), {
   sourceFile: path.basename(source),
   onProgress: (n) => {
     const rate = n / ((Date.now() - started) / 1000);
@@ -82,6 +82,9 @@ const n = (v: number) => v.toLocaleString("en-GB");
 console.log(`
   releases scanned   ${n(stats.releasesScanned)}
   seed releases      ${n(stats.seedReleases)}
+  seed candidates    ${n(stats.seedCandidates)}
+  dropped by ratio   ${n(stats.droppedByRatio)}   (too little work in the seed)
+  packaging credits  ${n(stats.packagingCredits)}   (conferred nothing)
   seed artists       ${n(stats.seedArtists)}   <- steering signal
   candidate labels   ${n(stats.candidateLabels)}   (had any seed artist)
   seed labels        ${n(stats.seedLabels)}   <- steering signal

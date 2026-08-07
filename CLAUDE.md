@@ -103,18 +103,29 @@ Derived tables (precomputed, what the app reads):
 
 Ranking by frequency is central: collaborators and labels are ordered by count, never alphabetically. Frequency is the signal.
 
-## UI principles — enforce these
+## UI principles
+
+These three are load-bearing and hold regardless of how the interface looks:
 
 - **Ranked lists over graphs.** Sorted by strength, lists answer "who matters here" on sight. No graph in v1.
-- **Density is a feature.** Small type, tight rows, lots on screen. Resist framework default whitespace — go tighter than Tailwind wants.
 - **One click to pivot.** Every artist, label, and release is a link to its own page. Digging is hopping between pages, not composing a query.
-- **Show data absence honestly.** "No credits recorded" must be visibly distinct from "worked solo." Never render an empty result that looks like a positive answer.
+- **Show data absence honestly.** "No credits recorded" must be visibly distinct from "worked solo." Never render an empty result that looks like a positive answer. The same honesty extends to connection strength: relevance grades and the collaborator/label-mate distinction exist so a peripheral artist looks peripheral. Never present a weak tie as a strong one.
+
+### Density: suspended, pending the design pass
+
+This used to read "Density is a feature. Small type, tight rows, lots on screen. Resist framework default whitespace, go tighter than Tailwind wants," and it was enforced as `--spacing: 0.2rem` plus a reduced `--text-*` scale in `web/app/globals.css`.
+
+Simone suspended it on 2026-08-06 to open up the design question: "I want to start thinking of the design without those constraints at first." A design drafted elsewhere is now being implemented here.
+
+**Until that design lands, do not tighten spacing or shrink type unprompted, and do not cite the old rule as a constraint.** Follow what the design specifies. The reasoning behind the original rule still stands and is worth weighing (the user reads Discogs pages for fun and wants information per scroll), but it is an input to the design now, not a veto over it.
+
+**When the design is implemented, replace this section with the spacing and type rules it actually settles on**, so the written rule and the shipped interface stop disagreeing. The baseline it replaces is tagged `ui-baseline-v0`.
 
 ## Stack
 
 - Next.js + TypeScript, server components for the dense pages
 - SQLite as a read-only file (no DB server)
-- Tailwind, with tightened spacing
+- Tailwind, spacing and type scale set by the design pass (see UI principles)
 - Ingest: standalone Node/TypeScript scripts using a streaming XML parser
 - Deploy: a single small VPS running the Next.js process alongside the SQLite file
 

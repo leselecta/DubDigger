@@ -145,7 +145,7 @@ function ResultHeader() {
     >
       <span>Name</span>
       <span>Releases</span>
-      <span className="hidden md:block">Dub relevance</span>
+      <span className="hidden md:block">Relevance</span>
       <span className="hidden md:block">Type</span>
     </div>
   );

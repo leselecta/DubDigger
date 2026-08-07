@@ -82,7 +82,7 @@ export default async function ArtistPage({
               {" "}
               &nbsp;·&nbsp;{" "}
               <span className="text-accent">
-                {artist.seedReleases.toLocaleString("en-GB")} in the scene
+                {artist.seedReleases.toLocaleString("en-GB")} in the dub techno scene
                 {artist.seedShare !== null && `, ${Math.round(artist.seedShare * 100)}% of output`}
               </span>
             </>
@@ -94,7 +94,7 @@ export default async function ArtistPage({
             <FieldRow label="Real name">{artist.realName}</FieldRow>
           )}
           <FieldRow label="Date active">{years(artist.firstYear, artist.lastYear) || "—"}</FieldRow>
-          <FieldRow label="Dub relevance" accent={artist.relevance !== "none"}>
+          <FieldRow label="Relevance" accent={artist.relevance !== "none"}>
             <Relevance artist={artist} />
           </FieldRow>
           <div className="border-hairline border-b">
@@ -223,33 +223,47 @@ function Releases({ artistId, limit }: { artistId: number; limit: number }) {
 }
 
 /**
- * How central they are, and for the ones at the bottom, why they are here at
- * all.
+ * How central they are, said as tie strength rather than as a bare grade.
  *
- * "Very low" rather than nothing, so the page uses the same four steps the
- * search results do. But an artist with no seed work is not a weak version of
- * core, they are a neighbour, and a label mate is not a weak collaborator. That
- * distinction is too useful to drop, so it rides alongside the grade: the scale
- * says how close, the connection says by what route.
+ * The four steps are the ones the search results use. The clause says what the
+ * step means without repeating the numbers behind it, which are already in the
+ * accent stat line above.
+ *
+ * "Very low" carries the route as well, because an artist with no seed work is
+ * not a weak version of core, they are a neighbour, and a label mate is not a
+ * weak collaborator. That distinction is too useful to drop.
  */
+const RELEVANCE_REASON: Record<string, string> = {
+  high: "very strong ties with the core dub techno scene",
+  medium: "strong ties with the core dub techno scene",
+  low: "weak ties with the core dub techno scene",
+};
+
 function Relevance({ artist }: { artist: Artist }) {
   if (artist.relevance !== "none") {
-    return <span className="capitalize">{artist.relevance}</span>;
+    return (
+      <>
+        <span className="capitalize">{artist.relevance}</span>
+        <span className="text-ink-faint">, {RELEVANCE_REASON[artist.relevance]}</span>
+      </>
+    );
   }
 
   const route =
     artist.channelA && artist.channelB
-      ? "collaborator and label mate"
+      ? "a one time collaborator and label mate"
       : artist.channelA
-        ? "collaborator"
+        ? "a one time collaborator"
         : artist.channelB
-          ? "label mate"
-          : null;
+          ? "a one time label mate"
+          : "a one time collaborator or label mate";
 
   return (
     <>
       Very low
-      {route && <span className="text-ink-faint">, here as a {route}</span>}
+      <span className="text-ink-faint">
+        , very weak ties with the core dub techno scene (here as {route})
+      </span>
     </>
   );
 }

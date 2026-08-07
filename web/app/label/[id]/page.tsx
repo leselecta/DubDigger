@@ -63,7 +63,7 @@ export default async function LabelPage({
 
         <p className="text-ink-muted mt-10 font-mono text-[0.8125rem] tracking-[0.06em] uppercase">
           {/*
-           * No scene share here, unlike the artist stat line. The Core label
+           * No scene share here, unlike the artist stat line. The Relevance
            * row below carries the same percentage, and the two sit close enough
            * that repeating it reads as a mistake.
            */}
@@ -73,8 +73,8 @@ export default async function LabelPage({
 
         <dl className="mt-9 max-w-[760px]">
           <FieldRow label="Date active">{years(label.firstYear, label.lastYear) || "—"}</FieldRow>
-          <FieldRow label={label.isSeed ? "Core label" : "Standing"} accent={label.isSeed}>
-            <Standing label={label} />
+          <FieldRow label="Relevance" accent={label.isSeed}>
+            <Relevance label={label} />
           </FieldRow>
           <div className="border-hairline border-b">
             <FieldRow label="View on">
@@ -163,18 +163,29 @@ function Releases({ labelId, limit }: { labelId: number; limit: number }) {
 }
 
 /**
- * What kind of label this is, in the terms the corpus actually knows.
+ * How close to the scene, in the words the search results use.
+ *
+ * Labels are not on the artist scale, but they have a measure of their own: a
+ * seed label is a scene label by roster concentration. The grade comes first
+ * for the same reason it does on the artist page — one vocabulary, whichever
+ * page you land on — and the reason rides alongside it, since a label's grade
+ * rests entirely on a percentage worth reading.
  *
  * A one artist label is not a thin roster, it is an imprint, and saying
  * "partial roster" about Purpose Maker would be describing complete data as
  * incomplete.
  */
-function Standing({ label }: { label: Label }) {
-  if (label.isImprint) {
-    return <>Artist-run imprint, one artist on every release</>;
-  }
-  if (label.seedRatio !== null) {
-    return <>{Math.round(label.seedRatio * 100)}% of roster in the scene</>;
-  }
-  return <>Reached the corpus through its artists, not as a scene label</>;
+function Relevance({ label }: { label: Label }) {
+  const reason = label.isImprint
+    ? "artist-run imprint, one artist on every release"
+    : label.seedRatio !== null
+      ? `${Math.round(label.seedRatio * 100)}% of roster in the dub techno scene`
+      : "here through its artists, not as a label in the dub techno scene";
+
+  return (
+    <>
+      {label.isSeed ? "High" : "Low"}
+      <span className="text-ink-faint">, {reason}</span>
+    </>
+  );
 }

@@ -1,15 +1,18 @@
 # Dub Digger
 
-**Follow the credits, not the algorithm.**
 
-Every record is made by more people than the cover admits. A producer, a mixing
-engineer, a bassist who turns up on four other records you already love. That web
-of credits is how crate diggers actually find music, and it all sits in Discogs.
-It just isn't shaped for digging.
+** Dig the extended scene. Dub Techno first. Following the credits, not the algorithm. **
+
+Every record is connected to another. A producer, a mixing
+engineer, a bassist who turns up on four other records you already love. 
+An iconic, minor label you discover by picking up an obscure release you love gives you access
+to a goldmine of amazing titles.
+That web of credits is how crate diggers actually find music, and it all sits in Discogs.
+It just isn't optimised for digging this way.  
 
 Dub Digger reshapes it. Type an artist, see who they worked with and what labels
 they released on, then click any of those and keep going. A map of scenes, drawn
-from credits.
+from credits. No unwanted noise.
 
 > **Status: working end to end.** The full pipeline runs against the 20260801
 > dump and the app serves real data: **1,025,881 releases**, **420,575

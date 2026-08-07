@@ -533,12 +533,20 @@ export function getLabelReleases(labelId: number, limit = 300): ArtistRelease[] 
 
   const rows = db
     .prepare(
-      `SELECT r.id, r.title, r.year, rl.catno,
+      // Grouped because a release can list the same label several times, once
+      // per catalogue number variant: Rhythm & Sound 92 is filed as "R-N 092",
+      // "RN92" and "r-n 92" on one record. Ungrouped that repeats the release
+      // down the page and spends the limit on duplicates.
+      //
+      // min(rl.position) picks the first of those entries, and SQLite
+      // guarantees the bare rl.catno comes from the row that min() matched.
+      `SELECT r.id, r.title, r.year, rl.catno, min(rl.position) AS pos,
               (SELECT group_concat(ra.name, ' ') FROM release_artists ra
                 WHERE ra.release_id = r.id) AS by_line
          FROM release_labels rl
          JOIN releases r ON r.id = rl.release_id
         WHERE rl.label_id = ?
+        GROUP BY r.id
         ORDER BY r.year IS NULL, r.year DESC, r.title
         LIMIT ?`,
     )
@@ -547,6 +555,7 @@ export function getLabelReleases(labelId: number, limit = 300): ArtistRelease[] 
     title: string;
     year: number | null;
     catno: string | null;
+    pos: number;
     by_line: string | null;
   }[];
 

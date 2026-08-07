@@ -36,6 +36,7 @@ const NOT_SERVED = [
   "release_genres",
   "label_artist_pairs",
   "seed_artist_totals",
+  "seed_artist_totals_meta",
 ];
 
 const dest =

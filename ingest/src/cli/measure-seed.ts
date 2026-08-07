@@ -8,13 +8,16 @@
  * of the corpus, so a rule that trims it is worth measuring before it is built.
  *
  * Totals are cached in seed_artist_totals so thresholds can be tried repeatedly
- * without re-reading 10.4 GB.
+ * without re-reading 10.4 GB. The cache records which dump it came from, and is
+ * rescanned rather than reused when that no longer matches: see
+ * lib/totals-cache.ts for the two ways it goes stale silently.
  */
 import fs from "node:fs";
 import path from "node:path";
 import { paths } from "../config.ts";
 import { openDb } from "../db/open.ts";
 import { openDump, streamReleases } from "../lib/release-stream.ts";
+import { judgeTotalsCache } from "../lib/totals-cache.ts";
 
 const db = openDb();
 db.exec(`
@@ -22,17 +25,42 @@ db.exec(`
     artist_id INTEGER PRIMARY KEY,
     total     INTEGER NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS seed_artist_totals_meta (
+    id        INTEGER PRIMARY KEY CHECK (id = 1),
+    built_from TEXT NOT NULL
+  );
 `);
 
-const cached = db.prepare("SELECT count(*) FROM seed_artist_totals").pluck().get() as number;
-
-if (cached === 0 || process.argv.includes("--rescan")) {
-  const dump = fs
+const dumpOnDisk =
+  fs
     .readdirSync(paths.dumps)
     .filter((f) => f.endsWith("_releases.xml.gz"))
     .sort()
-    .reverse()[0];
-  if (!dump) throw new Error("No releases dump found.");
+    .reverse()[0] ?? null;
+
+const verdict = judgeTotalsCache(
+  {
+    cached: db.prepare("SELECT count(*) FROM seed_artist_totals").pluck().get() as number,
+    builtFrom:
+      (db.prepare("SELECT built_from FROM seed_artist_totals_meta WHERE id = 1").pluck().get() as
+        | string
+        | undefined) ?? null,
+    dumpOnDisk,
+    uncovered: db
+      .prepare(
+        `SELECT count(*) FROM seed_artists s
+          WHERE NOT EXISTS (SELECT 1 FROM seed_artist_totals t WHERE t.artist_id = s.artist_id)`,
+      )
+      .pluck()
+      .get() as number,
+  },
+  process.argv.includes("--rescan"),
+);
+
+if (verdict.action === "rescan") {
+  const dump = dumpOnDisk;
+  if (!dump) throw new Error("No releases dump found, and the cache cannot be trusted.");
+  console.log(`Rescanning: ${verdict.why}.`);
 
   const seed = new Set(db.prepare("SELECT artist_id FROM seed_artists").pluck().all() as number[]);
   console.log(`Counting total appearances for ${seed.size.toLocaleString("en-GB")} seed artists...`);
@@ -55,11 +83,17 @@ if (cached === 0 || process.argv.includes("--rescan")) {
     db.exec("DELETE FROM seed_artist_totals");
     const stmt = db.prepare("INSERT INTO seed_artist_totals (artist_id, total) VALUES (?, ?)");
     for (const [id, n] of total) stmt.run(id, n);
+    db.prepare(
+      "INSERT OR REPLACE INTO seed_artist_totals_meta (id, built_from) VALUES (1, ?)",
+    ).run(dump);
   });
   write();
   console.log(`  scanned ${scanned.toLocaleString("en-GB")} in ${((Date.now() - started) / 1000).toFixed(0)}s\n`);
 } else {
-  console.log(`Using cached totals for ${cached.toLocaleString("en-GB")} seed artists. --rescan to redo.\n`);
+  const rows = db.prepare("SELECT count(*) FROM seed_artist_totals").pluck().get() as number;
+  console.log(`Using cached totals for ${rows.toLocaleString("en-GB")} seed artists. --rescan to redo.`);
+  if (verdict.warning) console.log(`  Note: ${verdict.warning}`);
+  console.log();
 }
 
 const n = (v: number) => v.toLocaleString("en-GB");
@@ -133,4 +167,5 @@ for (const floor of [0.02, 0.05, 0.1, 0.25]) {
       `   seed labels ${n(labels).padStart(8)}`,
   );
 }
-console.log(`\n  today: seed artists ${n(totalSeed)}, seed labels 29,397`);
+const seedLabelsToday = db.prepare("SELECT count(*) FROM seed_labels").pluck().get() as number;
+console.log(`\n  today: seed artists ${n(totalSeed)}, seed labels ${n(seedLabelsToday)}`);

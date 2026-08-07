@@ -186,18 +186,23 @@ function ResultRow({ hit }: { hit: SearchHit }) {
 }
 
 /**
- * How close to the scene a result sits, or how it got here if the answer is
- * "not at all".
+ * How close to the scene a result sits.
  *
  * Shown because breadth is only an asset when a distant act looks distant.
  * Mozart is genuinely in this corpus, on 85 releases that really do credit
  * someone here, and saying so is honest where hiding him would not be.
  *
+ * Four steps, not three. An artist with no seed work at all is not the same as
+ * one with a single record in it, so they read "very low" rather than being
+ * folded into the "low" above them. Whether they arrived as a collaborator or
+ * as a label mate is a different question from how close they are, and the
+ * artist page answers it; a column being scanned forty rows at a time wants one
+ * scale, not a grade for some rows and a reason for others.
+ *
  * The shade tracks the grade rather than the fact of being graded. Accenting
  * anything that carried a grade meant an artist reading "low" was highlighted
  * while a label reading "Low" was not, which is the opposite of what the colour
- * should say. Now the column dims as it goes down the scale, so a page of
- * results shows where the weight is at a glance.
+ * should say.
  *
  * Labels are graded on the same words, from the measure they do have: a seed
  * label is a scene label by roster concentration. The underlying test is not
@@ -208,19 +213,20 @@ const RELEVANCE_SHADE: Record<string, string> = {
   high: "text-accent",
   medium: "text-ink",
   low: "text-ink-muted",
+  "very low": "text-ink-faint",
 };
 
 function Relevance({ hit }: { hit: SearchHit }) {
-  if (hit.kind === "label") {
-    const grade = hit.coreLabel ? "high" : "low";
-    return <span className={RELEVANCE_SHADE[grade]}>{grade}</span>;
-  }
+  const grade =
+    hit.kind === "label"
+      ? hit.coreLabel
+        ? "high"
+        : "low"
+      : hit.relevance === null || hit.relevance === "none"
+        ? "very low"
+        : hit.relevance;
 
-  const graded = hit.relevance !== null && hit.relevance !== "none";
-  if (!graded) {
-    return <span className="text-ink-faint">{hit.connection ?? "artist"}</span>;
-  }
-  return <span className={RELEVANCE_SHADE[hit.relevance!]}>{hit.relevance}</span>;
+  return <span className={RELEVANCE_SHADE[grade]}>{grade}</span>;
 }
 
 /*

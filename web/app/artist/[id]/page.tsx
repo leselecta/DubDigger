@@ -212,20 +212,35 @@ function Releases({ artistId, limit }: { artistId: number; limit: number }) {
 }
 
 /**
- * How central they are, or how they got here if the answer is "not at all".
+ * How central they are, and for the ones at the bottom, why they are here at
+ * all.
  *
- * An artist with no seed work is not weakly relevant, they are a neighbour, and
- * a label mate is not a weak collaborator. Grading them at the bottom of a
- * scale they were never on would be the tidier lie.
+ * "Very low" rather than nothing, so the page uses the same four steps the
+ * search results do. But an artist with no seed work is not a weak version of
+ * core, they are a neighbour, and a label mate is not a weak collaborator. That
+ * distinction is too useful to drop, so it rides alongside the grade: the scale
+ * says how close, the connection says by what route.
  */
 function Relevance({ artist }: { artist: Artist }) {
   if (artist.relevance !== "none") {
     return <span className="capitalize">{artist.relevance}</span>;
   }
-  if (artist.channelA && artist.channelB) return <>Collaborator and label mate</>;
-  if (artist.channelA) return <>Collaborator</>;
-  if (artist.channelB) return <>Label mate</>;
-  return <>Not recorded</>;
+
+  const route =
+    artist.channelA && artist.channelB
+      ? "collaborator and label mate"
+      : artist.channelA
+        ? "collaborator"
+        : artist.channelB
+          ? "label mate"
+          : null;
+
+  return (
+    <>
+      Very low
+      {route && <span className="text-ink-faint">, here as a {route}</span>}
+    </>
+  );
 }
 
 /**

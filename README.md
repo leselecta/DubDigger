@@ -112,6 +112,21 @@ The nice property: the corpus boundary uses the same "related via collaboration 
 label" logic the tool itself surfaces. The dataset and the product share one
 definition of related.
 
+Against the 20260801 dump that takes 19,341,287 releases down to roughly a
+million:
+
+| | |
+|---|---|
+| Pass 1, style seed | 250,337 releases, 132,571 seed artists, 18,498 seed labels of 105,202 candidates |
+| Pass 2, channel A only | 574,048 releases |
+| Pass 2, channel B only | 151,481 releases |
+| Pass 2, both channels | 270,684 releases |
+| Corpus | 1,025,881 releases, 420,575 artists, 113,952 labels |
+
+288,004 of those artists arrived by the one hop and have no seed work of their
+own. That is the majority of the corpus, and it is the point: they are the
+neighbours a single style filter would have lost.
+
 ## Setup
 
 ```sh
@@ -183,11 +198,16 @@ ratio and run it again.
 Then the rest of the pipeline, in order:
 
 ```sh
-npm run pass2 --workspace ingest -- --full   # one hop out, ~35 min
+npm run pass2 --workspace ingest -- --full   # one hop out, ~27 min
 npm run entities --workspace ingest          # names, bios, search index
 npm run derive --workspace ingest            # the ranked tables
 npm run publish --workspace ingest           # writes web/data/dubdigger.sqlite
+npm run check-corpus --workspace ingest      # acceptance test, exits non-zero
 ```
+
+Pass 1 takes about 28 minutes against the 20260801 dump and pass 2 about 27,
+each reading all 19,341,287 releases. `entities` is a minute, `derive` three.
+Roughly an hour from dumps to a served file.
 
 `publish` is not a copy. It drops the raw tables the app never reads and goes
 through `VACUUM INTO`, which matters: copying a `.sqlite` leaves its
@@ -204,14 +224,32 @@ tuned by editing a pass script.
 | `seedStyles.core` | Dub Techno, Deep Techno | Admitted whatever the genre. |
 | `seedStyles.broad` | Minimal, Dub | Admitted only within genre Electronic. This is what separates electronic dub from reggae dub: the style is identical, only the genre differs. |
 | `seedStyles.needsTechno` | Ambient | Needs Electronic *and* a techno style on the same release. Ambient is 98% Electronic already, so a genre gate alone does nothing for it. |
+| `seedStyles.disqualifying` | Modern Classical, Soundtrack, Score and similar | Rejects a release however else it is tagged. A film score tagged Ambient is not a dub techno record, and it was the route that brought Mozart in. |
+| `seedArtist.minSeedRatio` | `0.02` | A seed artist has to do at least this share of their work inside the seed. Closes the door incidental credits opened. |
+| `seedArtist.packagingRoles` | photography, artwork, design, layout, sleeve, liner notes | Roles that do not make someone part of the scene. A photographer is not a musician. |
+| `AUTHORSHIP_ROLES` | Composed By, Written-By and similar | Writing a piece is not making a record. Mozart is credited "Composed By" on records that sample him. |
 | `seedLabel.minSeedArtists` | `2` | Floor. Stops a tiny label qualifying on one coincidence. |
 | `seedLabel.minSeedArtistRatio` | `0.50` | Concentration. Measured on the 20260801 dump there is a clean gap: majors land at 6-19%, scene labels at 67-100%. |
 | `expansion.channelAMinSharedReleases` | `1` (off) | Raise to `2` only if the one hop corpus balloons. Filters one off guest spots. |
+| `expansion.channelAMinSeedRatio` | `0.10` | A seed artist only vouches others in if this much of their work is in the scene. Moritz von Oswald bridges at 42.8%, a mastering engineer who touches everything does not at 0.2%. |
+| `expansion.channelAMaxPeopleToAdmit` | `8` | A release crowded with credits is a compilation, not a session. Kept, but it admits nobody new. |
+| `derive.maxPeoplePerRelease` | `20` | Above this a release generates no collaboration pairs. Track 7 and track 31 of a forty artist compilation are not collaborators. |
+| `relevance.high` / `.medium` | see below | Grades an artist by seed release count and seed share of their whole output. |
 | `PLACEHOLDER_ARTIST_IDS` / `NAMES` | `194`, "Various" and similar | Keeps Discogs placeholders out of the collaboration logic, where they would otherwise become the most collaborative artist in the database by a mile. Verify the IDs against the artists dump before the first full run. |
 
 Flat counts alone do not work for labels. A 500 artist label clearing "2 or more
 seed artists" is noise, not signal, so the bar has to scale with roster size.
 That is why there is both a floor and a ratio.
+
+Relevance grades on two signals for the same reason, and needs both. Share alone
+would put an artist with one record out of one above Moritz von Oswald. Volume
+alone would put Aphex Twin, 114 seed releases in 1,079, above Basic Channel, 61
+in 77. High is 5 or more seed releases and a 15% share, which sits just below
+Jeff Mills at 15.4%. The share is measured against an artist's whole output as
+the dump has it, never against their corpus releases: Depeche Mode has 75 seed
+style releases among the 204 of theirs the corpus kept, which reads as 37% and
+would rank them high, when against their real catalogue it is a fraction of a
+percent.
 
 These numbers are starting points, not answers. **Measure between passes.** Pass 1
 reports the seed artist and seed label counts, which are the steering signals.
@@ -221,6 +259,19 @@ to a full run. Too big, tighten the dials. Too thin, loosen them.
 Both seed sets are persisted to the `seed_artists` and `seed_labels` tables, so
 pass 2 can be re-run with different dials without redoing pass 1. They also answer
 the debugging question "why is this person or label in the corpus at all?"
+
+None of these numbers were read off a curve. Every one is pinned to acts and
+labels whose right answer is known in advance, and
+[`check-corpus`](ingest/src/cli/check-corpus.ts) asserts them after every
+rebuild, so a dial cannot drift without the build failing:
+
+```sh
+npm run check-corpus --workspace ingest
+```
+
+Fourteen labels that define the scene must be seed labels, seven budget
+compilation outfits must not be, eight acts must grade high, and ten acts a
+sceptic would type must not.
 
 ## Running the web app
 

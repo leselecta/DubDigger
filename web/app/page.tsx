@@ -135,16 +135,16 @@ function Results({
 }
 
 /** The column widths, shared by the header row and every result, so they line up. */
-const RESULT_GRID = "grid-cols-[3.25rem_1fr] md:grid-cols-[3.25rem_1fr_11rem_5rem]";
+const RESULT_GRID = "grid-cols-[4.5rem_1fr] md:grid-cols-[5.5rem_1fr_11rem_5rem]";
 
 function ResultHeader() {
   return (
     <div
       className={`border-hairline text-ink-faint grid ${RESULT_GRID} gap-x-[22px] border-b pb-3 font-mono text-[0.6875rem] tracking-[0.2em] uppercase`}
     >
-      <span className="text-right">n</span>
+      <span className="text-right">Releases</span>
       <span>Name</span>
-      <span className="hidden md:block">Relevance</span>
+      <span className="hidden md:block">Dub relevance</span>
       <span className="hidden md:block">Type</span>
     </div>
   );
@@ -193,16 +193,17 @@ function ResultRow({ hit }: { hit: SearchHit }) {
  * Mozart is genuinely in this corpus, on 85 releases that really do credit
  * someone here, and saying so is honest where hiding him would not be.
  *
- * Labels are not graded on the artist scale, so they get the one they do have:
- * a seed label is a scene label by roster concentration, which is what the
- * label page calls Core.
+ * Labels are graded on the same words, from the measure they do have: a seed
+ * label is a scene label by roster concentration. The underlying test is not
+ * the artist one, but one column asking one question in one vocabulary beats
+ * two scales sharing a heading.
  */
 function Relevance({ hit }: { hit: SearchHit }) {
   if (hit.kind === "label") {
     return hit.coreLabel ? (
-      <span className="text-accent">Core</span>
+      <span className="text-accent">High</span>
     ) : (
-      <span className="text-ink-faint">Not core</span>
+      <span className="text-ink-faint">Low</span>
     );
   }
 

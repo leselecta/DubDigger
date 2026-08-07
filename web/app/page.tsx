@@ -41,7 +41,7 @@ export default async function HomePage({
 
         {!searching && (
           <h1 className="text-hero text-ink-strong mt-9 leading-[0.98] font-bold tracking-[-0.035em]">
-            Dig the Extended Scene.
+            Dig the Extended Scene<span className="text-accent">.</span>
             <br />
             Dub Techno First<span className="text-accent">.</span>
           </h1>

@@ -354,6 +354,67 @@ export const relevance = {
 };
 
 /**
+ * Lineage: the one editorial rule in the corpus.
+ *
+ * Everything else here is derived. This is a judgement, stated openly.
+ *
+ * Relevance measures how much of an artist's work sits inside the dub techno
+ * seed, and by that measure King Tubby scores nothing: `Dub` is only a seed
+ * style on genre Electronic, so 206 of his 221 corpus releases are invisible to
+ * the seed by construction, and the 15 that are visible are 0.51% of a
+ * catalogue inflated by decades of reissues. He therefore reads exactly as the
+ * Spice Girls read, which is defensible as graph output and wrong as an answer
+ * a digger would accept. Jamaican dub is the tradition this scene came out of.
+ *
+ * No measure of the scene can fix that, and it was worth proving before
+ * reaching for a rule. Bob Marley has 123 seed releases to King Tubby's 15,
+ * Madonna 106, Depeche Mode 75. On connection strength Madonna has 63 ties into
+ * the seed and Mozart 75, against Tubby's 57. Every threshold that lifts Tubby
+ * lifts Madonna higher. "Ancestor of" is a historical fact, and style
+ * co-occurrence cannot express it.
+ *
+ * What does separate them is the music they make. Share of an artist's corpus
+ * releases tagged style Dub on genre Reggae: Jah Shaka 86%, King Tubby 72%,
+ * Prince Jammy 67%, Scientist 49%, Augustus Pablo 46%, Errol Thompson 24%,
+ * against Madonna 0.2% and a clean zero for Spice Girls, Björk, Depeche Mode,
+ * Mozart and The Beatles.
+ *
+ * So lineage is a SEPARATE AXIS, never a promotion. It does not touch the
+ * corpus, the seed sets, the label ratios or the relevance grade. King Tubby
+ * stays "very low" on relevance, because he genuinely is not in this scene, and
+ * gains a second line saying he is upstream of it. Reading him as "high
+ * relevance to dub techno" would be the same error pointed the other way.
+ *
+ * Dials measured on the 20260801 dump: 4,358 artists qualify, of whom 2,336
+ * already grade medium or high (the tag is additive there) and 1,109 currently
+ * read "very low". Those 1,109 are the Jamaican session pantheon: Roots Radics,
+ * Chinna Smith, Horsemouth Wallace, Dean Fraser, Scientist, King Tubby.
+ *
+ * The rule captures tradition membership, not chronology, so a present-day dub
+ * act making roots records qualifies too. That is the right answer for Roberto
+ * Sanchez and an arguable one for a London jazz player with a dub side, which
+ * is the known soft edge of this dial.
+ *
+ * Afrobeat and the new London jazz were considered and deliberately left out.
+ * Fela Kuti, Antibalas and Shabaka Hutchings score zero here, and no honest
+ * claim makes them ancestors of dub techno: they are neighbours who arrived
+ * through a real credit, which is what "very low" plus a route already says.
+ */
+export const lineage = {
+  rootsDub: {
+    /** Style and genre together. Either alone is a different music. */
+    style: "Dub",
+    genre: "Reggae",
+    /** A floor, so a single guest spot on a dub record is not a tradition. */
+    minReleases: 5,
+    /** And a share, so a prolific artist does not qualify on volume alone. */
+    minShare: 0.2,
+    /** Written into artist_coverage.lineage and shown as-is by the app. */
+    name: "roots dub",
+  },
+};
+
+/**
  * Building the derived tables.
  */
 export const derive = {

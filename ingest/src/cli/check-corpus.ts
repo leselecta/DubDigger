@@ -109,6 +109,46 @@ const ARTISTS_NOT_CORE = [
   "Elvis Presley",
 ];
 
+/**
+ * The tradition dub techno came out of, which the scene measure cannot see.
+ *
+ * These are the names that made the lineage rule necessary: on relevance alone
+ * King Tubby reads exactly as the Spice Girls do, because his catalogue is Dub
+ * on genre Reggae and the seed only admits Dub on genre Electronic.
+ */
+const ARTISTS_ROOTS_DUB = [
+  "King Tubby",
+  "Scientist",
+  "Prince Jammy",
+  "Augustus Pablo",
+  "Jah Shaka",
+  "Yabby You",
+  "Errol Thompson",
+  "The Roots Radics",
+  // Already high on relevance. The tag is additive, never a promotion.
+  "Rhythm & Sound",
+];
+
+/**
+ * Neighbours who are not ancestors, and must not pick the tag up.
+ *
+ * The afrobeat and new-jazz names are here because they were the other half of
+ * the question: they read very low too, and unlike the dub names that is the
+ * right answer. Nothing makes them upstream of this scene.
+ */
+const ARTISTS_NOT_ROOTS_DUB = [
+  "Fela Kuti",
+  "Antibalas",
+  "Shabaka Hutchings",
+  "Sun Ra",
+  "Madonna",
+  "Spice Girls",
+  "Björk",
+  "Depeche Mode",
+  "Wolfgang Amadeus Mozart",
+  "Basic Channel",
+];
+
 const db = openDbReadOnly();
 let failures = 0;
 
@@ -125,6 +165,10 @@ const isCore = db.prepare(
 const isHigh = db.prepare(
   `SELECT count(*) FROM artists a JOIN artist_coverage c ON c.artist_id = a.id
     WHERE a.name = ? AND c.relevance = 'high'`,
+);
+const isRootsDub = db.prepare(
+  `SELECT count(*) FROM artists a JOIN artist_coverage c ON c.artist_id = a.id
+    WHERE a.name = ? AND c.lineage = 'roots dub'`,
 );
 
 function check(kind: string, name: string, want: boolean, got: number) {
@@ -153,6 +197,15 @@ for (const name of ARTISTS_HIGH) check("artist", name, true, isHigh.pluck().get(
 console.log();
 for (const name of ARTISTS_NOT_CORE) {
   check("artist", name, false, isHigh.pluck().get(name) as number);
+}
+
+console.log("\nRoots dub lineage\n");
+for (const name of ARTISTS_ROOTS_DUB) {
+  check("artist", name, true, isRootsDub.pluck().get(name) as number);
+}
+console.log();
+for (const name of ARTISTS_NOT_ROOTS_DUB) {
+  check("artist", name, false, isRootsDub.pluck().get(name) as number);
 }
 
 console.log(

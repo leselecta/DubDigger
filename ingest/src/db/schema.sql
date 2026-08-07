@@ -252,7 +252,11 @@ CREATE TABLE IF NOT EXISTS artist_coverage (
   seed_releases      INTEGER NOT NULL DEFAULT 0,
   seed_share         REAL,
   -- 'high' | 'medium' | 'low' | 'none'. See the relevance dials in config.ts.
-  relevance          TEXT NOT NULL DEFAULT 'none'
+  relevance          TEXT NOT NULL DEFAULT 'none',
+  -- A tradition this artist belongs to, upstream of the scene rather than in
+  -- it: 'roots dub', or NULL. The one editorial rule in the corpus, and a
+  -- separate axis from relevance. See the lineage note in config.ts.
+  lineage            TEXT
 );
 
 -- Search: the entry point to the whole tool is typing a name.

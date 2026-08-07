@@ -1,8 +1,9 @@
 import type Database from "better-sqlite3";
-import { derive as deriveDefaults, relevance } from "../config.ts";
+import { derive as deriveDefaults, lineage, relevance } from "../config.ts";
 import { startRun } from "../db/open.ts";
 
 const { high, medium } = relevance;
+const { rootsDub } = lineage;
 
 /**
  * An artist's seed work as a share of everything they have ever appeared on.
@@ -59,6 +60,9 @@ export interface DeriveStats {
   artistLabels: number;
   labelRoster: number;
   artistCoverage: number;
+  /** Artists carrying a tradition tag, and how many of those grade 'none'. */
+  artistLineage: number;
+  artistLineageOtherwiseUngraded: number;
   /** Compilations too large to imply collaboration. Kept, but not paired. */
   releasesSkippedForPairs: number;
 }
@@ -209,10 +213,25 @@ export async function runDerive(
        GROUP BY p.artist_id;
     CREATE INDEX temp.idx_seed_n ON seed_n (artist_id);
 
+    DROP TABLE IF EXISTS temp.roots_dub;
+    CREATE TEMP TABLE roots_dub AS
+      SELECT s.release_id FROM release_styles s
+       WHERE s.style = '${rootsDub.style}'
+         AND EXISTS (SELECT 1 FROM release_genres g
+                      WHERE g.release_id = s.release_id AND g.genre = '${rootsDub.genre}');
+    CREATE INDEX temp.idx_roots_dub ON roots_dub (release_id);
+
+    DROP TABLE IF EXISTS temp.lineage_n;
+    CREATE TEMP TABLE lineage_n AS
+      SELECT p.artist_id, count(DISTINCT p.release_id) AS n
+        FROM release_people p
+        JOIN roots_dub d ON d.release_id = p.release_id
+       GROUP BY p.artist_id;
+    CREATE INDEX temp.idx_lineage_n ON lineage_n (artist_id);
 
     INSERT INTO artist_coverage
       (artist_id, release_count, credited_releases, collaborator_count, label_count,
-       first_year, last_year, seed_releases, seed_share, relevance)
+       first_year, last_year, seed_releases, seed_share, relevance, lineage)
     SELECT c.artist_id,
            coalesce(v.release_count, 0),
            coalesce(v.credited_releases, 0),
@@ -230,12 +249,18 @@ export async function runDerive(
              WHEN s.seed_releases >= ${medium.minSeedReleases}
               AND ${share} >= ${medium.minSeedShare}                  THEN 'medium'
              ELSE 'low'
+           END,
+           CASE
+             WHEN g.n >= ${rootsDub.minReleases}
+              AND 1.0 * g.n / nullif(v.release_count, 0) >= ${rootsDub.minShare}
+             THEN '${rootsDub.name}'
            END
       FROM corpus_artists c
       LEFT JOIN cov                v ON v.artist_id = c.artist_id
       LEFT JOIN collab_n           k ON k.artist_id = c.artist_id
       LEFT JOIN label_n            l ON l.artist_id = c.artist_id
       LEFT JOIN seed_n            sn ON sn.artist_id = c.artist_id
+      LEFT JOIN lineage_n          g ON g.artist_id = c.artist_id
       LEFT JOIN seed_artists       s ON s.artist_id = c.artist_id
       LEFT JOIN seed_artist_totals t ON t.artist_id = c.artist_id;
   `);
@@ -248,16 +273,26 @@ export async function runDerive(
             DROP TABLE IF EXISTS temp.cov;
             DROP TABLE IF EXISTS temp.collab_n;
             DROP TABLE IF EXISTS temp.label_n;
-            DROP TABLE IF EXISTS temp.seed_n;`);
+            DROP TABLE IF EXISTS temp.seed_n;
+            DROP TABLE IF EXISTS temp.roots_dub;
+            DROP TABLE IF EXISTS temp.lineage_n;`);
 
   const count = (table: string): number =>
     db.prepare(`SELECT count(*) FROM ${table}`).pluck().get() as number;
+
+  const scalar = (sql: string): number => db.prepare(sql).pluck().get() as number;
 
   const stats: DeriveStats = {
     artistCollaborators: count("artist_collaborators"),
     artistLabels: count("artist_labels"),
     labelRoster: count("label_roster"),
     artistCoverage: count("artist_coverage"),
+    artistLineage: scalar("SELECT count(*) FROM artist_coverage WHERE lineage IS NOT NULL"),
+    // The steering number for the lineage dials: how many artists the tag is
+    // the only thing saying anything about.
+    artistLineageOtherwiseUngraded: scalar(
+      "SELECT count(*) FROM artist_coverage WHERE lineage IS NOT NULL AND relevance = 'none'",
+    ),
     releasesSkippedForPairs,
   };
 

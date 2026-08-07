@@ -97,6 +97,11 @@ export default async function ArtistPage({
           <FieldRow label="Relevance" accent={artist.relevance !== "none"}>
             <Relevance artist={artist} />
           </FieldRow>
+          {artist.lineage && (
+            <FieldRow label="Lineage" accent>
+              <Lineage lineage={artist.lineage} />
+            </FieldRow>
+          )}
           <div className="border-hairline border-b">
             <FieldRow label="View on">
               <OutboundLinks kind="artist" id={artist.id} urls={artist.urls} />
@@ -264,6 +269,33 @@ function Relevance({ artist }: { artist: Artist }) {
       <span className="text-ink-faint">
         , very weak ties with the core dub techno scene (here as {route})
       </span>
+    </>
+  );
+}
+
+/**
+ * A tradition upstream of this scene, on its own row rather than on the scale.
+ *
+ * Relevance measures work inside dub techno, and by that measure King Tubby
+ * scores what the Spice Girls score: his catalogue is Dub on genre Reggae, and
+ * the seed only admits Dub on genre Electronic. No number in this corpus
+ * separates them, since Madonna has seven times his seed releases and Mozart
+ * more connections into the scene. Lineage is the second axis that does, and it
+ * says the other thing: not how close, but what he is upstream of.
+ *
+ * It never overwrites the grade. "Very low" is still true and still shown.
+ */
+const LINEAGE_REASON: Record<string, string> = {
+  "roots dub": "the Jamaican tradition dub techno grew out of",
+};
+
+function Lineage({ lineage }: { lineage: string }) {
+  return (
+    <>
+      <span className="capitalize">{lineage}</span>
+      {LINEAGE_REASON[lineage] && (
+        <span className="text-ink-faint">, {LINEAGE_REASON[lineage]}</span>
+      )}
     </>
   );
 }

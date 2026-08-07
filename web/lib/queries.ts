@@ -36,6 +36,12 @@ export interface Artist {
   seedReleases: number;
   /** That as a share of their whole output, or null if never measured. */
   seedShare: number | null;
+  /**
+   * A tradition they belong to that sits upstream of this scene rather than in
+   * it: 'roots dub', or null. Deliberately not on the relevance scale — King
+   * Tubby is not a weak dub techno artist, he is the reason there is one.
+   */
+  lineage: string | null;
 }
 
 export interface Collaborator {
@@ -122,6 +128,7 @@ interface ArtistRow {
   relevance: Relevance;
   seed_releases: number;
   seed_share: number | null;
+  lineage: string | null;
 }
 
 interface CollaboratorRow {
@@ -179,7 +186,8 @@ export function getArtist(id: number): Artist | null {
               coalesce(m.channel_b, 0) AS channel_b,
               coalesce(c.relevance, 'none') AS relevance,
               coalesce(c.seed_releases, 0)  AS seed_releases,
-              c.seed_share
+              c.seed_share,
+              c.lineage
          FROM artists a
          LEFT JOIN artist_coverage c ON c.artist_id = a.id
          LEFT JOIN corpus_artists  m ON m.artist_id = a.id
@@ -206,6 +214,7 @@ export function getArtist(id: number): Artist | null {
     relevance: row.relevance,
     seedReleases: row.seed_releases,
     seedShare: row.seed_share,
+    lineage: row.lineage,
   };
 }
 

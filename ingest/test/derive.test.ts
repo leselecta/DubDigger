@@ -15,10 +15,14 @@ function corpus(
     labels?: number[];
     /** Defaults to a seed release, which is what most of these fixtures want. */
     seed?: boolean;
+    styles?: string[];
+    genres?: string[];
   }[],
 ): Database.Database {
   const db = openDb(":memory:");
   const r = db.prepare("INSERT INTO releases (id, title, year, is_seed) VALUES (?, ?, ?, ?)");
+  const st = db.prepare("INSERT INTO release_styles (release_id, style) VALUES (?, ?)");
+  const gn = db.prepare("INSERT INTO release_genres (release_id, genre) VALUES (?, ?)");
   const a = db.prepare(
     "INSERT INTO release_artists (release_id, position, artist_id, name) VALUES (?, ?, ?, ?)",
   );
@@ -32,6 +36,8 @@ function corpus(
 
   for (const rel of releases) {
     r.run(rel.id, `Release ${rel.id}`, rel.year ?? null, rel.seed === false ? 0 : 1);
+    for (const s of rel.styles ?? []) st.run(rel.id, s);
+    for (const g of rel.genres ?? []) gn.run(rel.id, g);
     (rel.artists ?? []).forEach((id, i) => {
       a.run(rel.id, i, id, `Artist ${id}`);
       ca.run(id);
@@ -178,6 +184,7 @@ test("coverage tells 'no credits recorded' apart from 'worked solo'", async () =
     seed_releases: 1,
     seed_share: null,
     relevance: "none",
+    lineage: null,
   } as never);
 
   const solo = db.prepare("SELECT credited_releases, collaborator_count FROM artist_coverage WHERE artist_id = 11").get();
@@ -249,7 +256,7 @@ test("without a measured total nobody is graded high", async () => {
 });
 
 const coverageOf = (db: Database.Database, id: number) =>
-  db.prepare("SELECT seed_releases, seed_share, relevance FROM artist_coverage WHERE artist_id = ?").get(id);
+  db.prepare("SELECT seed_releases, seed_share, relevance, lineage FROM artist_coverage WHERE artist_id = ?").get(id);
 
 test("seed releases are counted for artists the ratio rejected", async () => {
   // King Tubby: on real seed releases, but 0.51% of a reissue-inflated
@@ -267,6 +274,7 @@ test("seed releases are counted for artists the ratio rejected", async () => {
     seed_share: 2 / 400,
     // Still not scene membership, and the share is what says so.
     relevance: "none",
+    lineage: null,
   });
 });
 
@@ -281,6 +289,61 @@ test("a release counts once when someone is on the artist line and in the credit
     db.prepare("SELECT seed_releases FROM artist_coverage WHERE artist_id = 10").pluck().get(),
     1,
   );
+});
+
+test("roots dub is tagged as lineage, and never as relevance", async () => {
+  // The tradition the scene came out of. Reggae dub is invisible to a seed that
+  // admits Dub only on genre Electronic, so no relevance grade can reach it.
+  const roots = { seed: false, styles: ["Dub"], genres: ["Reggae"] };
+  const db = corpus([
+    { id: 1, artists: [10], ...roots },
+    { id: 2, artists: [10], ...roots },
+    { id: 3, artists: [10], ...roots },
+    { id: 4, artists: [10], ...roots },
+    { id: 5, artists: [10], ...roots },
+    { id: 6, artists: [10], seed: false },
+  ]);
+  await runDerive(db);
+
+  assert.deepEqual(coverageOf(db, 10), {
+    seed_releases: 0,
+    seed_share: null,
+    relevance: "none",
+    lineage: "roots dub",
+  });
+});
+
+test("lineage needs both the floor and the share", async () => {
+  const roots = { seed: false, styles: ["Dub"], genres: ["Reggae"] };
+  // 11 has four roots records, all they ever made: pure, but under the floor.
+  // 12 has five, in a catalogue of fifty: a body of them, but a side project.
+  const db = corpus([
+    { id: 1, artists: [11], ...roots },
+    { id: 2, artists: [11], ...roots },
+    { id: 3, artists: [11], ...roots },
+    { id: 4, artists: [11], ...roots },
+    ...Array.from({ length: 5 }, (_, i) => ({ id: 100 + i, artists: [12], ...roots })),
+    ...Array.from({ length: 45 }, (_, i) => ({ id: 200 + i, artists: [12], seed: false })),
+  ]);
+  await runDerive(db);
+
+  assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 11").pluck().get(), null);
+  assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 12").pluck().get(), null);
+});
+
+test("dub on any other genre is not the roots tradition", async () => {
+  // The genre is the whole distinction: electronic dub is the scene itself, and
+  // tagging it as an ancestor of itself would say nothing.
+  const db = corpus(
+    Array.from({ length: 6 }, (_, i) => ({
+      id: i + 1,
+      artists: [10],
+      styles: ["Dub", "Dub Techno"],
+      genres: ["Electronic"],
+    })),
+  );
+  await runDerive(db);
+  assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 10").pluck().get(), null);
 });
 
 test("a second run replaces the first rather than layering on top of it", async () => {

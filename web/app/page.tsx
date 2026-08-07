@@ -135,15 +135,15 @@ function Results({
 }
 
 /** The column widths, shared by the header row and every result, so they line up. */
-const RESULT_GRID = "grid-cols-[4.5rem_1fr] md:grid-cols-[5.5rem_1fr_11rem_5rem]";
+const RESULT_GRID = "grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_11rem_5rem]";
 
 function ResultHeader() {
   return (
     <div
       className={`border-hairline text-ink-faint grid ${RESULT_GRID} gap-x-[22px] border-b pb-3 font-mono text-[0.6875rem] tracking-[0.2em] uppercase`}
     >
-      <span className="text-right">Releases</span>
       <span>Name</span>
+      <span>Releases</span>
       <span className="hidden md:block">Dub relevance</span>
       <span className="hidden md:block">Type</span>
     </div>
@@ -162,10 +162,6 @@ function ResultRow({ hit }: { hit: SearchHit }) {
     <li
       className={`border-hairline-soft grid ${RESULT_GRID} items-baseline gap-x-[22px] border-b py-[18px]`}
     >
-      <span className="text-ink-faint text-right font-mono text-[0.8125rem] font-medium tabular-nums">
-        {hit.releaseCount.toLocaleString("en-GB")}
-      </span>
-
       <Link
         href={`/${hit.kind}/${hit.id}`}
         className="text-row min-w-0 justify-self-start font-bold tracking-[-0.01em]"
@@ -174,11 +170,15 @@ function ResultRow({ hit }: { hit: SearchHit }) {
         {hit.name}
       </Link>
 
-      <span className="col-start-2 font-mono text-xs tracking-[0.1em] uppercase md:col-start-3">
+      <span className="text-ink-faint font-mono text-[0.8125rem] font-medium tabular-nums">
+        {hit.releaseCount.toLocaleString("en-GB")}
+      </span>
+
+      <span className="col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:col-start-3">
         <Relevance hit={hit} />
       </span>
 
-      <span className="text-ink-faint col-start-2 font-mono text-xs tracking-[0.1em] uppercase md:col-start-4">
+      <span className="text-ink-faint col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:col-start-4">
         {hit.kind}
       </span>
     </li>

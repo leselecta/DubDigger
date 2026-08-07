@@ -35,6 +35,71 @@
   --text-stat: clamp(2.5rem, 6vw, 4.125rem);
   --text-row: 1.25rem;
   --text-body: 1.1875rem;
+
+  /*
+   * A hard blink rather than a pulse. The page is set in mono and the dot sits
+   * at the end of a sentence, so it should read as a terminal cursor, not as
+   * something breathing.
+   */
+  --animate-blink: blink 1.05s steps(1, end) infinite;
+
+  @keyframes blink {
+    0%,
+    55% {
+      opacity: 1;
+    }
+    56%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes vt-fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes vt-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
+/*
+ * Page transitions, matching photo.simoneferraro.co.uk: the outgoing page fades
+ * over 0.8s while the incoming one rises over 1.5s, so the two cross dissolve
+ * rather than one waiting for the other.
+ */
+::view-transition-old(.page-fade) {
+  animation: 0.8s both vt-fade-out;
+}
+
+::view-transition-new(.page-fade) {
+  animation: 1.5s both vt-fade-in;
+}
+
+/*
+ * The transition overlay swallows clicks while it runs, which in a tool built
+ * for hopping between pages means a second click lands on nothing. Let them
+ * through to the live page instead.
+ */
+::view-transition {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+
+  .animate-blink {
+    animation: none;
+  }
 }
 
 html {

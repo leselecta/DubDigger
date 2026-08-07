@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ViewTransition } from "react";
 import { IBM_Plex_Mono } from "next/font/google";
 import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
@@ -29,9 +30,21 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={plexMono.variable}>
+      {/*
+       * One transition around the whole page, so a navigation cross dissolves
+       * rather than cutting. Matches photo.simoneferraro.co.uk, which fades the
+       * root the same way.
+       *
+       * `default` names a view-transition-class, which is what the CSS in
+       * globals.css hooks onto as `.page-fade`.
+       */}
       <body className="flex min-h-screen flex-col">
-        <div className="flex-1">{children}</div>
-        <SiteFooter />
+        <ViewTransition default="page-fade">
+          <div className="flex flex-1 flex-col">
+            <div className="flex-1">{children}</div>
+            <SiteFooter />
+          </div>
+        </ViewTransition>
       </body>
     </html>
   );

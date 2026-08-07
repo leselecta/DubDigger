@@ -43,6 +43,9 @@ export default async function HomePage({
             Dig the Extended Scene.
             <br />
             Dub Techno First
+            <span className="text-accent animate-blink" aria-hidden="true">
+              .
+            </span>
           </h1>
         )}
 

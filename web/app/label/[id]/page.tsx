@@ -12,7 +12,14 @@ import { OutboundLinks } from "@/components/outbound-links";
 import { SiteHeader } from "@/components/site-header";
 import { CollapsibleText } from "@/components/collapsible-text";
 import { Tabs, LoadMore } from "@/components/tabs";
-import { Absence, CreditRow, Eyebrow, FieldRow, LabelledBand } from "@/components/page-parts";
+import {
+  Absence,
+  CreditRow,
+  Eyebrow,
+  FieldRow,
+  LabelledBand,
+  ListHeader,
+} from "@/components/page-parts";
 import { PAGE_SIZE, pageSize, years } from "@/lib/view";
 
 export default async function LabelPage({
@@ -114,17 +121,20 @@ function Roster({ labelId, limit }: { labelId: number; limit: number }) {
   if (rows.length === 0) return <Absence>No roster recorded for this label.</Absence>;
 
   return (
-    <ul>
-      {rows.map((a) => (
-        <CreditRow
-          key={a.id}
-          count={a.releaseCount}
-          href={`/artist/${a.id}`}
-          name={a.name}
-          detail={years(a.firstYear, a.lastYear)}
-        />
-      ))}
-    </ul>
+    <>
+      <ListHeader name="Artist" count="Releases" meta="Active" />
+      <ul>
+        {rows.map((a) => (
+          <CreditRow
+            key={a.id}
+            count={a.releaseCount}
+            href={`/artist/${a.id}`}
+            name={a.name}
+            meta={years(a.firstYear, a.lastYear)}
+          />
+        ))}
+      </ul>
+    </>
   );
 }
 
@@ -133,18 +143,22 @@ function Releases({ labelId, limit }: { labelId: number; limit: number }) {
   if (rows.length === 0) return <Absence>No releases in this corpus.</Absence>;
 
   return (
-    <ul>
-      {rows.map((r) => (
-        <CreditRow
-          key={r.id}
-          count={r.year ?? "—"}
-          href={`https://www.discogs.com/release/${r.id}`}
-          name={r.title}
-          external
-          detail={[r.label, r.roles.join(" · ")].filter(Boolean).join(" · ")}
-        />
-      ))}
-    </ul>
+    <>
+      <ListHeader name="Release" count="Year" meta="Cat no." />
+      <ul>
+        {rows.map((r) => (
+          <CreditRow
+            key={r.id}
+            count={r.year ?? "—"}
+            href={`https://www.discogs.com/release/${r.id}`}
+            name={r.title}
+            external
+            detail={r.roles.join(" · ")}
+            meta={r.label}
+          />
+        ))}
+      </ul>
+    </>
   );
 }
 

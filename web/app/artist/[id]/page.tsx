@@ -22,6 +22,7 @@ import {
   Eyebrow,
   FieldRow,
   LabelledBand,
+  ListHeader,
 } from "@/components/page-parts";
 import { PAGE_SIZE, pageSize, years } from "@/lib/view";
 
@@ -158,17 +159,20 @@ function Collaborators({ artist, limit }: { artist: Artist; limit: number }) {
   if (rows.length === 0) return <NoCollaborators artist={artist} />;
 
   return (
-    <ul>
-      {rows.map((c) => (
-        <CreditRow
-          key={c.id}
-          count={c.sharedReleases}
-          href={`/artist/${c.id}`}
-          name={c.name}
-          detail={c.roles.join(" · ")}
-        />
-      ))}
-    </ul>
+    <>
+      <ListHeader name="Name" count="Shared" />
+      <ul>
+        {rows.map((c) => (
+          <CreditRow
+            key={c.id}
+            count={c.sharedReleases}
+            href={`/artist/${c.id}`}
+            name={c.name}
+            detail={c.roles.join(" · ")}
+          />
+        ))}
+      </ul>
+    </>
   );
 }
 
@@ -177,17 +181,20 @@ function Labels({ artistId, limit }: { artistId: number; limit: number }) {
   if (rows.length === 0) return <Absence>No labels recorded.</Absence>;
 
   return (
-    <ul>
-      {rows.map((l) => (
-        <CreditRow
-          key={l.id}
-          count={l.releaseCount}
-          href={`/label/${l.id}`}
-          name={l.name}
-          detail={years(l.firstYear, l.lastYear)}
-        />
-      ))}
-    </ul>
+    <>
+      <ListHeader name="Label" count="Releases" meta="Active" />
+      <ul>
+        {rows.map((l) => (
+          <CreditRow
+            key={l.id}
+            count={l.releaseCount}
+            href={`/label/${l.id}`}
+            name={l.name}
+            meta={years(l.firstYear, l.lastYear)}
+          />
+        ))}
+      </ul>
+    </>
   );
 }
 
@@ -196,18 +203,22 @@ function Releases({ artistId, limit }: { artistId: number; limit: number }) {
   if (rows.length === 0) return <Absence>No releases in this corpus.</Absence>;
 
   return (
-    <ul>
-      {rows.map((r) => (
-        <CreditRow
-          key={r.id}
-          count={r.year ?? "—"}
-          href={`https://www.discogs.com/release/${r.id}`}
-          name={r.title}
-          external
-          detail={[r.label, r.roles.join(" · ")].filter(Boolean).join(" · ")}
-        />
-      ))}
-    </ul>
+    <>
+      <ListHeader name="Release" count="Year" meta="Label" />
+      <ul>
+        {rows.map((r) => (
+          <CreditRow
+            key={r.id}
+            count={r.year ?? "—"}
+            href={`https://www.discogs.com/release/${r.id}`}
+            name={r.title}
+            external
+            detail={r.roles.join(" · ")}
+            meta={r.label}
+          />
+        ))}
+      </ul>
+    </>
   );
 }
 

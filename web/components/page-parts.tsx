@@ -52,62 +52,86 @@ export function LabelledBand({
 }
 
 /**
- * The list row used by collaborators, labels, releases and rosters: a count on
- * the left, the name and its detail on the right.
+ * The tables inside the tabs, sharing one shape with the search results: the
+ * name leads, then a count, then a piece of meta.
  *
- * Frequency is the signal in this project, so the count is what the eye lands
- * on first going down the column.
+ * One grid constant for the header and every row, so the columns line up down
+ * the page. Anything long, roles in particular, wraps under the name in the
+ * first column rather than being squeezed into one of the narrow ones: Juan
+ * Atkins holds fourteen distinct role strings on Moritz von Oswald's records.
  */
+const LIST_GRID = "grid-cols-[1fr_5rem] md:grid-cols-[1fr_6rem_10rem]";
+
+export function ListHeader({
+  name,
+  count,
+  meta,
+}: {
+  name: string;
+  count: string;
+  meta?: string;
+}) {
+  return (
+    <div
+      className={`border-hairline text-ink-faint grid ${LIST_GRID} gap-x-[22px] border-b pb-3 font-mono text-[0.6875rem] tracking-[0.2em] uppercase`}
+    >
+      <span>{name}</span>
+      <span>{count}</span>
+      <span className="hidden md:block">{meta ?? ""}</span>
+    </div>
+  );
+}
+
 export function CreditRow({
   count,
   href,
   name,
   detail,
+  meta,
   external = false,
-  trailing,
 }: {
   count: React.ReactNode;
   href: string;
   name: string;
+  /** Long text, wrapped under the name. Roles, mostly. */
   detail?: string | null;
+  /** Short text for the third column. Years, a catalogue number. */
+  meta?: React.ReactNode;
   external?: boolean;
-  trailing?: React.ReactNode;
 }) {
-  const nameEl = external ? (
-    <a
-      href={href}
-      rel="noreferrer"
-      className="text-row font-bold tracking-[-0.01em]"
-      style={{ borderBottom: "1px solid rgb(255 255 255 / 0.25)" }}
-    >
-      {name}
-    </a>
-  ) : (
-    <Link
-      href={href}
-      className="text-row font-bold tracking-[-0.01em]"
-      style={{ borderBottom: "1px solid rgb(255 255 255 / 0.25)" }}
-    >
-      {name}
-    </Link>
-  );
+  const nameProps = {
+    className: "text-row justify-self-start font-bold tracking-[-0.01em]",
+    style: { borderBottom: "1px solid rgb(255 255 255 / 0.25)" },
+  };
 
   return (
-    <li className="border-hairline-soft grid grid-cols-[3.25rem_1fr] items-baseline gap-x-[22px] border-b py-[18px]">
-      <span className="text-ink-faint font-mono text-[0.8125rem] font-medium tabular-nums">
-        {count}
-      </span>
+    <li
+      className={`border-hairline-soft grid ${LIST_GRID} items-baseline gap-x-[22px] border-b py-[18px]`}
+    >
       <div className="min-w-0">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-          {nameEl}
-          {trailing}
-        </div>
+        {external ? (
+          <a href={href} rel="noreferrer" {...nameProps}>
+            {name}
+          </a>
+        ) : (
+          <Link href={href} {...nameProps}>
+            {name}
+          </Link>
+        )}
         {detail && (
           <p className="text-ink-dim mt-2 max-w-[920px] font-mono text-xs leading-[1.65]">
             {detail}
           </p>
         )}
       </div>
+
+      <span className="text-ink-faint font-mono text-[0.8125rem] font-medium tabular-nums">
+        {count}
+      </span>
+
+      <span className="text-ink-faint col-start-1 font-mono text-[0.8125rem] tabular-nums md:col-start-3">
+        {meta}
+      </span>
     </li>
   );
 }

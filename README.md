@@ -12,8 +12,8 @@ they released on, then click any of those and keep going. A map of scenes, drawn
 from credits.
 
 > **Status: working end to end.** The full pipeline runs against the 20260801
-> dump and the app serves real data: **1,321,431 releases**, **561,672
-> artists**, **133,960 labels**, in a **1.05 GB** file. See
+> dump and the app serves real data: **1,025,881 releases**, **420,575
+> artists**, **113,952 labels**, in a **0.89 GB** file. See
 > [Roadmap](#roadmap) for what is still open.
 
 The full design rationale is in
@@ -250,42 +250,31 @@ small VPS running the Next.js process next to the SQLite file.
 - [x] Derived tables: collaborators, labels, rosters, coverage and relevance
 - [x] Artist, label and search pages
 
-### Next up: two seed rules, both measured, neither built
+### How the sceptic tests got closed
 
-Frank Sinatra and Elvis Presley are in the corpus. They arrived through two
-different doors, and closing either one alone leaves the other open.
+Frank Sinatra and Elvis Presley were in the corpus. They arrived through two
+different doors, and closing either one alone left the other open. Both rules
+are now in `ingest/src/config.ts` and both are asserted by `check-corpus`.
 
-**Door one: packaging credits confer seed membership.** Sinatra was admitted by
-"Tribute To Frank Sinatra", vouched for by Otto Bettmann of the Bettmann photo
-archive, credited on 64 releases of which 11 sit in the seed. His 17.2% clears
-the bridge ratio honestly. He is simply not a musician. **23,919 seed artists
-qualify on packaging credits alone**: photography, artwork, design, layout,
-sleeve, liner notes.
+**Door one: packaging credits conferred seed membership.** Sinatra was admitted
+by "Tribute To Frank Sinatra", vouched for by Otto Bettmann of the Bettmann
+photo archive, credited on 64 releases of which 11 sat in the seed. His 17.2%
+cleared the bridge ratio honestly. He is simply not a musician. 23,919 seed
+artists qualified on packaging credits alone: photography, artwork, design,
+layout, sleeve, liner notes. Those roles no longer confer membership.
 
-Roles stay raw and `roles_seen` keeps logging all 46,033 strings. This is a
+Roles stay raw and `roles_seen` keeps logging all 281,018 strings. This is a
 membership rule, not the role normalisation v1 rules out.
 
 **Door two: incidental seed artists.** Luciano re-edited Nina Simone's
-"Sinnerman", correctly tagged Minimal on genre Electronic. That makes Nina
-Simone a seed artist off 4 releases in 5,087, 0.08% of her work. Vintage
-reissue labels then read as 74% scene, clear the 0.50 label ratio, and admit
-their whole catalogues through channel B.
+"Sinnerman", correctly tagged Minimal on genre Electronic. That made Nina Simone
+a seed artist off 4 releases in 5,087, 0.08% of her work. Vintage reissue labels
+then read as 74% scene, cleared the 0.50 label ratio, and admitted their whole
+catalogues through channel B. A seed artist now has to do at least 2% of their
+work inside the seed.
 
-`npm run measure-seed` has already measured the fix:
-
-| floor | seed artists | seed labels |
-|---|---|---|
-| today | 179,416 | 29,397 |
-| 2% | 162,394 | 19,552 |
-| **5%** | **146,416** | **15,544** |
-| 10% | 128,555 | 11,805 |
-| 25% | 97,641 | 6,895 |
-
-The label effect dwarfs the artist effect, because incidental seed artists
-cluster on exactly the reissue labels that should never have qualified.
-
-There is no clean gap in the distribution, so the threshold cannot be read off
-it the way the label and bridge ratios could. Real acts pin it instead:
+There was no clean gap in the distribution, so the threshold could not be read
+off it the way the label and bridge ratios could. Real acts pinned it instead:
 
 | act | share | should be |
 |---|---|---|
@@ -296,34 +285,37 @@ it the way the label and bridge ratios could. Real acts pin it instead:
 | The Beatles | 0.01% | out |
 
 **2%, because it is the cheapest floor that does the whole job.** Two orders of
-magnitude separate the acts that belong from the ones that do not, and nothing
-a sceptical user would think to type sits in between. Measured against the
-metal labels, 2% and 5% produce identical outcomes, so 5% would remove 16,000
-more artists and 4,000 more seed labels for no visible difference. 10% is ruled
+magnitude separate the acts that belong from the ones that do not, and nothing a
+sceptical user would think to type sits in between. Measured against the metal
+labels, 2% and 5% produce identical outcomes, so 5% would have removed 16,000
+more artists and 4,000 more seed labels for no visible difference. 10% was ruled
 out outright: it cuts The Clash.
 
-The aim is not maximum pruning. It is that someone testing the tool with
-"Mozart" or "Iron Maiden" gets nothing, because that is the search that decides
-whether they trust it. Everything short of obviously wrong stays in and is
-handled by showing relevance in the interface, which grades an artist high,
-medium or low by how much of their output sits in the seed, and falls back to
-saying how they got here — collaborator, label mate, or both — for the ones with
-no seed work at all.
+The aim was never maximum pruning. It is that someone testing the tool with
+"Mozart" or "Iron Maiden" is not misled, because that is the search that decides
+whether they trust it. Mozart is still present, on 85 releases that really do
+credit someone in the scene, and after three rules a fourth would start cutting
+real neighbours to chase a shrinking tail. So the interface carries the
+distinction instead: relevance grades an artist high, medium or low by how much
+of their output sits in the seed, and for the ones with no seed work at all it
+says how they got here instead: collaborator, label mate, or both. Being visibly
+peripheral is honest. Being absent would be a lie about what the data says.
 
-The same floor closes the metal. Manowar, Iron Maiden and Black Sabbath sit on
-budget compilation labels whose entire scene credibility is incidental seed
-artists: Sonotec goes from 16 seed artists of 29 to zero, E L M from 11 of 19
-to zero, and every such label sampled drops out.
+The same floor closed the metal. Manowar, Iron Maiden and Black Sabbath sat on
+budget compilation labels whose entire scene credibility was incidental seed
+artists: Sonotec went from 16 seed artists of 29 to zero, E L M from 11 of 19 to
+zero, and every such label sampled dropped out.
 
-Both are pass 1 rules, so one rebuild covers them: pass 1 through publish,
-roughly 75 minutes. **Keep the dumps until this is done.**
+### Still open
 
-### Also open
-
-- **Release pages.** Releases surface only through artists and labels, as
-  intended, but there is no page for one.
-- **Roles are still raw.** 46,033 distinct strings, logged in `roles_seen` as
+- **Release pages.** A release row links straight to Discogs, which holds the
+  fuller picture including images and avoids presenting a mostly empty credits
+  list as though it were an answer. A page of our own is a v1.1 question, not a
+  gap.
+- **Roles are still raw.** 281,018 distinct strings, logged in `roles_seen` as
   the record of what a later pass would face.
+- **The UI is a baseline, not a design.** Dense, legible, and deliberately
+  unstyled while the layout question is still open.
 
 ## Deliberately out of scope for v1
 

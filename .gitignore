@@ -12,8 +12,11 @@ ingest/data/*.sqlite-journal
 ingest/data/*.sqlite-wal
 ingest/data/*.sqlite-shm
 
-# The derived database the web app reads (copied in from ingest)
+# The derived database the web app reads (copied in from ingest), and the
+# write-ahead log sidecars SQLite creates beside it while the app is running.
 web/data/*.sqlite
+web/data/*.sqlite-wal
+web/data/*.sqlite-shm
 
 # Next.js
 web/.next/

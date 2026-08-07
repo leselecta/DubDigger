@@ -247,7 +247,7 @@ small VPS running the Next.js process next to the SQLite file.
 - [x] Pass 2, one hop out on both channels, with provenance tagging
 - [x] Artists and labels dumps, with bios and outbound links
 - [x] Aliases, members and groups, read straight from the dump
-- [x] Derived tables: collaborators, labels, rosters, coverage flags
+- [x] Derived tables: collaborators, labels, rosters, coverage and relevance
 - [x] Artist, label and search pages
 
 ### Next up: two seed rules, both measured, neither built
@@ -305,8 +305,10 @@ out outright: it cuts The Clash.
 The aim is not maximum pruning. It is that someone testing the tool with
 "Mozart" or "Iron Maiden" gets nothing, because that is the search that decides
 whether they trust it. Everything short of obviously wrong stays in and is
-handled by showing relevance in the interface, where core, collaborator and
-label mate are already distinguished.
+handled by showing relevance in the interface, which grades an artist high,
+medium or low by how much of their output sits in the seed, and falls back to
+saying how they got here — collaborator, label mate, or both — for the ones with
+no seed work at all.
 
 The same floor closes the metal. Manowar, Iron Maiden and Black Sabbath sit on
 budget compilation labels whose entire scene credibility is incidental seed

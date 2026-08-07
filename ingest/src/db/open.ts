@@ -45,6 +45,10 @@ function addMissingColumns(db: Database.Database): void {
     ["labels", "profile", "TEXT"],
     ["labels", "urls", "TEXT"],
     ["artist_relations", "related_name", "TEXT NOT NULL DEFAULT ''"],
+    ["seed_artists", "total_releases", "INTEGER"],
+    ["artist_coverage", "seed_releases", "INTEGER NOT NULL DEFAULT 0"],
+    ["artist_coverage", "seed_share", "REAL"],
+    ["artist_coverage", "relevance", "TEXT NOT NULL DEFAULT 'none'"],
   ];
 
   for (const [table, column, type] of additions) {

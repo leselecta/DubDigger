@@ -171,10 +171,77 @@ test("coverage tells 'no credits recorded' apart from 'worked solo'", async () =
     label_count: 0,
     first_year: null,
     last_year: null,
+    seed_releases: 0,
+    seed_share: null,
+    relevance: "none",
   } as never);
 
   const solo = db.prepare("SELECT credited_releases, collaborator_count FROM artist_coverage WHERE artist_id = 11").get();
   assert.deepEqual(solo, { credited_releases: 1, collaborator_count: 0 });
+});
+
+/** Records what pass 1 measured about a seed artist: core releases, and total. */
+function seed(db: Database.Database, rows: [id: number, seed: number, total: number | null][]) {
+  const stmt = db.prepare(
+    "INSERT OR REPLACE INTO seed_artists (artist_id, seed_releases, total_releases) VALUES (?, ?, ?)",
+  );
+  for (const [id, n, total] of rows) stmt.run(id, n, total);
+}
+
+const relevanceOf = (db: Database.Database, id: number) =>
+  db.prepare("SELECT relevance FROM artist_coverage WHERE artist_id = ?").pluck().get(id);
+
+test("relevance needs both a body of core work and a share of the output", async () => {
+  // The two failure modes it exists to avoid, side by side. 12 has the deepest
+  // catalogue in the seed and is still not high, because it is a sliver of what
+  // they do; 11 does almost nothing else and is.
+  const db = corpus([{ id: 1, artists: [10, 11, 12] }]);
+  seed(db, [
+    [10, 61, 77], //  79%, Basic Channel
+    [11, 8, 10], //   80% off a small output
+    [12, 114, 1079], // 11%, Aphex Twin
+  ]);
+  await runDerive(db);
+
+  assert.equal(relevanceOf(db, 10), "high");
+  assert.equal(relevanceOf(db, 11), "high");
+  assert.equal(relevanceOf(db, 12), "medium");
+});
+
+test("one record in the seed is low however pure it looks", async () => {
+  // Share alone would read this as 100% and rank it above Moritz von Oswald.
+  const db = corpus([{ id: 1, artists: [10] }]);
+  seed(db, [[10, 1, 1]]);
+  await runDerive(db);
+  assert.equal(relevanceOf(db, 10), "low");
+});
+
+test("enough core work is medium whatever the share", async () => {
+  const db = corpus([{ id: 1, artists: [10] }]);
+  seed(db, [[10, 25, 5000]]); // 0.5%, but 25 records is a body of work
+  await runDerive(db);
+  assert.equal(relevanceOf(db, 10), "medium");
+});
+
+test("an artist who reached the corpus by one hop has no relevance grade", async () => {
+  // Not a low score: they have no seed work at all. Mozart is here because a
+  // record really does credit him, and the page should say only that.
+  const db = corpus([{ id: 1, artists: [10] }]);
+  await runDerive(db);
+  assert.equal(relevanceOf(db, 10), "none");
+  assert.equal(
+    db.prepare("SELECT seed_share FROM artist_coverage WHERE artist_id = 10").pluck().get(),
+    null,
+  );
+});
+
+test("without a measured total nobody is graded high", async () => {
+  // Pass 1 only counts totals when the seed ratio is on. Guessing a denominator
+  // would be worse than declining to grade.
+  const db = corpus([{ id: 1, artists: [10] }]);
+  seed(db, [[10, 61, null]]);
+  await runDerive(db);
+  assert.equal(relevanceOf(db, 10), "medium");
 });
 
 test("a second run replaces the first rather than layering on top of it", async () => {

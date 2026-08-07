@@ -1,6 +1,18 @@
 import type Database from "better-sqlite3";
-import { derive as deriveDefaults } from "../config.ts";
+import { derive as deriveDefaults, relevance } from "../config.ts";
 import { startRun } from "../db/open.ts";
+
+const { high, medium } = relevance;
+
+/**
+ * An artist's seed work as a share of everything they have ever appeared on.
+ *
+ * NULL when pass 1 never counted their total, which happens only with the seed
+ * ratio switched off. Every comparison against NULL is itself NULL, so those
+ * artists simply fall through to the rules that go on volume alone rather than
+ * being graded against a denominator nobody measured.
+ */
+const share = "1.0 * s.seed_releases / nullif(s.total_releases, 0)";
 
 /**
  * Builds the precomputed answers the web app reads.
@@ -166,18 +178,30 @@ export async function runDerive(
 
     INSERT INTO artist_coverage
       (artist_id, release_count, credited_releases, collaborator_count, label_count,
-       first_year, last_year)
+       first_year, last_year, seed_releases, seed_share, relevance)
     SELECT c.artist_id,
            coalesce(v.release_count, 0),
            coalesce(v.credited_releases, 0),
            coalesce(k.n, 0),
            coalesce(l.n, 0),
            v.first_year,
-           v.last_year
+           v.last_year,
+           coalesce(s.seed_releases, 0),
+           ${share},
+           CASE
+             WHEN s.artist_id IS NULL OR s.seed_releases < 1 THEN 'none'
+             WHEN s.seed_releases >= ${high.minSeedReleases}
+              AND ${share} >= ${high.minSeedShare}                    THEN 'high'
+             WHEN s.seed_releases >= ${medium.orSeedReleases}         THEN 'medium'
+             WHEN s.seed_releases >= ${medium.minSeedReleases}
+              AND ${share} >= ${medium.minSeedShare}                  THEN 'medium'
+             ELSE 'low'
+           END
       FROM corpus_artists c
-      LEFT JOIN cov      v ON v.artist_id = c.artist_id
-      LEFT JOIN collab_n k ON k.artist_id = c.artist_id
-      LEFT JOIN label_n  l ON l.artist_id = c.artist_id;
+      LEFT JOIN cov          v ON v.artist_id = c.artist_id
+      LEFT JOIN collab_n     k ON k.artist_id = c.artist_id
+      LEFT JOIN label_n      l ON l.artist_id = c.artist_id
+      LEFT JOIN seed_artists s ON s.artist_id = c.artist_id;
   `);
 
   db.exec(`DROP TABLE IF EXISTS temp.release_people;

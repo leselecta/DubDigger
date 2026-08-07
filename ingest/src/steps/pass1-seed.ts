@@ -196,8 +196,12 @@ export async function runPass1(
   const seedCandidates = seedArtistReleases.size;
   let droppedByRatio = 0;
 
+  // Kept rather than discarded with the phase. It is the only honest
+  // denominator for how central an artist is, and re-deriving it costs another
+  // full read of the dump.
+  const total = new Map<number, number>();
+
   if (minSeedRatio !== null) {
-    const total = new Map<number, number>();
     for await (const release of openReleases()) {
       for (const person of [...release.artists, ...release.credits]) {
         if (!seedArtistReleases.has(person.id)) continue;
@@ -215,9 +219,12 @@ export async function runPass1(
 
   const writeSeedArtists = db.transaction(() => {
     const stmt = db.prepare(
-      `INSERT OR REPLACE INTO seed_artists (artist_id, seed_releases) VALUES (?, ?)`,
+      `INSERT OR REPLACE INTO seed_artists (artist_id, seed_releases, total_releases)
+       VALUES (?, ?, ?)`,
     );
-    for (const [artistId, count] of seedArtistReleases) stmt.run(artistId, count);
+    for (const [artistId, count] of seedArtistReleases) {
+      stmt.run(artistId, count, total.get(artistId) ?? null);
+    }
   });
   writeSeedArtists();
 

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { getCorpusStats, getDbPath } from "@/lib/db";
-import { search } from "@/lib/queries";
+import { search, type SearchHit } from "@/lib/queries";
 
 export default async function HomePage({
   searchParams,
@@ -71,15 +71,28 @@ function Results({ query, hits }: { query: string; hits: ReturnType<typeof searc
             {hit.name}
           </Link>
           <span className="text-ink-faint shrink-0 text-xs">
-            {hit.relevance === "core" ? (
-              <span className="text-accent">core</span>
-            ) : (
-              (hit.relevance ?? hit.kind)
-            )}
+            {hit.kind === "label" ? "label" : <Relevance hit={hit} />}
           </span>
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * How central an artist is, or how they got here if they are not central at all.
+ *
+ * The two are different answers and the row shows whichever applies. An artist
+ * with no seed work is not weakly relevant, they are a neighbour, and saying
+ * "collaborator" is the honest thing rather than grading them at the bottom of
+ * a scale they were never on.
+ */
+function Relevance({ hit }: { hit: SearchHit }) {
+  if (hit.relevance === "none" || hit.relevance === null) {
+    return <>{hit.connection ?? "artist"}</>;
+  }
+  return (
+    <span className={hit.relevance === "high" ? "text-accent" : undefined}>{hit.relevance}</span>
   );
 }
 

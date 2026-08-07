@@ -99,6 +99,7 @@ Derived tables (precomputed, what the app reads):
 - `artist_labels` — per artist, labels with release counts and date ranges
 - `label_roster` — per label, artists ranked by release count
 - coverage flags per artist — distinguish "no credits recorded" from "worked solo"; seed vs. one-hop membership, tagged with provenance (Channel A collaboration / Channel B label-membership / both)
+- relevance per artist — `high` / `medium` / `low` graded on seed release count AND seed share of their whole output (both, since either alone misranks); `none` for one-hop artists with no seed work, where the provenance above is what the UI shows instead. Dials in `ingest/src/config.ts`, pinned to named acts and asserted by `check-corpus`.
 
 Ranking by frequency is central: collaborators and labels are ordered by count, never alphabetically. Frequency is the signal.
 

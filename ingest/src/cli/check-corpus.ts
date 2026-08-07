@@ -77,6 +77,25 @@ const ARTISTS_IN = [
  * mate. Being visibly peripheral is honest. Being absent would be a lie about
  * what the data says.
  */
+/**
+ * People the tool should rank as the answer, not as a neighbour.
+ *
+ * These pin the relevance dials the way the lists above pin the corpus ones.
+ * Jeff Mills is the boundary case at 15.4% of his output in the seed, which is
+ * what put the high threshold at 15% rather than 20%; if a rebuild drops him to
+ * medium the dial has drifted away from the act it was set by.
+ */
+const ARTISTS_HIGH = [
+  "Basic Channel",
+  "Rhythm & Sound",
+  "Maurizio",
+  "Vainqueur",
+  "Moritz von Oswald",
+  "Monolake",
+  "Porter Ricks",
+  "Jeff Mills",
+];
+
 const ARTISTS_NOT_CORE = [
   "Wolfgang Amadeus Mozart",
   "Ludwig van Beethoven",
@@ -103,6 +122,10 @@ const isCore = db.prepare(
   `SELECT count(*) FROM artists a JOIN corpus_artists m ON m.artist_id = a.id
     WHERE a.name = ? AND m.is_seed = 1`,
 );
+const isHigh = db.prepare(
+  `SELECT count(*) FROM artists a JOIN artist_coverage c ON c.artist_id = a.id
+    WHERE a.name = ? AND c.relevance = 'high'`,
+);
 
 function check(kind: string, name: string, want: boolean, got: number) {
   const ok = want ? got > 0 : got === 0;
@@ -123,6 +146,13 @@ for (const name of ARTISTS_IN) check("artist", name, true, inCorpus.pluck().get(
 console.log();
 for (const name of ARTISTS_NOT_CORE) {
   check("artist", name, false, isCore.pluck().get(name) as number);
+}
+
+console.log("\nHigh relevance\n");
+for (const name of ARTISTS_HIGH) check("artist", name, true, isHigh.pluck().get(name) as number);
+console.log();
+for (const name of ARTISTS_NOT_CORE) {
+  check("artist", name, false, isHigh.pluck().get(name) as number);
 }
 
 console.log(

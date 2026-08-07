@@ -315,6 +315,45 @@ export function isPlaceholderLabel(name: string): boolean {
 }
 
 /**
+ * How close to the scene an artist sits, graded rather than binary.
+ *
+ * Seed membership is a yes or no, and it has to be, because it decides what the
+ * corpus contains. But 132,571 artists cleared it, and inside that set the
+ * difference between Rhythm & Sound and someone with two records in the seed is
+ * the difference between the answer and a footnote. The interface needs to say
+ * which, so this grades it.
+ *
+ * Two signals, and neither works alone. Share alone puts an artist with one
+ * record out of one above Moritz von Oswald. Volume alone puts Aphex Twin, who
+ * has 114 seed releases in 1,079, above Basic Channel, who has 61 in 77.
+ * Requiring both is what sorts them.
+ *
+ * The share is measured against an artist's WHOLE output as the dump has it,
+ * not against their corpus releases. Depeche Mode has 75 seed-style releases
+ * among the 204 of theirs the corpus kept, which reads as 37% and would rank
+ * them high; against their real catalogue it is a fraction of a percent. The
+ * corpus denominator is truncated for exactly the artists this most needs to be
+ * honest about.
+ */
+export const relevance = {
+  /**
+   * Measured against the 20260801 dump, the boundary case is Jeff Mills at
+   * 15.4% and 160 seed releases. He is central to what this tool is for, so the
+   * threshold sits below him. Aphex Twin at 10.6% and The Clash at 8.8% stay
+   * medium, which is right: both belong in the corpus, neither is the scene.
+   *
+   * The floor of 5 releases is what stops a one-off from reading as devotion.
+   */
+  high: { minSeedReleases: 5, minSeedShare: 0.15 },
+  /**
+   * Either a real share of a small output, or enough core work that the share
+   * stops mattering. 20 seed releases is a body of work in this scene whatever
+   * else the artist did.
+   */
+  medium: { minSeedReleases: 2, minSeedShare: 0.05, orSeedReleases: 20 },
+};
+
+/**
  * Building the derived tables.
  */
 export const derive = {

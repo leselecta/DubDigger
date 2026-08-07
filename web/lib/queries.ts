@@ -6,6 +6,15 @@ import { getDb } from "./db";
  * time: the ranking work happened offline, during ingest.
  */
 
+/**
+ * How central an artist is to the scene, graded during ingest.
+ *
+ * "none" is not a low score. It means they have no work in the seed at all and
+ * reached the corpus by one hop, through a real credit or a shared label; the
+ * connection is what the page should show, not a grade.
+ */
+export type Relevance = "high" | "medium" | "low" | "none";
+
 export interface Artist {
   id: number;
   name: string;
@@ -22,6 +31,11 @@ export interface Artist {
   isSeed: boolean;
   channelA: boolean;
   channelB: boolean;
+  relevance: Relevance;
+  /** Releases of theirs inside the style seed. */
+  seedReleases: number;
+  /** That as a share of their whole output, or null if never measured. */
+  seedShare: number | null;
 }
 
 export interface Collaborator {
@@ -74,8 +88,12 @@ export interface SearchHit {
    * when a distant act looks distant: Mozart is genuinely in the corpus, on 85
    * releases that really do credit someone here, and saying so is honest where
    * hiding him would not be.
+   *
+   * Null on labels, which are not graded.
    */
-  relevance: "core" | "collaborator" | "label mate" | null;
+  relevance: Relevance | null;
+  /** How a "none" artist reached the corpus. A label mate is not a collaborator. */
+  connection: "collaborator" | "label mate" | "collaborator + label mate" | null;
 }
 
 /** Row shapes as SQLite returns them, snake_case and with 0/1 for booleans. */
@@ -94,6 +112,9 @@ interface ArtistRow {
   is_seed: number;
   channel_a: number;
   channel_b: number;
+  relevance: Relevance;
+  seed_releases: number;
+  seed_share: number | null;
 }
 
 interface CollaboratorRow {
@@ -129,6 +150,7 @@ interface HitRow {
   is_seed?: number;
   channel_a?: number;
   channel_b?: number;
+  relevance?: Relevance;
 }
 
 export function getArtist(id: number): Artist | null {
@@ -145,7 +167,10 @@ export function getArtist(id: number): Artist | null {
               c.first_year, c.last_year,
               coalesce(m.is_seed, 0)   AS is_seed,
               coalesce(m.channel_a, 0) AS channel_a,
-              coalesce(m.channel_b, 0) AS channel_b
+              coalesce(m.channel_b, 0) AS channel_b,
+              coalesce(c.relevance, 'none') AS relevance,
+              coalesce(c.seed_releases, 0)  AS seed_releases,
+              c.seed_share
          FROM artists a
          LEFT JOIN artist_coverage c ON c.artist_id = a.id
          LEFT JOIN corpus_artists  m ON m.artist_id = a.id
@@ -169,6 +194,9 @@ export function getArtist(id: number): Artist | null {
     isSeed: row.is_seed === 1,
     channelA: row.channel_a === 1,
     channelB: row.channel_b === 1,
+    relevance: row.relevance,
+    seedReleases: row.seed_releases,
+    seedShare: row.seed_share,
   };
 }
 
@@ -288,7 +316,8 @@ export function search(query: string, limit = 40): SearchHit[] {
       `SELECT a.id, a.name, coalesce(c.release_count, 0) AS release_count,
               coalesce(m.is_seed, 0) AS is_seed,
               coalesce(m.channel_a, 0) AS channel_a,
-              coalesce(m.channel_b, 0) AS channel_b
+              coalesce(m.channel_b, 0) AS channel_b,
+              coalesce(c.relevance, 'none') AS relevance
          FROM artist_search s
          JOIN artists a ON a.id = s.rowid
          LEFT JOIN artist_coverage c ON c.artist_id = a.id
@@ -303,29 +332,44 @@ export function search(query: string, limit = 40): SearchHit[] {
     .prepare(
       `SELECT l.id, l.name, l.profile, l.urls,
               (SELECT count(DISTINCT rl.release_id) FROM release_labels rl WHERE rl.label_id = l.id)
-                AS release_count
+                AS release_count,
+              (sd.label_id IS NOT NULL) AS is_seed
          FROM label_search s
          JOIN labels l ON l.id = s.rowid
+         LEFT JOIN seed_labels sd ON sd.label_id = l.id
         WHERE label_search MATCH ?
         ORDER BY release_count DESC
         LIMIT ?`,
     )
     .all(term, limit) as HitRow[];
 
-  const relevance = (r: HitRow): SearchHit["relevance"] => {
-    if (r.is_seed === 1) return "core";
+  const connection = (r: HitRow): SearchHit["connection"] => {
+    if (r.channel_a === 1 && r.channel_b === 1) return "collaborator + label mate";
     if (r.channel_a === 1) return "collaborator";
     if (r.channel_b === 1) return "label mate";
     return null;
   };
 
-  return [
+  /**
+   * Graded first, so a sceptic searching "Mozart" sees at a glance that the
+   * scene artists are the answer and he is a footnote.
+   *
+   * Labels are not on the artist scale, so they are ranked by the one they do
+   * have: a seed label sorts with the strong artists, anything else with the
+   * weak. Ranking every label below every graded artist would bury Chain
+   * Reaction under the two unrelated acts that share its name.
+   */
+  const ORDER: Record<string, number> = { high: 0, medium: 1, low: 2, none: 3 };
+
+  const hits: (SearchHit & { rank: number })[] = [
     ...artists.map((r) => ({
       id: r.id,
       name: r.name,
       kind: "artist" as const,
       releaseCount: r.release_count,
-      relevance: relevance(r),
+      relevance: r.relevance ?? "none",
+      connection: connection(r),
+      rank: ORDER[r.relevance ?? "none"]!,
     })),
     ...labels.map((r) => ({
       id: r.id,
@@ -333,13 +377,14 @@ export function search(query: string, limit = 40): SearchHit[] {
       kind: "label" as const,
       releaseCount: r.release_count,
       relevance: null,
+      connection: null,
+      rank: r.is_seed === 1 ? ORDER.high! : ORDER.low!,
     })),
-  ].sort((a, b) => {
-    // Core first, so a sceptic searching "Mozart" sees at a glance that the
-    // scene artists are the answer and he is a footnote.
-    const rank = (h: SearchHit) => (h.relevance === "core" ? 0 : 1);
-    return rank(a) - rank(b) || b.releaseCount - a.releaseCount;
-  });
+  ];
+
+  return hits
+    .sort((a, b) => a.rank - b.rank || b.releaseCount - a.releaseCount)
+    .map(({ rank: _, ...hit }) => hit);
 }
 
 /**

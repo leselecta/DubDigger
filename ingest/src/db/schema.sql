@@ -113,7 +113,12 @@ CREATE INDEX IF NOT EXISTS idx_artist_relations_related
 
 CREATE TABLE IF NOT EXISTS seed_artists (
   artist_id     INTEGER PRIMARY KEY,
-  seed_releases INTEGER NOT NULL DEFAULT 0
+  seed_releases INTEGER NOT NULL DEFAULT 0,
+  -- Their whole output as this dump has it, not just their corpus releases.
+  -- Pass 1 counts this to apply the seed ratio and used to discard it; it is
+  -- kept because it is the only honest denominator for grading relevance.
+  -- NULL when the ratio rule was switched off and the count never happened.
+  total_releases INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS seed_labels (
@@ -221,7 +226,14 @@ CREATE TABLE IF NOT EXISTS artist_coverage (
   collaborator_count INTEGER NOT NULL DEFAULT 0,
   label_count        INTEGER NOT NULL DEFAULT 0,
   first_year         INTEGER,
-  last_year          INTEGER
+  last_year          INTEGER,
+  -- Releases of theirs inside the style seed, and that as a share of everything
+  -- they have ever appeared on. Both carried here so the app can show the
+  -- working rather than just the verdict.
+  seed_releases      INTEGER NOT NULL DEFAULT 0,
+  seed_share         REAL,
+  -- 'high' | 'medium' | 'low' | 'none'. See the relevance dials in config.ts.
+  relevance          TEXT NOT NULL DEFAULT 'none'
 );
 
 -- Search: the entry point to the whole tool is typing a name.

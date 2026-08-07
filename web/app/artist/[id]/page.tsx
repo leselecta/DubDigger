@@ -8,6 +8,7 @@ import {
   getProfileNames,
   getRelations,
   getArtistReleases,
+  type Artist,
   type Relation,
 } from "@/lib/queries";
 import { ProfileText } from "@/components/profile-text";
@@ -231,11 +232,39 @@ function NoCollaborators({ artist }: { artist: { releaseCount: number; creditedR
   );
 }
 
-/** A collaborator is not the same as a label mate, so the page says which. */
-function Provenance({ artist }: { artist: { isSeed: boolean; channelA: boolean; channelB: boolean } }) {
-  if (artist.isSeed) return <span className="text-accent">core</span>;
-  if (artist.channelA && artist.channelB) return <span>collaborator + label mate</span>;
-  if (artist.channelA) return <span>collaborator</span>;
-  if (artist.channelB) return <span>label mate</span>;
-  return null;
+/**
+ * How central they are, with the numbers behind it.
+ *
+ * A grade on its own is an assertion. "high · 61 in the scene, 79% of their
+ * output" is the same claim with its working shown, which is the difference
+ * between asking a digger to trust the tool and letting them check it.
+ *
+ * The share is against their whole catalogue, which is deliberately not the
+ * release count beside it: that one counts the corpus, and for an artist who
+ * mostly works elsewhere the two are far apart. Showing the percentage rather
+ * than the second total keeps the honest number without putting two totals on
+ * one line for the reader to reconcile.
+ *
+ * For an artist with no scene work at all the grade would be meaningless, so
+ * the row says how they got here instead: a collaborator is not the same as a
+ * label mate, and neither is a weak version of being core.
+ */
+function Provenance({ artist }: { artist: Artist }) {
+  if (artist.relevance === "none") {
+    if (artist.channelA && artist.channelB) return <span>collaborator + label mate</span>;
+    if (artist.channelA) return <span>collaborator</span>;
+    if (artist.channelB) return <span>label mate</span>;
+    return null;
+  }
+
+  return (
+    <span className={artist.relevance === "high" ? "text-accent" : undefined}>
+      {artist.relevance}
+      <span className="text-ink-faint">
+        {" · "}
+        {artist.seedReleases} in the scene
+        {artist.seedShare !== null && `, ${Math.round(artist.seedShare * 100)}% of their output`}
+      </span>
+    </span>
+  );
 }

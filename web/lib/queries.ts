@@ -68,6 +68,8 @@ export interface Label {
   releaseCount: number;
   isSeed: boolean;
   seedRatio: number | null;
+  firstYear: number | null;
+  lastYear: number | null;
 }
 
 export interface RosterEntry {
@@ -141,6 +143,8 @@ interface LabelRow {
   release_count: number;
   seed_ratio: number | null;
   top_artist_releases: number | null;
+  first_year: number | null;
+  last_year: number | null;
 }
 
 interface HitRow {
@@ -258,7 +262,9 @@ export function getLabel(id: number): Label | null {
                 AS release_count,
               s.seed_ratio,
               (SELECT max(release_count) FROM label_roster r WHERE r.label_id = l.id)
-                AS top_artist_releases
+                AS top_artist_releases,
+              (SELECT min(first_year) FROM label_roster r WHERE r.label_id = l.id) AS first_year,
+              (SELECT max(last_year)  FROM label_roster r WHERE r.label_id = l.id) AS last_year
          FROM labels l
          LEFT JOIN seed_labels s ON s.label_id = l.id
         WHERE l.id = ?`,
@@ -276,6 +282,8 @@ export function getLabel(id: number): Label | null {
     isSeed: row.seed_ratio !== null,
     seedRatio: row.seed_ratio,
     isImprint: row.release_count > 1 && row.top_artist_releases === row.release_count,
+    firstYear: row.first_year,
+    lastYear: row.last_year,
   };
 }
 

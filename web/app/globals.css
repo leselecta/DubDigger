@@ -1,42 +1,52 @@
 @import "tailwindcss";
 
 /*
- * Density is a feature. Rather than fighting default whitespace utility by
- * utility, the spacing scale itself is tightened at the root: every p-*, gap-*
- * and space-* in the app inherits it. 0.2rem against Tailwind's 0.25rem.
+ * Tokens from the design handoff. There is no imagery in v1, so typography and
+ * rules carry the entire hierarchy: near-black ground, one accent, and hairlines
+ * doing the work borders would otherwise do.
  */
 @theme {
-  --spacing: 0.2rem;
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --color-bg: #060606;
+  --color-ink: #f2f2f2;
+  --color-ink-strong: #ffffff;
+  --color-ink-muted: #9a9a9a;
+  --color-ink-dim: #787878;
+  --color-ink-faint: #6a6a6a;
+  --color-accent: #6fcabd;
 
-  --text-xs: 0.6875rem;
-  --text-xs--line-height: 1.1rem;
-  --text-sm: 0.8125rem;
-  --text-sm--line-height: 1.25rem;
-  --text-base: 0.875rem;
-  --text-base--line-height: 1.35rem;
+  /* Hairlines rather than borders: they separate without drawing attention. */
+  --color-hairline: rgb(255 255 255 / 0.12);
+  --color-hairline-soft: rgb(255 255 255 / 0.08);
+  --color-edge: rgb(255 255 255 / 0.22);
+  --color-edge-strong: rgb(255 255 255 / 0.35);
 
-  --color-ink: oklch(0.97 0.002 265);
-  --color-ink-dim: oklch(0.72 0.006 265);
-  --color-ink-faint: oklch(0.55 0.008 265);
-  --color-surface: oklch(0.17 0.008 265);
-  --color-surface-raised: oklch(0.21 0.009 265);
-  --color-line: oklch(0.28 0.009 265);
-  --color-accent: oklch(0.78 0.13 195);
+  /*
+   * The handoff specifies fixed pixel sizes. They are kept as the upper bound
+   * of a clamp rather than as absolutes, because a 120px headline is wider than
+   * a phone: "Moritz von Oswald" at 104px needs 900px of viewport. The design
+   * did not cover small screens, so these degrade rather than overflow.
+   */
+  --text-hero: clamp(2.75rem, 8.5vw, 5.75rem);
+  --text-name: clamp(2.5rem, 8vw, 6.5rem);
+  --text-name-label: clamp(2.5rem, 9vw, 7.5rem);
+  --text-stat: clamp(2.5rem, 6vw, 4.125rem);
+  --text-row: 1.25rem;
+  --text-body: 1.1875rem;
 }
 
 html {
-  font-size: 15px;
+  background: var(--color-bg);
 }
 
 body {
-  background: var(--color-surface);
+  background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-size: var(--text-base);
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 /* Digging is hopping between pages, so links are the primary control. */
@@ -53,5 +63,34 @@ a:focus-visible,
 input:focus-visible,
 button:focus-visible {
   outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/*
+ * The content column, repeated on every band of every page. A utility rather
+ * than a component because bands need to span the full width while their
+ * contents stay in the column.
+ */
+@utility column {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+
+  @media (min-width: 768px) {
+    padding-inline: 3rem;
+  }
+}
+
+/* Mono, uppercase, letterspaced: every label, count and control in the design. */
+@utility mono-label {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.75rem;
+  color: var(--color-ink-muted);
 }

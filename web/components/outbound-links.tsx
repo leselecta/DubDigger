@@ -6,6 +6,42 @@
  * images out of v1 because they are Restricted Data, and names linking out as
  * the cheap alternative.
  */
+
+/**
+ * Recognisable names for the hosts that keep coming up, so the row reads
+ * "Discogs · Facebook · Wikipedia" the way the design does.
+ *
+ * Anything unrecognised keeps its hostname rather than being called "Website",
+ * because artists routinely list several of their own sites and three links all
+ * reading "Website" would say less than the domains do.
+ */
+const KNOWN_HOSTS: [suffix: string, name: string][] = [
+  ["facebook.com", "Facebook"],
+  ["wikipedia.org", "Wikipedia"],
+  ["twitter.com", "Twitter"],
+  ["x.com", "X"],
+  ["instagram.com", "Instagram"],
+  ["soundcloud.com", "SoundCloud"],
+  ["bandcamp.com", "Bandcamp"],
+  ["youtube.com", "YouTube"],
+  ["mixcloud.com", "Mixcloud"],
+  ["residentadvisor.net", "Resident Advisor"],
+  ["ra.co", "Resident Advisor"],
+  ["myspace.com", "MySpace"],
+  ["last.fm", "Last.fm"],
+  ["beatport.com", "Beatport"],
+];
+
+function nameFor(url: string): string | null {
+  let host: string;
+  try {
+    host = new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+  return KNOWN_HOSTS.find(([suffix]) => host.endsWith(suffix))?.[1] ?? host;
+}
+
 export function OutboundLinks({
   kind,
   id,
@@ -15,28 +51,36 @@ export function OutboundLinks({
   id: number;
   urls: string[];
 }) {
-  const host = (url: string) => {
-    try {
-      return new URL(url).hostname.replace(/^www\./, "");
-    } catch {
-      return url;
-    }
-  };
+  const seen = new Set<string>();
+  const links: { href: string; name: string }[] = [];
+
+  for (const url of urls) {
+    const name = nameFor(url);
+    if (name === null || seen.has(name)) continue;
+    seen.add(name);
+    links.push({ href: url, name });
+    if (links.length === 5) break;
+  }
 
   return (
-    <p className="text-ink-faint mt-1 flex flex-wrap gap-x-3 text-xs">
+    <span className="flex flex-wrap gap-x-4 gap-y-1">
       <a
         href={`https://www.discogs.com/${kind}/${id}`}
         rel="noreferrer"
-        className="underline underline-offset-2"
+        className="border-b border-[rgb(255_255_255_/_0.3)]"
       >
-        view on Discogs
+        Discogs
       </a>
-      {urls.slice(0, 4).map((url) => (
-        <a key={url} href={url} rel="noreferrer nofollow" className="underline underline-offset-2">
-          {host(url)}
+      {links.map((l) => (
+        <a
+          key={l.href}
+          href={l.href}
+          rel="noreferrer nofollow"
+          className="border-b border-[rgb(255_255_255_/_0.3)]"
+        >
+          {l.name}
         </a>
       ))}
-    </p>
+    </span>
   );
 }

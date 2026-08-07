@@ -20,7 +20,7 @@ import {
   LabelledBand,
   ListHeader,
 } from "@/components/page-parts";
-import { PAGE_SIZE, pageSize, years } from "@/lib/view";
+import { PAGE_SIZE, pageSize, percent, years } from "@/lib/view";
 
 export default async function LabelPage({
   params,
@@ -179,7 +179,7 @@ function Relevance({ label }: { label: Label }) {
   const reason = label.isImprint
     ? "artist-run imprint, one artist on every release"
     : label.seedRatio !== null
-      ? `${Math.round(label.seedRatio * 100)}% of roster in the dub techno scene`
+      ? `${percent(label.seedRatio)} of roster in the dub techno scene`
       : "here through its artists, not as a label in the dub techno scene";
 
   return (

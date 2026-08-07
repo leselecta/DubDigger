@@ -11,6 +11,9 @@
  * without re-reading 10.4 GB. The cache records which dump it came from, and is
  * rescanned rather than reused when that no longer matches: see
  * lib/totals-cache.ts for the two ways it goes stale silently.
+ *
+ * This CLI fills the cache; derive reads it, so both tables are declared in
+ * schema.sql rather than here.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -20,16 +23,6 @@ import { openDump, streamReleases } from "../lib/release-stream.ts";
 import { judgeTotalsCache } from "../lib/totals-cache.ts";
 
 const db = openDb();
-db.exec(`
-  CREATE TABLE IF NOT EXISTS seed_artist_totals (
-    artist_id INTEGER PRIMARY KEY,
-    total     INTEGER NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS seed_artist_totals_meta (
-    id        INTEGER PRIMARY KEY CHECK (id = 1),
-    built_from TEXT NOT NULL
-  );
-`);
 
 const dumpOnDisk =
   fs

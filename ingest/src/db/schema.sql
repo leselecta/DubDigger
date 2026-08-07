@@ -121,6 +121,21 @@ CREATE TABLE IF NOT EXISTS seed_artists (
   total_releases INTEGER
 );
 
+-- Whole-dump output per artist, cached by measure-seed so a ratio dial can be
+-- tried without re-reading 10.4 GB. Declared here rather than in that CLI
+-- because derive reads it too: it is the denominator behind the scene share a
+-- page displays, and the only one that covers artists the ratio rejected.
+-- Empty is a valid state, and reads as an unmeasured share rather than as zero.
+CREATE TABLE IF NOT EXISTS seed_artist_totals (
+  artist_id INTEGER PRIMARY KEY,
+  total     INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS seed_artist_totals_meta (
+  id         INTEGER PRIMARY KEY CHECK (id = 1),
+  built_from TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS seed_labels (
   label_id           INTEGER PRIMARY KEY,
   seed_artist_count  INTEGER NOT NULL,
@@ -230,6 +245,10 @@ CREATE TABLE IF NOT EXISTS artist_coverage (
   -- Releases of theirs inside the style seed, and that as a share of everything
   -- they have ever appeared on. Both carried here so the app can show the
   -- working rather than just the verdict.
+  --
+  -- Counted in DISTINCT releases, and counted for everyone rather than only for
+  -- seed artists. See the note in derive.ts: these two columns are what a page
+  -- displays, and they are not the tally the grade below was computed from.
   seed_releases      INTEGER NOT NULL DEFAULT 0,
   seed_share         REAL,
   -- 'high' | 'medium' | 'low' | 'none'. See the relevance dials in config.ts.

@@ -24,7 +24,7 @@ import {
   LabelledBand,
   ListHeader,
 } from "@/components/page-parts";
-import { PAGE_SIZE, pageSize, years } from "@/lib/view";
+import { PAGE_SIZE, pageSize, percent, years } from "@/lib/view";
 
 export default async function ArtistPage({
   params,
@@ -83,7 +83,7 @@ export default async function ArtistPage({
               &nbsp;·&nbsp;{" "}
               <span className="text-accent">
                 {artist.seedReleases.toLocaleString("en-GB")} in the dub techno scene
-                {artist.seedShare !== null && `, ${Math.round(artist.seedShare * 100)}% of output`}
+                {artist.seedShare !== null && `, ${percent(artist.seedShare)} of output`}
               </span>
             </>
           )}

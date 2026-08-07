@@ -13,10 +13,12 @@ function corpus(
     artists?: number[];
     credits?: [number, string][];
     labels?: number[];
+    /** Defaults to a seed release, which is what most of these fixtures want. */
+    seed?: boolean;
   }[],
 ): Database.Database {
   const db = openDb(":memory:");
-  const r = db.prepare("INSERT INTO releases (id, title, year, is_seed) VALUES (?, ?, ?, 1)");
+  const r = db.prepare("INSERT INTO releases (id, title, year, is_seed) VALUES (?, ?, ?, ?)");
   const a = db.prepare(
     "INSERT INTO release_artists (release_id, position, artist_id, name) VALUES (?, ?, ?, ?)",
   );
@@ -29,7 +31,7 @@ function corpus(
   const ca = db.prepare("INSERT OR IGNORE INTO corpus_artists (artist_id, is_seed) VALUES (?, 1)");
 
   for (const rel of releases) {
-    r.run(rel.id, `Release ${rel.id}`, rel.year ?? null);
+    r.run(rel.id, `Release ${rel.id}`, rel.year ?? null, rel.seed === false ? 0 : 1);
     (rel.artists ?? []).forEach((id, i) => {
       a.run(rel.id, i, id, `Artist ${id}`);
       ca.run(id);
@@ -171,7 +173,9 @@ test("coverage tells 'no credits recorded' apart from 'worked solo'", async () =
     label_count: 0,
     first_year: null,
     last_year: null,
-    seed_releases: 0,
+    // On the one seed release in this fixture, and graded 'none' regardless:
+    // the count is what the corpus holds, the grade is what pass 1 measured.
+    seed_releases: 1,
     seed_share: null,
     relevance: "none",
   } as never);
@@ -242,6 +246,41 @@ test("without a measured total nobody is graded high", async () => {
   seed(db, [[10, 61, null]]);
   await runDerive(db);
   assert.equal(relevanceOf(db, 10), "medium");
+});
+
+const coverageOf = (db: Database.Database, id: number) =>
+  db.prepare("SELECT seed_releases, seed_share, relevance FROM artist_coverage WHERE artist_id = ?").get(id);
+
+test("seed releases are counted for artists the ratio rejected", async () => {
+  // King Tubby: on real seed releases, but 0.51% of a reissue-inflated
+  // catalogue, so pass 1 dropped him and the page reported nothing at all.
+  const db = corpus([
+    { id: 1, artists: [10] },
+    { id: 2, credits: [[10, "Mixed By"]] },
+    { id: 3, artists: [10], seed: false },
+  ]);
+  db.prepare("INSERT INTO seed_artist_totals (artist_id, total) VALUES (10, 400)").run();
+  await runDerive(db);
+
+  assert.deepEqual(coverageOf(db, 10), {
+    seed_releases: 2,
+    seed_share: 2 / 400,
+    // Still not scene membership, and the share is what says so.
+    relevance: "none",
+  });
+});
+
+test("a release counts once when someone is on the artist line and in the credits", async () => {
+  // Pass 1 counts appearances, which is why it has Jeff Mills at 160 where the
+  // corpus holds 116 releases. What a page shows is releases.
+  const db = corpus([{ id: 1, artists: [10], credits: [[10, "Producer"]] }]);
+  db.prepare("INSERT INTO seed_artist_totals (artist_id, total) VALUES (10, 10)").run();
+  await runDerive(db);
+
+  assert.equal(
+    db.prepare("SELECT seed_releases FROM artist_coverage WHERE artist_id = 10").pluck().get(),
+    1,
+  );
 });
 
 test("a second run replaces the first rather than layering on top of it", async () => {

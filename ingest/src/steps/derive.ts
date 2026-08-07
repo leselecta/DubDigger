@@ -11,8 +11,33 @@ const { high, medium } = relevance;
  * ratio switched off. Every comparison against NULL is itself NULL, so those
  * artists simply fall through to the rules that go on volume alone rather than
  * being graded against a denominator nobody measured.
+ *
+ * This is the GRADING share, and it reads pass 1's tally, which is the tally
+ * every relevance dial was tuned against. It is not what a page displays.
  */
 const share = "1.0 * s.seed_releases / nullif(s.total_releases, 0)";
+
+/**
+ * The seed figures a page displays, which are not the ones the grade came from.
+ *
+ * Two things are wrong with pass 1's tally for display purposes. It only exists
+ * for artists who cleared the seed ratio, so King Tubby, on 15 seed releases and
+ * dropped at 0.51% of a reissue-inflated catalogue, reported zero. And it counts
+ * APPEARANCES, not releases: someone on the artist line who also engineered the
+ * record counts twice, which is why pass 1 has Jeff Mills at 160 where the
+ * corpus holds 116 distinct seed releases crediting him.
+ *
+ * So the displayed count is recomputed here, for everyone, in distinct releases.
+ * It is a floor rather than a total, because a crowded release keeps its credits
+ * but the dump holds seed releases pass 2 never wrote out; under-reporting is
+ * the safe direction.
+ *
+ * The grade above is deliberately left on pass 1's numbers. Regrading on these
+ * would move the dials under acts they were set by, and that is a decision to
+ * take deliberately rather than as a side effect of fixing a display bug.
+ */
+const displayedShare =
+  "1.0 * coalesce(sn.n, 0) / nullif(coalesce(s.total_releases, t.total), 0)";
 
 /**
  * Builds the precomputed answers the web app reads.
@@ -176,6 +201,15 @@ export async function runDerive(
       SELECT artist_id, count(*) AS n FROM artist_labels GROUP BY artist_id;
     CREATE INDEX temp.idx_label_n ON label_n (artist_id);
 
+    DROP TABLE IF EXISTS temp.seed_n;
+    CREATE TEMP TABLE seed_n AS
+      SELECT p.artist_id, count(DISTINCT p.release_id) AS n
+        FROM release_people p
+        JOIN releases r ON r.id = p.release_id AND r.is_seed = 1
+       GROUP BY p.artist_id;
+    CREATE INDEX temp.idx_seed_n ON seed_n (artist_id);
+
+
     INSERT INTO artist_coverage
       (artist_id, release_count, credited_releases, collaborator_count, label_count,
        first_year, last_year, seed_releases, seed_share, relevance)
@@ -186,8 +220,8 @@ export async function runDerive(
            coalesce(l.n, 0),
            v.first_year,
            v.last_year,
-           coalesce(s.seed_releases, 0),
-           ${share},
+           coalesce(sn.n, 0),
+           ${displayedShare},
            CASE
              WHEN s.artist_id IS NULL OR s.seed_releases < 1 THEN 'none'
              WHEN s.seed_releases >= ${high.minSeedReleases}
@@ -198,10 +232,12 @@ export async function runDerive(
              ELSE 'low'
            END
       FROM corpus_artists c
-      LEFT JOIN cov          v ON v.artist_id = c.artist_id
-      LEFT JOIN collab_n     k ON k.artist_id = c.artist_id
-      LEFT JOIN label_n      l ON l.artist_id = c.artist_id
-      LEFT JOIN seed_artists s ON s.artist_id = c.artist_id;
+      LEFT JOIN cov                v ON v.artist_id = c.artist_id
+      LEFT JOIN collab_n           k ON k.artist_id = c.artist_id
+      LEFT JOIN label_n            l ON l.artist_id = c.artist_id
+      LEFT JOIN seed_n            sn ON sn.artist_id = c.artist_id
+      LEFT JOIN seed_artists       s ON s.artist_id = c.artist_id
+      LEFT JOIN seed_artist_totals t ON t.artist_id = c.artist_id;
   `);
 
   db.exec(`DROP TABLE IF EXISTS temp.release_people;
@@ -211,7 +247,8 @@ export async function runDerive(
             DROP TABLE IF EXISTS temp.credited;
             DROP TABLE IF EXISTS temp.cov;
             DROP TABLE IF EXISTS temp.collab_n;
-            DROP TABLE IF EXISTS temp.label_n;`);
+            DROP TABLE IF EXISTS temp.label_n;
+            DROP TABLE IF EXISTS temp.seed_n;`);
 
   const count = (table: string): number =>
     db.prepare(`SELECT count(*) FROM ${table}`).pluck().get() as number;

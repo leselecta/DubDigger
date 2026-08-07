@@ -311,9 +311,19 @@ export function getRoster(labelId: number, limit = 200): RosterEntry[] {
   }));
 }
 
-export function search(query: string, limit = 40): SearchHit[] {
+export interface SearchResults {
+  hits: SearchHit[];
+  /**
+   * The limit applies per kind, so a full artist or label list means there are
+   * more matches than these. Reported rather than inferred from the total,
+   * because "80 found" would be stating the cap as if it were a count.
+   */
+  truncated: boolean;
+}
+
+export function search(query: string, limit = 40): SearchResults {
   const db = getDb();
-  if (!db || query.trim().length === 0) return [];
+  if (!db || query.trim().length === 0) return { hits: [], truncated: false };
 
   // FTS5 reads bare punctuation as syntax, so the term is quoted, and given a
   // trailing wildcard to make the box behave like search rather than exact match.
@@ -390,9 +400,12 @@ export function search(query: string, limit = 40): SearchHit[] {
     })),
   ];
 
-  return hits
-    .sort((a, b) => a.rank - b.rank || b.releaseCount - a.releaseCount)
-    .map(({ rank: _, ...hit }) => hit);
+  return {
+    hits: hits
+      .sort((a, b) => a.rank - b.rank || b.releaseCount - a.releaseCount)
+      .map(({ rank: _, ...hit }) => hit),
+    truncated: artists.length === limit || labels.length === limit,
+  };
 }
 
 /**

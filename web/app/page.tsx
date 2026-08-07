@@ -18,23 +18,36 @@ export default async function HomePage({
 
   const { q } = await searchParams;
   const stats = getCorpusStats();
-  const hits = q ? search(q) : [];
+  const searching = Boolean(q);
+  const results = q ? search(q) : null;
 
   return (
     <>
       <SiteHeader search={false} />
 
-      <div className="column pt-24 pb-16 text-center md:pt-[130px] md:pb-24">
-        <p className="text-ink-muted mb-9 font-mono text-xs tracking-[0.32em] uppercase">
+      {/*
+       * Searching drops the tagline and keeps everything else. A headline
+       * announcing what the site is has done its job by the time someone has
+       * typed into it, and the results are what they came back for.
+       */}
+      <div
+        className={`column text-center ${
+          searching ? "pt-14 pb-12" : "pt-24 pb-16 md:pt-[130px] md:pb-24"
+        }`}
+      >
+        <p className="text-ink-muted font-mono text-xs tracking-[0.32em] uppercase">
           The Dub Techno Index
         </p>
-        <h1 className="text-hero text-ink-strong leading-[0.98] font-bold tracking-[-0.035em]">
-          Dig the Extended Scene.
-          <br />
-          Dub Techno First
-        </h1>
 
-        <div className="mx-auto mt-16 max-w-[640px]">
+        {!searching && (
+          <h1 className="text-hero text-ink-strong mt-9 leading-[0.98] font-bold tracking-[-0.035em]">
+            Dig the Extended Scene.
+            <br />
+            Dub Techno First
+          </h1>
+        )}
+
+        <div className={`mx-auto max-w-[640px] ${searching ? "mt-8" : "mt-16"}`}>
           <SearchField size="hero" defaultValue={q} />
         </div>
         <p className="mt-[18px] font-mono text-xs tracking-[0.14em] text-[#5f5f5f] uppercase">
@@ -44,10 +57,13 @@ export default async function HomePage({
 
       {stats === null ? (
         <NoDatabase />
-      ) : q ? (
-        <Results query={q} hits={hits} />
       ) : (
-        <CorpusStats stats={stats} />
+        <>
+          {searching && results && (
+            <Results query={q!} hits={results.hits} truncated={results.truncated} />
+          )}
+          <CorpusStats stats={stats} />
+        </>
       )}
     </>
   );
@@ -81,13 +97,23 @@ function CorpusStats({ stats }: { stats: NonNullable<ReturnType<typeof getCorpus
   );
 }
 
-function Results({ query, hits }: { query: string; hits: SearchHit[] }) {
+function Results({
+  query,
+  hits,
+  truncated,
+}: {
+  query: string;
+  hits: SearchHit[];
+  truncated: boolean;
+}) {
   return (
-    <div className="column pb-32">
+    <div className="column pb-24">
       <p className="mono-label border-hairline border-b pb-4">
-        {hits.length > 0
-          ? `${hits.length}${hits.length === 40 ? "+" : ""} found for “${query}”`
-          : `Nothing found for “${query}”`}
+        {hits.length === 0
+          ? `Nothing found for “${query}”`
+          : truncated
+            ? `Closest ${hits.length} for “${query}”`
+            : `${hits.length} found for “${query}”`}
       </p>
 
       {hits.length === 0 ? (

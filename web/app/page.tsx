@@ -193,26 +193,34 @@ function ResultRow({ hit }: { hit: SearchHit }) {
  * Mozart is genuinely in this corpus, on 85 releases that really do credit
  * someone here, and saying so is honest where hiding him would not be.
  *
+ * The shade tracks the grade rather than the fact of being graded. Accenting
+ * anything that carried a grade meant an artist reading "low" was highlighted
+ * while a label reading "Low" was not, which is the opposite of what the colour
+ * should say. Now the column dims as it goes down the scale, so a page of
+ * results shows where the weight is at a glance.
+ *
  * Labels are graded on the same words, from the measure they do have: a seed
  * label is a scene label by roster concentration. The underlying test is not
  * the artist one, but one column asking one question in one vocabulary beats
  * two scales sharing a heading.
  */
+const RELEVANCE_SHADE: Record<string, string> = {
+  high: "text-accent",
+  medium: "text-ink",
+  low: "text-ink-muted",
+};
+
 function Relevance({ hit }: { hit: SearchHit }) {
   if (hit.kind === "label") {
-    return hit.coreLabel ? (
-      <span className="text-accent">High</span>
-    ) : (
-      <span className="text-ink-faint">Low</span>
-    );
+    const grade = hit.coreLabel ? "high" : "low";
+    return <span className={RELEVANCE_SHADE[grade]}>{grade}</span>;
   }
 
   const graded = hit.relevance !== null && hit.relevance !== "none";
-  return (
-    <span className={graded ? "text-accent" : "text-ink-faint"}>
-      {graded ? hit.relevance : (hit.connection ?? "artist")}
-    </span>
-  );
+  if (!graded) {
+    return <span className="text-ink-faint">{hit.connection ?? "artist"}</span>;
+  }
+  return <span className={RELEVANCE_SHADE[hit.relevance!]}>{hit.relevance}</span>;
 }
 
 /*

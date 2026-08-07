@@ -178,7 +178,7 @@ function ResultRow({ hit }: { hit: SearchHit }) {
         <Relevance hit={hit} />
       </span>
 
-      <span className="text-ink-faint col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:col-start-4">
+      <span className="text-ink col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:col-start-4">
         {hit.kind}
       </span>
     </li>

@@ -2,12 +2,12 @@
 
 **Dig the extended scene. Dub Techno first. Following the credits, not the algorithm.**
 
-Every record is connected to another. A producer, a mixing engineer, a bassist
-who turns up on four other records you already love. An iconic, minor label you
-discover by picking up an obscure release you love gives you access to a
-goldmine of amazing titles. That web of credits is how crate diggers actually
-find music, and it all sits in Discogs. It just isn't optimised for digging this
-way.
+Every record is connected to another, through the people who made it. A
+producer, a mixing engineer, a bassist who turns up on four other records you
+already like. An iconic, minor label you discover by picking up an obscure
+release you love gives you access to a goldmine of new amazing titles. That web
+of credits is how crate diggers actually find music, and it all sits in Discogs.
+It just isn't optimised for digging this way.
 
 Dub Digger reshapes it. Type an artist, see who they worked with and what labels
 they released on, then click any of those and keep going. A map of scenes, drawn

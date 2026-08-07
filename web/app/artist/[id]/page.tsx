@@ -15,7 +15,14 @@ import { OutboundLinks } from "@/components/outbound-links";
 import { SiteHeader } from "@/components/site-header";
 import { CollapsibleText } from "@/components/collapsible-text";
 import { Tabs, LoadMore } from "@/components/tabs";
-import { Absence, Chip, CreditRow, FieldRow, LabelledBand } from "@/components/page-parts";
+import {
+  Absence,
+  Chip,
+  CreditRow,
+  Eyebrow,
+  FieldRow,
+  LabelledBand,
+} from "@/components/page-parts";
 import { PAGE_SIZE, pageSize, years } from "@/lib/view";
 
 export default async function ArtistPage({
@@ -60,7 +67,8 @@ export default async function ArtistPage({
       <SiteHeader />
 
       <div className="column pt-16 pb-16 md:pt-24">
-        <h1 className="text-name text-ink-strong leading-[0.92] font-bold tracking-[-0.04em]">
+        <Eyebrow>Artist</Eyebrow>
+        <h1 className="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]">
           {artist.name}
         </h1>
 

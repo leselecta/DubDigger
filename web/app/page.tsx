@@ -3,7 +3,7 @@ import { getCorpusStats, getDbPath } from "@/lib/db";
 import { search, type SearchHit } from "@/lib/queries";
 import { SiteHeader } from "@/components/site-header";
 import { SearchField } from "@/components/search-field";
-import { CreditRow } from "@/components/page-parts";
+import { CreditRow, Eyebrow } from "@/components/page-parts";
 
 export default async function HomePage({
   searchParams,
@@ -35,9 +35,7 @@ export default async function HomePage({
           searching ? "pt-14 pb-12" : "pt-24 pb-16 md:pt-[130px] md:pb-24"
         }`}
       >
-        <p className="text-ink-muted font-mono text-xs tracking-[0.32em] uppercase">
-          The Dub Techno Index
-        </p>
+        <Eyebrow>The Dub Techno Index</Eyebrow>
 
         {!searching && (
           <h1 className="text-hero text-ink-strong mt-9 leading-[0.98] font-bold tracking-[-0.035em]">

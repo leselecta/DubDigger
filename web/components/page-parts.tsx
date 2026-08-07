@@ -5,6 +5,18 @@ import Link from "next/link";
  * different nouns, so the layout lives here once.
  */
 
+/**
+ * The small accented line above a headline. On the home page it names the site,
+ * on an entity page it names what you are looking at, which is the one thing
+ * the big name itself cannot tell you: "Chain Reaction" is both a label and two
+ * unrelated artists.
+ */
+export function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-accent font-mono text-xs tracking-[0.32em] uppercase">{children}</p>
+  );
+}
+
 /** A `[label | value]` row in the identity block, separated by hairlines. */
 export function FieldRow({
   label,

@@ -4,6 +4,7 @@ import { getCorpusStats, getDbPath } from "@/lib/db";
 import { search, type SearchHit } from "@/lib/queries";
 import { SiteHeader } from "@/components/site-header";
 import { SearchField } from "@/components/search-field";
+import { CountUp } from "@/components/count-up";
 import { Eyebrow } from "@/components/page-parts";
 
 export default async function HomePage({
@@ -87,7 +88,7 @@ function CorpusStats({ stats }: { stats: NonNullable<ReturnType<typeof getCorpus
           >
             <dt className="mono-label">{label}</dt>
             <dd className="text-stat text-ink-strong mt-3 font-bold tracking-[-0.03em] tabular-nums">
-              {value.toLocaleString("en-GB")}
+              <CountUp value={value} />
             </dd>
           </div>
         ))}

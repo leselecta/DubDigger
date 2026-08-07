@@ -183,6 +183,7 @@ test("coverage tells 'no credits recorded' apart from 'worked solo'", async () =
     // the count is what the corpus holds, the grade is what pass 1 measured.
     seed_releases: 1,
     seed_share: null,
+    scene_relevance: "none",
     relevance: "none",
     lineage: null,
   } as never);
@@ -256,7 +257,11 @@ test("without a measured total nobody is graded high", async () => {
 });
 
 const coverageOf = (db: Database.Database, id: number) =>
-  db.prepare("SELECT seed_releases, seed_share, relevance, lineage FROM artist_coverage WHERE artist_id = ?").get(id);
+  db
+    .prepare(
+      "SELECT seed_releases, seed_share, scene_relevance, relevance, lineage FROM artist_coverage WHERE artist_id = ?",
+    )
+    .get(id);
 
 test("seed releases are counted for artists the ratio rejected", async () => {
   // King Tubby: on real seed releases, but 0.51% of a reissue-inflated
@@ -273,6 +278,7 @@ test("seed releases are counted for artists the ratio rejected", async () => {
     seed_releases: 2,
     seed_share: 2 / 400,
     // Still not scene membership, and the share is what says so.
+    scene_relevance: "none",
     relevance: "none",
     lineage: null,
   });
@@ -291,59 +297,90 @@ test("a release counts once when someone is on the artist line and in the credit
   );
 });
 
-test("roots dub is tagged as lineage, and never as relevance", async () => {
-  // The tradition the scene came out of. Reggae dub is invisible to a seed that
-  // admits Dub only on genre Electronic, so no relevance grade can reach it.
-  const roots = { seed: false, styles: ["Dub"], genres: ["Reggae"] };
-  const db = corpus([
-    { id: 1, artists: [10], ...roots },
-    { id: 2, artists: [10], ...roots },
-    { id: 3, artists: [10], ...roots },
-    { id: 4, artists: [10], ...roots },
-    { id: 5, artists: [10], ...roots },
-    { id: 6, artists: [10], seed: false },
-  ]);
+/** Five records in a tradition, plus one outside it: over both dials. */
+const tradition = (id: number, tags: { styles?: string[]; genres?: string[]; labels?: number[] }) => [
+  ...Array.from({ length: 5 }, (_, i) => ({ id: id * 1000 + i, artists: [id], seed: false, ...tags })),
+  { id: id * 1000 + 9, artists: [id], seed: false },
+];
+
+test("a tradition lifts the grade to the floor, and keeps the measurement", async () => {
+  // King Tubby. Reggae dub is invisible to a seed that admits Dub only on genre
+  // Electronic, so no measure of the scene can reach him: 'none' is what the
+  // corpus knows and 'medium' is what the tool says.
+  const db = corpus(tradition(10, { styles: ["Dub"], genres: ["Reggae"] }));
   await runDerive(db);
 
   assert.deepEqual(coverageOf(db, 10), {
     seed_releases: 0,
     seed_share: null,
-    relevance: "none",
+    scene_relevance: "none",
+    relevance: "medium",
     lineage: "roots dub",
   });
 });
 
-test("lineage needs both the floor and the share", async () => {
-  const roots = { seed: false, styles: ["Dub"], genres: ["Reggae"] };
-  // 11 has four roots records, all they ever made: pure, but under the floor.
-  // 12 has five, in a catalogue of fifty: a body of them, but a side project.
+test("a tradition lifts to the floor and no further", async () => {
+  // 11 is already high on scene work. The tag describes them; it cannot promote
+  // them, and it must not demote them to the floor either.
   const db = corpus([
-    { id: 1, artists: [11], ...roots },
-    { id: 2, artists: [11], ...roots },
-    { id: 3, artists: [11], ...roots },
-    { id: 4, artists: [11], ...roots },
-    ...Array.from({ length: 5 }, (_, i) => ({ id: 100 + i, artists: [12], ...roots })),
-    ...Array.from({ length: 45 }, (_, i) => ({ id: 200 + i, artists: [12], seed: false })),
+    ...tradition(11, { styles: ["Dub"], genres: ["Reggae"] }),
+    { id: 500, artists: [11] },
+  ]);
+  seed(db, [[11, 61, 77]]);
+  await runDerive(db);
+
+  const row = coverageOf(db, 11) as { scene_relevance: string; relevance: string };
+  assert.equal(row.scene_relevance, "high");
+  assert.equal(row.relevance, "high");
+});
+
+test("afrobeat and detroit techno are traditions too", async () => {
+  // Afrobeat off a style, Detroit off the imprints, because `Detroit Techno` is
+  // not a Discogs style and `Techno` is too broad to be one.
+  const db = corpus([
+    ...tradition(12, { styles: ["Afrobeat"] }),
+    ...tradition(13, { labels: [415] }), // Metroplex
   ]);
   await runDerive(db);
 
-  assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 11").pluck().get(), null);
-  assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 12").pluck().get(), null);
+  assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 12").pluck().get(), "afrobeat");
+  assert.equal(db.prepare("SELECT relevance FROM artist_coverage WHERE artist_id = 12").pluck().get(), "medium");
+  assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 13").pluck().get(), "detroit techno");
+});
+
+test("one tag per artist, styles before labels", async () => {
+  // A Jamaican player who also cut for Metroplex reads as what they mostly are.
+  const db = corpus([
+    ...tradition(14, { styles: ["Dub"], genres: ["Reggae"], labels: [415] }),
+  ]);
+  await runDerive(db);
+  assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 14").pluck().get(), "roots dub");
 });
 
 test("dub on any other genre is not the roots tradition", async () => {
   // The genre is the whole distinction: electronic dub is the scene itself, and
   // tagging it as an ancestor of itself would say nothing.
-  const db = corpus(
-    Array.from({ length: 6 }, (_, i) => ({
-      id: i + 1,
-      artists: [10],
-      styles: ["Dub", "Dub Techno"],
-      genres: ["Electronic"],
-    })),
-  );
+  const db = corpus(tradition(15, { styles: ["Dub", "Dub Techno"], genres: ["Electronic"] }));
   await runDerive(db);
-  assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 10").pluck().get(), null);
+  assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 15").pluck().get(), null);
+});
+
+test("a tradition needs both the floor and the share", async () => {
+  const roots = { seed: false, styles: ["Dub"], genres: ["Reggae"] };
+  // 16 has four roots records, all they ever made: pure, but under the floor.
+  // 17 has five, in a catalogue of fifty: a body of them, but a side project.
+  const db = corpus([
+    { id: 1, artists: [16], ...roots },
+    { id: 2, artists: [16], ...roots },
+    { id: 3, artists: [16], ...roots },
+    { id: 4, artists: [16], ...roots },
+    ...Array.from({ length: 5 }, (_, i) => ({ id: 100 + i, artists: [17], ...roots })),
+    ...Array.from({ length: 45 }, (_, i) => ({ id: 200 + i, artists: [17], seed: false })),
+  ]);
+  await runDerive(db);
+
+  assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 16").pluck().get(), null);
+  assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 17").pluck().get(), null);
 });
 
 test("a second run replaces the first rather than layering on top of it", async () => {

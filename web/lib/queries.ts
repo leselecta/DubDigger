@@ -31,16 +31,19 @@ export interface Artist {
   isSeed: boolean;
   channelA: boolean;
   channelB: boolean;
+  /** What the page shows: the measurement, raised by any tradition. */
   relevance: Relevance;
+  /**
+   * The measurement on its own, before a tradition lifted it. Where the two
+   * differ, the grade is standing on lineage rather than on scene work, and the
+   * page has to say so instead of claiming work that is not there.
+   */
+  sceneRelevance: Relevance;
   /** Releases of theirs inside the style seed. */
   seedReleases: number;
   /** That as a share of their whole output, or null if never measured. */
   seedShare: number | null;
-  /**
-   * A tradition they belong to that sits upstream of this scene rather than in
-   * it: 'roots dub', or null. Deliberately not on the relevance scale — King
-   * Tubby is not a weak dub techno artist, he is the reason there is one.
-   */
+  /** The tradition that lifted them: 'roots dub', 'afrobeat', 'detroit techno'. */
   lineage: string | null;
 }
 
@@ -126,6 +129,7 @@ interface ArtistRow {
   channel_a: number;
   channel_b: number;
   relevance: Relevance;
+  scene_relevance: Relevance;
   seed_releases: number;
   seed_share: number | null;
   lineage: string | null;
@@ -185,6 +189,7 @@ export function getArtist(id: number): Artist | null {
               coalesce(m.channel_a, 0) AS channel_a,
               coalesce(m.channel_b, 0) AS channel_b,
               coalesce(c.relevance, 'none') AS relevance,
+              coalesce(c.scene_relevance, 'none') AS scene_relevance,
               coalesce(c.seed_releases, 0)  AS seed_releases,
               c.seed_share,
               c.lineage
@@ -212,6 +217,7 @@ export function getArtist(id: number): Artist | null {
     channelA: row.channel_a === 1,
     channelB: row.channel_b === 1,
     relevance: row.relevance,
+    sceneRelevance: row.scene_relevance,
     seedReleases: row.seed_releases,
     seedShare: row.seed_share,
     lineage: row.lineage,

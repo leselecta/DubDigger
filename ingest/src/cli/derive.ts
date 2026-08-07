@@ -37,8 +37,9 @@ console.log(`
   artist_coverage        ${n(stats.artistCoverage)}
   compilations unpaired  ${n(stats.releasesSkippedForPairs)}
 
-  lineage tagged         ${n(stats.artistLineage)}
-    of those, ungraded   ${n(stats.artistLineageOtherwiseUngraded)}   (the tag is all they have)
+${stats.lineage
+  .map((t) => `  ${t.name.padEnd(21)}${n(t.tagged)} tagged, ${n(t.lifted)} lifted to the floor`)
+  .join("\n")}
 
   elapsed                ${((Date.now() - started) / 1000).toFixed(1)}s
 `);

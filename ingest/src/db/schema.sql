@@ -251,11 +251,15 @@ CREATE TABLE IF NOT EXISTS artist_coverage (
   -- displays, and they are not the tally the grade below was computed from.
   seed_releases      INTEGER NOT NULL DEFAULT 0,
   seed_share         REAL,
-  -- 'high' | 'medium' | 'low' | 'none'. See the relevance dials in config.ts.
+  -- 'high' | 'medium' | 'low' | 'none', as the seed measures it. The dials are
+  -- in config.ts. This is the measurement, before any editorial rule runs.
+  scene_relevance    TEXT NOT NULL DEFAULT 'none',
+  -- What the interface shows: scene_relevance, raised to the lineage floor when
+  -- a tradition applies. The two are kept apart so a page can say which it is
+  -- reading, and never implies scene work an artist does not have.
   relevance          TEXT NOT NULL DEFAULT 'none',
-  -- A tradition this artist belongs to, upstream of the scene rather than in
-  -- it: 'roots dub', or NULL. The one editorial rule in the corpus, and a
-  -- separate axis from relevance. See the lineage note in config.ts.
+  -- The tradition that raised it, or NULL: 'roots dub', 'afrobeat',
+  -- 'detroit techno'. The editorial rules of the corpus, argued in config.ts.
   lineage            TEXT
 );
 

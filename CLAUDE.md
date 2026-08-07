@@ -99,29 +99,40 @@ Derived tables (precomputed, what the app reads):
 - `artist_labels` — per artist, labels with release counts and date ranges
 - `label_roster` — per label, artists ranked by release count
 - coverage flags per artist — distinguish "no credits recorded" from "worked solo"; seed vs. one-hop membership, tagged with provenance (Channel A collaboration / Channel B label-membership / both)
-- relevance per artist — `high` / `medium` / `low` graded on seed release count AND seed share of their whole output (both, since either alone misranks); `none` for one-hop artists with no seed work, where the provenance above is what the UI shows instead. Dials in `ingest/src/config.ts`, pinned to named acts and asserted by `check-corpus`.
-- lineage per artist — a tradition upstream of the scene, `roots dub` or NULL. **A separate axis from relevance, never a grade on it.** See "Lineage" below.
+- `scene_relevance` per artist — the measurement: `high` / `medium` / `low` graded on seed release count AND seed share of their whole output (both, since either alone misranks); `none` for one-hop artists with no seed work, where the provenance above is what the UI shows instead. Dials in `ingest/src/config.ts`, pinned to named acts and asserted by `check-corpus`.
+- lineage per artist — a tradition the scene came out of or keeps company with: `roots dub`, `detroit techno`, `afrobeat`, or NULL. See "Lineage" below.
+- `relevance` per artist — **what the interface shows**: `scene_relevance`, raised to `medium` when a lineage applies. One scale, one column, so a result reads the same in search as on its page.
+
+Never show `relevance` as a bare word where there is room to say what it stands on. Two different things put an artist on a step, and a page that says "medium" without saying which is claiming scene work that may not exist. The artist page pattern: `Medium, very weak ties with the core dub techno scene, here for lineage: roots dub, the Jamaican tradition dub techno grew out of`. The search results column is the one place the word stands alone, and that is a known cost of merging, not a licence to do it elsewhere.
 
 Two numbers on an artist are close enough to confuse and are not the same thing. The grade comes from pass 1's tally, which counts APPEARANCES across the whole dump (someone on the artist line who also engineered the record counts twice) and only exists for artists who cleared the seed ratio. What a page displays is recomputed in `derive` as DISTINCT releases, for everyone. Pass 1 has Jeff Mills at 160 where the corpus holds 116. Do not quietly reconcile them by regrading on the displayed figure: that moves every dial under the acts they were pinned to, and it is a decision to take deliberately.
 
 Ranking by frequency is central: collaborators and labels are ordered by count, never alphabetically. Frequency is the signal.
 
-## Lineage — the one editorial rule
+## Lineage — the editorial rules
 
-Everything else in this corpus is derived. This is a judgement, and it is written down rather than hidden in a dial.
+Everything else in this corpus is derived. These are judgements, written down rather than hidden in a dial.
 
-**The problem.** Relevance measures work inside the dub techno seed. By that measure King Tubby scores what the Spice Girls score, because `Dub` is only a seed style on genre `Electronic` and his catalogue is Dub on genre `Reggae`. Defensible as graph output, wrong as an answer a digger would accept: classic Jamaican dub is the spark this scene came from.
+**The problem.** The seed measures work inside dub techno. By that measure King Tubby scores what the Spice Girls score, because `Dub` is only a seed style on genre `Electronic` and his catalogue is Dub on genre `Reggae`. Underground Resistance scores the same, because `Techno` was kept out of the seed for being too broad. Defensible as graph output, wrong as an answer a digger would accept: those two traditions are where this music comes from.
 
-**No measure of the scene fixes it, and that was proved before reaching for a rule.** Bob Marley has 123 seed releases to King Tubby's 15, Madonna 106, Depeche Mode 75. On connection strength Madonna has 63 ties into the seed and Mozart 75, against Tubby's 57. Every threshold that lifts Tubby lifts Madonna higher. "Ancestor of" is a historical fact and style co-occurrence cannot express it.
+**No measure of the scene fixes it, and that was proved before reaching for a rule.** Bob Marley has 123 seed releases to King Tubby's 15, Madonna 106, Depeche Mode 75. On connection strength Madonna has 63 ties into the seed and Mozart 75, against Tubby's 57. Every threshold that lifts Tubby lifts Madonna higher. "Ancestor of" is a historical fact and style co-occurrence cannot express it, so it is asserted instead.
 
-**The rule.** Classify an artist by the music they make, not by whether it is in the seed: share of their corpus releases tagged style `Dub` on genre `Reggae`. Jah Shaka 86%, King Tubby 72%, Prince Jammy 67%, Scientist 49%, Augustus Pablo 46%, against Madonna 0.2% and a clean zero for Spice Girls, Björk, Depeche Mode, Mozart and The Beatles. Dials (5+ releases, 20%+ share) in `ingest/src/config.ts`, asserted by `check-corpus` in both directions.
+**The three traditions**, all dialled in `ingest/src/config.ts` and asserted by `check-corpus` in both directions:
 
-**Rules about the rule:**
-- **Lineage never touches relevance, the corpus, the seed sets or the label ratios.** King Tubby stays "very low" and gains a second line saying he is upstream. Reading him as "high relevance to dub techno" is the same error pointed the other way.
-- **Additive where a grade already exists.** 3,896 artists carry the tag and 2,336 of them already grade medium or high. The 1,109 it rescues from "very low" are the Jamaican session pantheon: Roots Radics, Chinna Smith, Horsemouth Wallace, Dean Fraser, Scientist, King Tubby.
-- **It captures tradition membership, not chronology.** A present-day act making roots records qualifies. That is right for Roberto Sanchez and arguable for a London jazz player with a dub side, which is the known soft edge.
-- **Afrobeat and the new London jazz were considered and deliberately left out.** Fela Kuti, Antibalas and Shabaka Hutchings score zero here, and no honest claim makes them ancestors of dub techno. They are neighbours who arrived through a real credit, which is what "very low" plus a route already says. Both are in the `check-corpus` must-not list to keep it that way.
-- **Adding a second tradition is an editorial decision, not a config tweak.** Argue it here first, with the numbers that separate it from the acts it must not catch.
+| | mechanism | dials | tagged / lifted |
+|---|---|---|---|
+| `roots dub` | style `Dub` on genre `Reggae` | 5+ releases, 20% | 3,896 / 1,560 |
+| `detroit techno` | 3+ releases on ten Detroit imprints, by label ID | 3+ releases, 10% | 256 / 193 |
+| `afrobeat` | style `Afrobeat` | 5+ releases, 20% | 209 / 132 |
+
+**Rules about the rules:**
+- **A tradition lifts to `medium` and no further.** It cannot promote someone to high and cannot demote someone already there. `scene_relevance` keeps the measurement, so the page never implies scene work that is not in the data.
+- **One tag per artist, styles before labels, first match wins.** A Jamaican player who also cut for Metroplex reads `roots dub`.
+- **They are not the same claim, and the interface must not flatten them.** Roots dub and Detroit are descent ("grew out of", "the tradition Berlin was answering"). Afrobeat is kinship ("keeps company with"). Keep that wording distinction.
+- **Afrobeat is Simone's editorial call, recorded as such.** There is no documented line from Fela Kuti to dub techno the way there is from King Tubby, and the counter-argument was on the table when he made it. What it expresses: this tool is a map of a scene's roots and neighbours, and it should hold the black traditions the music keeps company with rather than rank them as footnotes. Don't quietly "correct" it, and don't cite it as precedent for a tradition with no argument behind it.
+- **Tresor is deliberately not a Detroit label.** It is the Detroit-Berlin bridge and would tag several hundred Berlin artists as Detroit descent. The cost is Drexciya, whose corpus presence is 45 Tresor releases and nothing else, so they stay ungraded. A wrong tag on hundreds beats a right one on one.
+- **A jazz rule was measured and rejected.** Genre `Jazz` at these dials tags 11,281 artists and lifts 4,360, headed by John Zorn, Peter Brötzmann, Evan Parker and two mastering engineers. They are here because Bill Laswell produced half of New York's avant-garde: a hub, not a heritage. Shabaka Hutchings, Sun Ra and John Zorn are in the `check-corpus` must-not list to keep it that way.
+- **Adding a tradition is an editorial decision, not a config tweak, and the bar rose when the axes merged.** A tradition no longer annotates a grade, it sets one, and the results column shows the word with no room for the reason. Argue it here first, with the numbers that separate it from the acts it must not catch.
 
 ## UI principles
 
@@ -129,7 +140,7 @@ These three are load-bearing and hold regardless of how the interface looks:
 
 - **Ranked lists over graphs.** Sorted by strength, lists answer "who matters here" on sight. No graph in v1.
 - **One click to pivot.** Every artist, label, and release is a link to its own page. Digging is hopping between pages, not composing a query.
-- **Show data absence honestly.** "No credits recorded" must be visibly distinct from "worked solo." Never render an empty result that looks like a positive answer. The same honesty extends to connection strength: relevance grades and the collaborator/label-mate distinction exist so a peripheral artist looks peripheral. Never present a weak tie as a strong one. And it runs the other way too: a grade the corpus cannot measure must not be reported as a low score. That is what Lineage is for.
+- **Show data absence honestly.** "No credits recorded" must be visibly distinct from "worked solo." Never render an empty result that looks like a positive answer. The same honesty extends to connection strength: relevance grades and the collaborator/label-mate distinction exist so a peripheral artist looks peripheral. Never present a weak tie as a strong one. And it runs the other way too: a grade the corpus cannot measure must not be reported as a low score. That is what Lineage is for, and why a lifted grade always says it was lifted.
 - **One question, one vocabulary.** Relevance reads in the same four steps wherever it appears — the results column, the artist page, the label page — with the reason for the step alongside it in grey. A page that answers "how close to the scene" in words its own search results do not use is two scales sharing a heading.
 
 ### Density: suspended, pending the design pass

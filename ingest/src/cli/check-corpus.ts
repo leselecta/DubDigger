@@ -110,43 +110,62 @@ const ARTISTS_NOT_CORE = [
 ];
 
 /**
- * The tradition dub techno came out of, which the scene measure cannot see.
+ * Traditions the scene measure cannot see, and the tag each must carry.
  *
- * These are the names that made the lineage rule necessary: on relevance alone
- * King Tubby reads exactly as the Spice Girls do, because his catalogue is Dub
- * on genre Reggae and the seed only admits Dub on genre Electronic.
+ * These are the names that made the lineage rules necessary: on scene work
+ * alone King Tubby and Underground Resistance both read exactly as the Spice
+ * Girls do, one because his catalogue is Dub on genre Reggae and the seed only
+ * admits Dub on genre Electronic, the other because Techno was kept out of the
+ * seed for being too broad.
  */
-const ARTISTS_ROOTS_DUB = [
-  "King Tubby",
-  "Scientist",
-  "Prince Jammy",
-  "Augustus Pablo",
-  "Jah Shaka",
-  "Yabby You",
-  "Errol Thompson",
-  "The Roots Radics",
-  // Already high on relevance. The tag is additive, never a promotion.
-  "Rhythm & Sound",
+const ARTISTS_LINEAGE: [name: string, tradition: string][] = [
+  ["King Tubby", "roots dub"],
+  ["Scientist", "roots dub"],
+  ["Prince Jammy", "roots dub"],
+  ["Augustus Pablo", "roots dub"],
+  ["Jah Shaka", "roots dub"],
+  ["Yabby You", "roots dub"],
+  ["Errol Thompson", "roots dub"],
+  ["The Roots Radics", "roots dub"],
+  // Already high on scene work. A tradition describes, it does not promote.
+  ["Rhythm & Sound", "roots dub"],
+  ["Fela Kuti", "afrobeat"],
+  ["Antibalas", "afrobeat"],
+  ["Underground Resistance", "detroit techno"],
+  ["Rhythim Is Rhythim", "detroit techno"],
+  ["Kevin Saunderson", "detroit techno"],
+  ["Octave One", "detroit techno"],
+  ["Theo Parrish", "detroit techno"],
 ];
 
 /**
- * Neighbours who are not ancestors, and must not pick the tag up.
+ * Nobody a tradition may reach.
  *
- * The afrobeat and new-jazz names are here because they were the other half of
- * the question: they read very low too, and unlike the dub names that is the
- * right answer. Nothing makes them upstream of this scene.
+ * Shabaka Hutchings and Sun Ra are here because a jazz rule was measured and
+ * rejected: at these dials genre Jazz tags 11,281 artists and lifts 4,360,
+ * headed by John Zorn and two mastering engineers, all of them present because
+ * Bill Laswell produced half of New York's avant-garde. If one of these ever
+ * turns up tagged, a rule has started reading a hub as a heritage.
  */
-const ARTISTS_NOT_ROOTS_DUB = [
-  "Fela Kuti",
-  "Antibalas",
+const ARTISTS_NO_LINEAGE = [
   "Shabaka Hutchings",
   "Sun Ra",
+  "John Zorn",
   "Madonna",
   "Spice Girls",
   "Björk",
   "Depeche Mode",
   "Wolfgang Amadeus Mozart",
   "Basic Channel",
+];
+
+/** The merged scale: what a tradition is worth, and what it must not be worth. */
+const ARTISTS_AT_LEAST_MEDIUM = [
+  "King Tubby",
+  "Scientist",
+  "Fela Kuti",
+  "Underground Resistance",
+  "Rhythim Is Rhythim",
 ];
 
 const db = openDbReadOnly();
@@ -166,9 +185,17 @@ const isHigh = db.prepare(
   `SELECT count(*) FROM artists a JOIN artist_coverage c ON c.artist_id = a.id
     WHERE a.name = ? AND c.relevance = 'high'`,
 );
-const isRootsDub = db.prepare(
+const hasLineage = db.prepare(
   `SELECT count(*) FROM artists a JOIN artist_coverage c ON c.artist_id = a.id
-    WHERE a.name = ? AND c.lineage = 'roots dub'`,
+    WHERE a.name = ? AND c.lineage = ?`,
+);
+const anyLineage = db.prepare(
+  `SELECT count(*) FROM artists a JOIN artist_coverage c ON c.artist_id = a.id
+    WHERE a.name = ? AND c.lineage IS NOT NULL`,
+);
+const atLeastMedium = db.prepare(
+  `SELECT count(*) FROM artists a JOIN artist_coverage c ON c.artist_id = a.id
+    WHERE a.name = ? AND c.relevance IN ('high', 'medium')`,
 );
 
 function check(kind: string, name: string, want: boolean, got: number) {
@@ -199,13 +226,22 @@ for (const name of ARTISTS_NOT_CORE) {
   check("artist", name, false, isHigh.pluck().get(name) as number);
 }
 
-console.log("\nRoots dub lineage\n");
-for (const name of ARTISTS_ROOTS_DUB) {
-  check("artist", name, true, isRootsDub.pluck().get(name) as number);
+console.log("\nLineage\n");
+for (const [name, tradition] of ARTISTS_LINEAGE) {
+  check(tradition, name, true, hasLineage.pluck().get(name, tradition) as number);
 }
 console.log();
-for (const name of ARTISTS_NOT_ROOTS_DUB) {
-  check("artist", name, false, isRootsDub.pluck().get(name) as number);
+for (const name of ARTISTS_NO_LINEAGE) {
+  check("none", name, false, anyLineage.pluck().get(name) as number);
+}
+
+console.log("\nLifted to the floor\n");
+for (const name of ARTISTS_AT_LEAST_MEDIUM) {
+  check("artist", name, true, atLeastMedium.pluck().get(name) as number);
+}
+console.log();
+for (const name of ARTISTS_NOT_CORE) {
+  check("artist", name, false, atLeastMedium.pluck().get(name) as number);
 }
 
 console.log(

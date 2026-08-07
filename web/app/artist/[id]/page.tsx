@@ -97,11 +97,6 @@ export default async function ArtistPage({
           <FieldRow label="Relevance" accent={artist.relevance !== "none"}>
             <Relevance artist={artist} />
           </FieldRow>
-          {artist.lineage && (
-            <FieldRow label="Lineage" accent>
-              <Lineage lineage={artist.lineage} />
-            </FieldRow>
-          )}
           <div className="border-hairline border-b">
             <FieldRow label="View on">
               <OutboundLinks kind="artist" id={artist.id} urls={artist.urls} />
@@ -228,28 +223,63 @@ function Releases({ artistId, limit }: { artistId: number; limit: number }) {
 }
 
 /**
- * How central they are, said as tie strength rather than as a bare grade.
+ * One grade, and what it is standing on.
  *
- * The four steps are the ones the search results use. The clause says what the
- * step means without repeating the numbers behind it, which are already in the
- * accent stat line above.
+ * The four steps are the ones the search results use. Two different things can
+ * put an artist on a step, so the clause always says which: work inside the
+ * scene, or membership of a tradition the scene came out of. King Tubby reads
+ * medium, and it would be a lie to let that imply dub techno records he never
+ * made, so the clause says weak ties AND says why he is here anyway.
  *
- * "Very low" carries the route as well, because an artist with no seed work is
- * not a weak version of core, they are a neighbour, and a label mate is not a
- * weak collaborator. That distinction is too useful to drop.
+ * The bottom step carries the route instead, because an artist with no seed
+ * work is not a weak version of core, they are a neighbour, and a label mate is
+ * not a weak collaborator. That distinction is too useful to drop.
  */
-const RELEVANCE_REASON: Record<string, string> = {
+const SCENE_REASON: Record<string, string> = {
   high: "very strong ties with the core dub techno scene",
   medium: "strong ties with the core dub techno scene",
   low: "weak ties with the core dub techno scene",
+  none: "very weak ties with the core dub techno scene",
+};
+
+/**
+ * What each tradition claims, in its own words.
+ *
+ * These are not the same claim and must not read as though they were. Roots dub
+ * and Detroit are descent, and the phrasing says so. Afrobeat is kinship: it is
+ * here as an editorial choice about what this map should hold, not because
+ * anyone traces dub techno back to Lagos.
+ */
+const LINEAGE_REASON: Record<string, string> = {
+  "roots dub": "the Jamaican tradition dub techno grew out of",
+  "detroit techno": "the tradition Berlin was answering",
+  afrobeat: "a tradition this scene keeps company with",
 };
 
 function Relevance({ artist }: { artist: Artist }) {
+  const lifted = artist.lineage !== null && artist.relevance !== artist.sceneRelevance;
+  const grade = artist.relevance === "none" ? "Very low" : artist.relevance;
+
+  if (lifted) {
+    return (
+      <>
+        <span className="capitalize">{grade}</span>
+        <span className="text-ink-faint">
+          , {SCENE_REASON[artist.sceneRelevance]}, here for lineage: {artist.lineage},{" "}
+          {LINEAGE_REASON[artist.lineage!]}
+        </span>
+      </>
+    );
+  }
+
   if (artist.relevance !== "none") {
     return (
       <>
-        <span className="capitalize">{artist.relevance}</span>
-        <span className="text-ink-faint">, {RELEVANCE_REASON[artist.relevance]}</span>
+        <span className="capitalize">{grade}</span>
+        <span className="text-ink-faint">
+          , {SCENE_REASON[artist.relevance]}
+          {artist.lineage && `, and part of the ${artist.lineage} tradition`}
+        </span>
       </>
     );
   }
@@ -267,35 +297,8 @@ function Relevance({ artist }: { artist: Artist }) {
     <>
       Very low
       <span className="text-ink-faint">
-        , very weak ties with the core dub techno scene (here as {route})
+        , {SCENE_REASON.none} (here as {route})
       </span>
-    </>
-  );
-}
-
-/**
- * A tradition upstream of this scene, on its own row rather than on the scale.
- *
- * Relevance measures work inside dub techno, and by that measure King Tubby
- * scores what the Spice Girls score: his catalogue is Dub on genre Reggae, and
- * the seed only admits Dub on genre Electronic. No number in this corpus
- * separates them, since Madonna has seven times his seed releases and Mozart
- * more connections into the scene. Lineage is the second axis that does, and it
- * says the other thing: not how close, but what he is upstream of.
- *
- * It never overwrites the grade. "Very low" is still true and still shown.
- */
-const LINEAGE_REASON: Record<string, string> = {
-  "roots dub": "the Jamaican tradition dub techno grew out of",
-};
-
-function Lineage({ lineage }: { lineage: string }) {
-  return (
-    <>
-      <span className="capitalize">{lineage}</span>
-      {LINEAGE_REASON[lineage] && (
-        <span className="text-ink-faint">, {LINEAGE_REASON[lineage]}</span>
-      )}
     </>
   );
 }

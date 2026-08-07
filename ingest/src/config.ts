@@ -354,64 +354,117 @@ export const relevance = {
 };
 
 /**
- * Lineage: the one editorial rule in the corpus.
+ * Lineage: the editorial rules in the corpus.
  *
- * Everything else here is derived. This is a judgement, stated openly.
+ * Everything else here is derived. These are judgements, stated openly.
  *
- * Relevance measures how much of an artist's work sits inside the dub techno
- * seed, and by that measure King Tubby scores nothing: `Dub` is only a seed
- * style on genre Electronic, so 206 of his 221 corpus releases are invisible to
- * the seed by construction, and the 15 that are visible are 0.51% of a
- * catalogue inflated by decades of reissues. He therefore reads exactly as the
- * Spice Girls read, which is defensible as graph output and wrong as an answer
- * a digger would accept. Jamaican dub is the tradition this scene came out of.
+ * WHY THE MEASURE NEEDS HELP. Relevance counts an artist's work inside the dub
+ * techno seed. By that count King Tubby scores what the Spice Girls score:
+ * `Dub` is only a seed style on genre Electronic, so 206 of his 221 corpus
+ * releases are invisible to the seed by construction, and the 15 that are
+ * visible are 0.51% of a catalogue inflated by decades of reissues. Defensible
+ * as graph output, wrong as an answer a digger would accept.
  *
- * No measure of the scene can fix that, and it was worth proving before
- * reaching for a rule. Bob Marley has 123 seed releases to King Tubby's 15,
- * Madonna 106, Depeche Mode 75. On connection strength Madonna has 63 ties into
- * the seed and Mozart 75, against Tubby's 57. Every threshold that lifts Tubby
- * lifts Madonna higher. "Ancestor of" is a historical fact, and style
- * co-occurrence cannot express it.
+ * No measure of the scene fixes it, and that was proved before reaching for a
+ * rule. Bob Marley has 123 seed releases to King Tubby's 15, Madonna 106,
+ * Depeche Mode 75. On connection strength Madonna has 63 ties into the seed and
+ * Mozart 75, against Tubby's 57. Every threshold that lifts Tubby lifts Madonna
+ * higher. "Ancestor of" is a historical fact and style co-occurrence cannot
+ * express it, so it is asserted here instead.
  *
- * What does separate them is the music they make. Share of an artist's corpus
- * releases tagged style Dub on genre Reggae: Jah Shaka 86%, King Tubby 72%,
- * Prince Jammy 67%, Scientist 49%, Augustus Pablo 46%, Errol Thompson 24%,
- * against Madonna 0.2% and a clean zero for Spice Girls, Björk, Depeche Mode,
- * Mozart and The Beatles.
+ * HOW IT LANDS. A tradition raises the merged grade to `floor` and no further.
+ * The measured grade is kept alongside it in artist_coverage.scene_relevance,
+ * so a page can say which of the two it is reading and never implies scene work
+ * that is not there. An artist already at high stays high.
  *
- * So lineage is a SEPARATE AXIS, never a promotion. It does not touch the
- * corpus, the seed sets, the label ratios or the relevance grade. King Tubby
- * stays "very low" on relevance, because he genuinely is not in this scene, and
- * gains a second line saying he is upstream of it. Reading him as "high
- * relevance to dub techno" would be the same error pointed the other way.
+ * PRECEDENCE. Styles are tried before labels, in array order, first match wins.
+ * Only one tag is stored: a Jamaican player who also cut for Metroplex reads
+ * "roots dub", which is the truer of the two.
  *
- * Dials measured on the 20260801 dump: 4,358 artists qualify, of whom 2,336
- * already grade medium or high (the tag is additive there) and 1,109 currently
- * read "very low". Those 1,109 are the Jamaican session pantheon: Roots Radics,
- * Chinna Smith, Horsemouth Wallace, Dean Fraser, Scientist, King Tubby.
- *
- * The rule captures tradition membership, not chronology, so a present-day dub
- * act making roots records qualifies too. That is the right answer for Roberto
- * Sanchez and an arguable one for a London jazz player with a dub side, which
- * is the known soft edge of this dial.
- *
- * Afrobeat and the new London jazz were considered and deliberately left out.
- * Fela Kuti, Antibalas and Shabaka Hutchings score zero here, and no honest
- * claim makes them ancestors of dub techno: they are neighbours who arrived
- * through a real credit, which is what "very low" plus a route already says.
+ * THE BAR FOR ADDING ONE. Higher now than when lineage was a separate row,
+ * because a tradition no longer annotates a grade, it sets one, and the search
+ * results column shows the word with no room for the reason. A tradition needs
+ * a line of descent someone can name, and dials that provably miss the acts it
+ * must not catch. A jazz rule was measured and rejected on exactly this: genre
+ * Jazz at these dials tags 11,281 artists and lifts 4,360, headed by John Zorn,
+ * Peter Brötzmann, Evan Parker and two mastering engineers, none of whom are
+ * upstream of anything here. They are in this corpus because Bill Laswell
+ * produced half of New York's avant-garde, which is a hub, not a heritage.
  */
 export const lineage = {
-  rootsDub: {
+  /** A tradition lifts an artist to here, never past it. */
+  floor: "medium",
+
+  /**
+   * Traditions read off what an artist records.
+   *
+   * roots dub: the founding line. Basic Channel and Rhythm & Sound made reggae
+   * records with Jamaican vocalists and cut them in their own dubplate room, so
+   * this is descent you can point at rather than resemblance. Share of corpus
+   * releases tagged Dub on genre Reggae: Jah Shaka 86%, King Tubby 72%, Prince
+   * Jammy 67%, Scientist 49%, Augustus Pablo 46%, Errol Thompson 24%, against
+   * Madonna 0.2% and a clean zero for Spice Girls, Björk, Depeche Mode, Mozart
+   * and The Beatles. 3,896 tagged, 1,109 of them otherwise ungraded: the
+   * Jamaican session pantheon, Roots Radics and Chinna Smith and Dean Fraser.
+   *
+   * afrobeat: Simone's call, made with the counter-argument on the table and
+   * recorded that way rather than dressed up as something the data implies.
+   * There is no documented line from Fela Kuti to dub techno the way there is
+   * from King Tubby; afrobeat acts are in this corpus through a real credit,
+   * not through descent. What is true is that this tool is a map of a scene's
+   * roots and neighbours, and he wants that map to hold the black traditions
+   * the music keeps company with rather than rank them as footnotes. The rule
+   * is small and precise enough to be honest about: 471 tagged, 113 lifted.
+   * The interface says "keeps company with" for this one and "grew out of" for
+   * the dub line, because those are different claims and only one is descent.
+   */
+  byStyle: [
     /** Style and genre together. Either alone is a different music. */
-    style: "Dub",
-    genre: "Reggae",
-    /** A floor, so a single guest spot on a dub record is not a tradition. */
-    minReleases: 5,
-    /** And a share, so a prolific artist does not qualify on volume alone. */
-    minShare: 0.2,
-    /** Written into artist_coverage.lineage and shown as-is by the app. */
-    name: "roots dub",
-  },
+    { name: "roots dub", style: "Dub", genre: "Reggae", minReleases: 5, minShare: 0.2 },
+    /** Afrobeat is specific enough as a style that no genre gate is needed. */
+    { name: "afrobeat", style: "Afrobeat", genre: null, minReleases: 5, minShare: 0.2 },
+  ],
+
+  /**
+   * Traditions read off where an artist released.
+   *
+   * detroit techno: the other founding line, and Berlin said so out loud. It
+   * cannot be a style rule, because `Detroit Techno` does not exist as a
+   * Discogs style (zero rows in this corpus) and `Techno` was kept out of the
+   * seed for being too broad. So the imprints stand in for the tradition, by
+   * ID rather than by name because "Axis" and "Buzz" are not unique strings.
+   *
+   * Lower dials than the style rules: a curated list of ten labels is already
+   * the precision, so the share only has to rule out a one-off guest. At 3
+   * releases and 10% it tags 271 and lifts 171, taking Underground Resistance,
+   * Rhythim Is Rhythim, Mike Banks, Kevin Saunderson, Octave One and Theo
+   * Parrish off the floor, all of whom read "very low" before it.
+   *
+   * Tresor is deliberately NOT here. It is the Detroit-Berlin bridge and it
+   * would tag several hundred Berlin techno artists as Detroit descent. The
+   * cost is Drexciya, whose corpus presence is 45 Tresor releases and nothing
+   * else, so they stay ungraded. A wrong tag on hundreds beats a right one on
+   * one.
+   */
+  byLabel: [
+    {
+      name: "detroit techno",
+      labels: [
+        415, // Metroplex
+        388, // Transmat
+        290, // KMS
+        258, // Underground Resistance
+        43, //  Axis
+        1, //   Planet E
+        257, // 430 West
+        70, //  7th City
+        399, // M-Plant
+        374, // Sound Signature
+      ],
+      minReleases: 3,
+      minShare: 0.1,
+    },
+  ],
 };
 
 /**

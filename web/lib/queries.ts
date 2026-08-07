@@ -96,6 +96,11 @@ export interface SearchHit {
   relevance: Relevance | null;
   /** How a "none" artist reached the corpus. A label mate is not a collaborator. */
   connection: "collaborator" | "label mate" | "collaborator + label mate" | null;
+  /**
+   * Labels are not on the artist relevance scale, but they have one of their
+   * own: a seed label is a scene label by roster concentration. Null on artists.
+   */
+  coreLabel: boolean | null;
 }
 
 /** Row shapes as SQLite returns them, snake_case and with 0/1 for booleans. */
@@ -387,6 +392,7 @@ export function search(query: string, limit = 40): SearchResults {
       releaseCount: r.release_count,
       relevance: r.relevance ?? "none",
       connection: connection(r),
+      coreLabel: null,
       rank: ORDER[r.relevance ?? "none"]!,
     })),
     ...labels.map((r) => ({
@@ -396,6 +402,7 @@ export function search(query: string, limit = 40): SearchResults {
       releaseCount: r.release_count,
       relevance: null,
       connection: null,
+      coreLabel: r.is_seed === 1,
       rank: r.is_seed === 1 ? ORDER.high! : ORDER.low!,
     })),
   ];

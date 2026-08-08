@@ -82,7 +82,7 @@ export default async function ArtistPage({
               {" "}
               &nbsp;·&nbsp;{" "}
               <span className="text-accent">
-                {artist.seedReleases.toLocaleString("en-GB")} in the dub techno scene
+                {artist.seedReleases.toLocaleString("en-GB")} in the dub techno cluster
                 {artist.seedShare !== null && `, ${percent(artist.seedShare)} of output`}
               </span>
             </>
@@ -227,19 +227,23 @@ function Releases({ artistId, limit }: { artistId: number; limit: number }) {
  *
  * The four steps are the ones the search results use. Two different things can
  * put an artist on a step, so the clause always says which: work inside the
- * scene, or membership of a tradition the scene came out of. King Tubby reads
+ * cluster, or membership of a tradition it came out of. King Tubby reads
  * medium, and it would be a lie to let that imply dub techno records he never
  * made, so the clause says weak ties AND says why he is here anyway.
+ *
+ * "Cluster" rather than "scene" throughout: the scene is the whole extended
+ * map this tool draws, and the cluster is the dub techno core it was drawn
+ * from. Ties are measured against the core, so the core is what they name.
  *
  * The bottom step carries the route instead, because an artist with no seed
  * work is not a weak version of core, they are a neighbour, and a label mate is
  * not a weak collaborator. That distinction is too useful to drop.
  */
 const SCENE_REASON: Record<string, string> = {
-  high: "very strong ties with the core dub techno scene",
-  medium: "strong ties with the core dub techno scene",
-  low: "weak ties with the core dub techno scene",
-  none: "very weak ties with the core dub techno scene",
+  high: "very strong ties with the core dub techno cluster",
+  medium: "strong ties with the core dub techno cluster",
+  low: "weak ties with the core dub techno cluster",
+  none: "very weak ties with the core dub techno cluster",
 };
 
 /**
@@ -286,12 +290,12 @@ function Relevance({ artist }: { artist: Artist }) {
 
   const route =
     artist.channelA && artist.channelB
-      ? "a one time collaborator and label mate"
+      ? "an occasional collaborator and label mate"
       : artist.channelA
-        ? "a one time collaborator"
+        ? "an occasional collaborator"
         : artist.channelB
-          ? "a one time label mate"
-          : "a one time collaborator or label mate";
+          ? "an occasional label mate"
+          : "an occasional collaborator or label mate";
 
   return (
     <>

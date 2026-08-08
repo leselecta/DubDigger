@@ -163,10 +163,10 @@ function Releases({ labelId, limit }: { labelId: number; limit: number }) {
 }
 
 /**
- * How close to the scene, in the words the search results use.
+ * How close to the cluster, in the words the search results use.
  *
  * Labels are not on the artist scale, but they have a measure of their own: a
- * seed label is a scene label by roster concentration. The grade comes first
+ * seed label is a cluster label by roster concentration. The grade comes first
  * for the same reason it does on the artist page — one vocabulary, whichever
  * page you land on — and the reason rides alongside it, since a label's grade
  * rests entirely on a percentage worth reading.
@@ -179,8 +179,8 @@ function Relevance({ label }: { label: Label }) {
   const reason = label.isImprint
     ? "artist-run imprint, one artist on every release"
     : label.seedRatio !== null
-      ? `${percent(label.seedRatio)} of roster in the dub techno scene`
-      : "here through its artists, not as a label in the dub techno scene";
+      ? `${percent(label.seedRatio)} of roster in the dub techno cluster`
+      : "here through its artists, not as a label in the dub techno cluster";
 
   return (
     <>

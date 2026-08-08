@@ -338,8 +338,9 @@ cleared the bridge ratio honestly. He is simply not a musician. 23,919 seed
 artists qualified on packaging credits alone: photography, artwork, design,
 layout, sleeve, liner notes. Those roles no longer confer membership.
 
-Roles stay raw and `roles_seen` keeps logging all 281,018 strings. This is a
-membership rule, not the role normalisation v1 rules out.
+Roles stay raw in ingest and `roles_seen` keeps logging all 281,018 strings.
+This is a membership rule, decided on the raw string, and it is unaffected by
+the naming the app does at display time.
 
 **Door two: incidental seed artists.** Luciano re-edited Nina Simone's
 "Sinnerman", correctly tagged Minimal on genre Electronic. That made Nina Simone
@@ -387,8 +388,11 @@ zero, and every such label sampled dropped out.
   fuller picture including images and avoids presenting a mostly empty credits
   list as though it were an answer. A page of our own is a v1.1 question, not a
   gap.
-- **Roles are still raw.** 281,018 distinct strings, logged in `roles_seen` as
-  the record of what a later pass would face.
+- **Roles are raw in the data and named in the interface.** Ingest stores what
+  the dump wrote and logs all 281,018 distinct strings in `roles_seen`. The app
+  reads them out loud: `Producer`, `Produced By` and `Producer [Produced By]` are
+  one credit, so a row says Production, once. That table names 97.8% of 5.7M
+  credit occurrences and leaves the rest in their own words.
 - **The UI is a baseline, not a design.** Dense, legible, and deliberately
   unstyled while the layout question is still open.
 
@@ -398,8 +402,6 @@ Written down rather than forgotten. Each is a later evolution of a core that has
 to work on its own first.
 
 - MusicBrainz as a second source
-- Normalising role strings into a controlled vocabulary (v1 stores them raw and
-  logs every distinct one it sees)
 - Alias resolution beyond what Discogs already gives
 - A graph view (a possible v2, for the one job a graph is genuinely good at:
   the connection path between two artists)
@@ -407,10 +409,24 @@ to work on its own first.
 
 ## Licensing
 
-Code is MIT, see [LICENSE](LICENSE).
+**This is source available, not open source.** Read it, run it, learn from it,
+fork it, take it apart. Just not for commercial purposes without asking first.
+
+Code is under the [PolyForm Noncommercial License 1.0.0](LICENSE): any
+noncommercial purpose is permitted, and that explicitly includes personal
+projects, study, research, teaching, and use by charities, schools and public
+institutions. Commercial use needs a licence from me, so get in touch.
+
+The writing, meaning this README, `CLAUDE.md` and the case study, is under
+[CC BY-NC-ND 4.0](LICENSE-DOCS). Quote it and cite it freely with credit.
+
+Neither is an OSI-approved open source licence, because both restrict the field
+of use. That is the intended trade and it is worth naming plainly rather than
+calling this open source and hoping nobody reads the file.
 
 Discogs **dump data is CC0**, free to use with no attribution required, which is
-why this ingests dumps rather than calling the API.
+why this ingests dumps rather than calling the API. Nothing upstream constrains
+the licence above.
 
 **Images are not CC0.** They are Restricted Data, they are not in the dumps, and
 they carry caching and commercial limits. That is one reason v1 has no images and

@@ -1,0 +1,40 @@
+Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International
+(CC BY-NC-ND 4.0)
+
+Copyright 2026 Simone Ferraro
+
+This licence covers the writing in this repository, not the software. The
+software is licensed separately, under the PolyForm Noncommercial License
+1.0.0: see LICENSE.
+
+Covered by this licence:
+
+  README.md
+  CLAUDE.md
+  case-study-credit-graph.md
+  design_handoff/README.md
+
+Everything else in this repository, including all source code, configuration
+and test files, is covered by LICENSE.
+
+You are free to share these documents: copy and redistribute them in any medium
+or format, quote them, and cite them, under the following terms.
+
+  Attribution   You must give appropriate credit, link to this licence, and
+                indicate if changes were made.
+  NonCommercial You may not use the material for commercial purposes.
+  NoDerivatives If you remix, transform, or build upon the material, you may
+                not distribute the modified material.
+
+The full legal code:
+<https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode>
+
+A plain-language summary, which is not a substitute for the licence:
+<https://creativecommons.org/licenses/by-nc-nd/4.0/>
+
+Suggested attribution:
+
+  "Dub Digger" by Simone Ferraro, licensed under CC BY-NC-ND 4.0.
+  https://github.com/leselecta/DubDigger
+
+For any use these terms do not permit, including commercial use, ask.

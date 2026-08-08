@@ -348,6 +348,21 @@ test("afrobeat and detroit techno are traditions too", async () => {
   assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 13").pluck().get(), "detroit techno");
 });
 
+test("a tradition lifts to its own floor, not to a shared one", async () => {
+  // Acid jazz and jungle carry a Jamaican inheritance at one remove, so Talkin'
+  // Loud lifts one step where the dub line lifts two.
+  const db = corpus(tradition(18, { labels: [118] })); // Talkin' Loud
+  await runDerive(db);
+
+  assert.deepEqual(coverageOf(db, 18), {
+    seed_releases: 0,
+    seed_share: null,
+    scene_relevance: "none",
+    relevance: "low",
+    lineage: "acid jazz and DNB",
+  });
+});
+
 test("one tag per artist, styles before labels", async () => {
   // A Jamaican player who also cut for Metroplex reads as what they mostly are.
   const db = corpus([

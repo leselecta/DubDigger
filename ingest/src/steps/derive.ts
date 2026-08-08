@@ -299,14 +299,24 @@ export async function runDerive(
       LEFT JOIN lineage_tag        g ON g.artist_id = c.artist_id
       LEFT JOIN seed_artists       s ON s.artist_id = c.artist_id
       LEFT JOIN seed_artist_totals t ON t.artist_id = c.artist_id;
-
-    -- The merge. scene_relevance keeps the measurement; relevance is what the
-    -- interface shows, and a tradition raises it to the floor and no further.
-    UPDATE artist_coverage
-       SET relevance = '${lineage.floor}'
-     WHERE lineage IS NOT NULL
-       AND relevance IN ('none', 'low');
   `);
+
+  // The merge. scene_relevance keeps the measurement; relevance is what the
+  // interface shows, and a tradition raises it to its own floor and no further.
+  // Most traditions floor at medium; acid jazz and DNB at low, because that
+  // inheritance is at one remove.
+  step("applying the lineage floor");
+  for (const t of [...lineage.byStyle, ...lineage.byLabel]) {
+    const below = lineage.liftsFrom[t.floor];
+    if (!below) throw new Error(`Tradition "${t.name}" has no rule for floor "${t.floor}"`);
+
+    db.prepare(
+      `UPDATE artist_coverage
+          SET relevance = ?
+        WHERE lineage = ?
+          AND relevance IN (${below.map(() => "?").join(", ")})`,
+    ).run(t.floor, t.name, ...below);
+  }
 
   db.exec(`DROP TABLE IF EXISTS temp.release_people;
             DROP TABLE IF EXISTS temp.pairable;

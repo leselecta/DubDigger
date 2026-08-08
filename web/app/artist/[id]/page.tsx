@@ -250,14 +250,18 @@ const SCENE_REASON: Record<string, string> = {
  * What each tradition claims, in its own words.
  *
  * These are not the same claim and must not read as though they were. Roots dub
- * and Detroit are descent, and the phrasing says so. Afrobeat is kinship: it is
- * here as an editorial choice about what this map should hold, not because
- * anyone traces dub techno back to Lagos.
+ * and Detroit are descent, and the phrasing says so. Afrobeat and uk jazz are
+ * kinship: editorial choices about what this map should hold, not because
+ * anyone traces dub techno back to Lagos or to Peckham. Acid jazz and jungle is
+ * inheritance at one remove, which is why it is the one tradition that lifts to
+ * low rather than to medium.
  */
 const LINEAGE_REASON: Record<string, string> = {
   "roots dub": "the Jamaican tradition dub techno grew out of",
   "detroit techno": "the tradition Berlin was answering",
   afrobeat: "a tradition this scene keeps company with",
+  "uk jazz": "the scene around Gilles Peterson and Brownswood",
+  "acid jazz and DNB": "UK scenes with Jamaican roots of their own",
 };
 
 function Relevance({ artist }: { artist: Artist }) {

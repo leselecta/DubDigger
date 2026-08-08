@@ -136,21 +136,39 @@ const ARTISTS_LINEAGE: [name: string, tradition: string][] = [
   ["Kevin Saunderson", "detroit techno"],
   ["Octave One", "detroit techno"],
   ["Theo Parrish", "detroit techno"],
+  ["Gilles Peterson", "uk jazz"],
+  ["Matthew Halsall", "uk jazz"],
+  ["Nubya Garcia", "uk jazz"],
+  ["Moses Boyd", "uk jazz"],
+  ["Bradley Zero", "uk jazz"],
+  // Talkin' Loud, and the reason it is not "uk jazz": drum and bass on the
+  // same imprint. Both read as the acid jazz line, one step rather than two.
+  ["Roni Size", "acid jazz and DNB"],
+  ["Krust", "acid jazz and DNB"],
+  ["Galliano", "acid jazz and DNB"],
 ];
 
 /**
  * Nobody a tradition may reach.
  *
- * Shabaka Hutchings and Sun Ra are here because a jazz rule was measured and
+ * Sun Ra and John Zorn are here because a genre-wide jazz rule was measured and
  * rejected: at these dials genre Jazz tags 11,281 artists and lifts 4,360,
- * headed by John Zorn and two mastering engineers, all of them present because
- * Bill Laswell produced half of New York's avant-garde. If one of these ever
- * turns up tagged, a rule has started reading a hub as a heritage.
+ * headed by Zorn and two mastering engineers, all of them present because Bill
+ * Laswell produced half of New York's avant-garde. The uk jazz rule names nine
+ * labels instead, and these three have no releases between them on any of
+ * them. If one ever turns up tagged, a rule has started reading a hub as a
+ * heritage.
+ *
+ * Shabaka Hutchings was on this list and has been taken off it. Under the label
+ * rule he is a miss rather than a rejection, on 1 of 13 because the corpus
+ * holds his Impulse! records and not his Brownswood ones, so asserting he stays
+ * untagged would pin the wrong thing.
  */
 const ARTISTS_NO_LINEAGE = [
-  "Shabaka Hutchings",
   "Sun Ra",
   "John Zorn",
+  "Peter Brötzmann",
+  "Evan Parker",
   "Madonna",
   "Spice Girls",
   "Björk",
@@ -166,7 +184,18 @@ const ARTISTS_AT_LEAST_MEDIUM = [
   "Fela Kuti",
   "Underground Resistance",
   "Rhythim Is Rhythim",
+  "Gilles Peterson",
+  "Matthew Halsall",
 ];
+
+/**
+ * Lifted, but only one step.
+ *
+ * The acid jazz line floors at low, so these must be present and graded, and
+ * must NOT reach medium. Roni Size on the same footing as King Tubby would be
+ * the floor doing more than it was asked to.
+ */
+const ARTISTS_LOW_ONLY = ["Roni Size", "Krust"];
 
 const db = openDbReadOnly();
 let failures = 0;
@@ -196,6 +225,10 @@ const anyLineage = db.prepare(
 const atLeastMedium = db.prepare(
   `SELECT count(*) FROM artists a JOIN artist_coverage c ON c.artist_id = a.id
     WHERE a.name = ? AND c.relevance IN ('high', 'medium')`,
+);
+const isLow = db.prepare(
+  `SELECT count(*) FROM artists a JOIN artist_coverage c ON c.artist_id = a.id
+    WHERE a.name = ? AND c.relevance = 'low'`,
 );
 
 function check(kind: string, name: string, want: boolean, got: number) {
@@ -237,11 +270,15 @@ for (const name of ARTISTS_NO_LINEAGE) {
 
 console.log("\nLifted to the floor\n");
 for (const name of ARTISTS_AT_LEAST_MEDIUM) {
-  check("artist", name, true, atLeastMedium.pluck().get(name) as number);
+  check("medium+", name, true, atLeastMedium.pluck().get(name) as number);
 }
 console.log();
 for (const name of ARTISTS_NOT_CORE) {
-  check("artist", name, false, atLeastMedium.pluck().get(name) as number);
+  check("medium+", name, false, atLeastMedium.pluck().get(name) as number);
+}
+console.log();
+for (const name of ARTISTS_LOW_ONLY) {
+  check("low", name, true, isLow.pluck().get(name) as number);
 }
 
 console.log(

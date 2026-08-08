@@ -392,8 +392,17 @@ export const relevance = {
  * produced half of New York's avant-garde, which is a hub, not a heritage.
  */
 export const lineage = {
-  /** A tradition lifts an artist to here, never past it. */
-  floor: "medium",
+  /**
+   * Which grades a floor may lift, keyed by the floor itself.
+   *
+   * A tradition raises an artist TO its floor and never past it, so the only
+   * grades it may touch are the ones below. Written out rather than computed
+   * from an ordering, because there are four steps and two floors.
+   */
+  liftsFrom: {
+    medium: ["none", "low"],
+    low: ["none"],
+  } as Record<string, string[]>,
 
   /**
    * Traditions read off what an artist records.
@@ -420,9 +429,9 @@ export const lineage = {
    */
   byStyle: [
     /** Style and genre together. Either alone is a different music. */
-    { name: "roots dub", style: "Dub", genre: "Reggae", minReleases: 5, minShare: 0.2 },
+    { name: "roots dub", style: "Dub", genre: "Reggae", minReleases: 5, minShare: 0.2, floor: "medium" },
     /** Afrobeat is specific enough as a style that no genre gate is needed. */
-    { name: "afrobeat", style: "Afrobeat", genre: null, minReleases: 5, minShare: 0.2 },
+    { name: "afrobeat", style: "Afrobeat", genre: null, minReleases: 5, minShare: 0.2, floor: "medium" },
   ],
 
   /**
@@ -445,6 +454,27 @@ export const lineage = {
    * cost is Drexciya, whose corpus presence is 45 Tresor releases and nothing
    * else, so they stay ungraded. A wrong tag on hundreds beats a right one on
    * one.
+   *
+   * uk jazz: the scene around Gilles Peterson and Brownswood. A genre-wide jazz
+   * rule was measured and rejected for tagging 11,281 artists off Bill
+   * Laswell's address book; naming the rooms instead is what makes it honest.
+   * Nine labels, 2 releases and 10%, tagging 343 and lifting 146: Gilles
+   * Peterson, Matthew Halsall, Bradley Zero, Nubya Garcia, Moses Boyd, Nat
+   * Birchall, Portico Quartet. John Zorn, Peter Brötzmann and Evan Parker have
+   * zero releases between them on these labels, which is the whole point.
+   *
+   * Shabaka Hutchings is missed, on 1 of 13, because the corpus holds his
+   * Impulse! and Verve records rather than his Brownswood ones. Loosening the
+   * dial to reach him would admit everyone with a single compilation credit.
+   *
+   * acid jazz and DNB: Talkin' Loud, and the only tradition with a floor of
+   * `low`. It is Gilles Peterson's own label, so it looked like part of the
+   * rule above until the roster was read: Roni Size, Krust, DJ Die, Suv and
+   * Reprazent alongside Galliano and Young Disciples. Calling Bristol drum and
+   * bass "uk jazz" would be wrong, and dropping it would lose a real thread,
+   * since acid jazz and DNB both carry a Jamaican inheritance of their own.
+   * Simone's call: its own tradition, lifted one step rather than two, because
+   * the inheritance is at one remove. 145 tagged, 65 lifted.
    */
   byLabel: [
     {
@@ -463,6 +493,36 @@ export const lineage = {
       ],
       minReleases: 3,
       minShare: 0.1,
+      floor: "medium",
+    },
+    {
+      // Before acid jazz below, so Gilles Peterson himself reads as the scene
+      // he curates now rather than the one he ran in the nineties.
+      name: "uk jazz",
+      labels: [
+        62136, //  Brownswood Recordings
+        3244, //   Brownswood Records
+        116373, // Gondwana Records
+        695882, // Rhythm Section International
+        617182, // 22a
+        710676, // Jazz Re:freshed
+        755637, // Total Refreshment Centre
+        143126, // First Word Records
+        143129, // Eglo Records
+      ],
+      minReleases: 2,
+      minShare: 0.1,
+      floor: "medium",
+    },
+    {
+      name: "acid jazz and DNB",
+      labels: [
+        118, //    Talkin' Loud
+        123224, // Talkin' Loud Classics
+      ],
+      minReleases: 3,
+      minShare: 0.1,
+      floor: "low",
     },
   ],
 };

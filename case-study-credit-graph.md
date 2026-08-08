@@ -97,6 +97,42 @@ The same lesson showed up in miniature with Basic Channel, the most important ac
 
 ---
 
+## When the measure ran out
+
+Up to this point every number in the tool was derived. The corpus came from style tags, the grades came from counting, and the dials were tuned against acts whose right answer I knew. Nothing was asserted. I was quietly proud of that.
+
+Then I typed King Tubby and the page said the same thing it says about the Spice Girls.
+
+He is the man who invented dub. The tool had him at the bottom of the scale, next to a nineties pop group, and it was not a bug. `Dub` only counts as a core style when the genre is Electronic, so 206 of King Tubby's 221 records are invisible to the measure by construction. That gate exists for a good reason: without it, "Dub" pulled in the entire reggae catalogue, 702,038 records, and the list of scene labels came out topped by EMI, Columbia, Sony and Virgin. The gate was right. The answer it produced was wrong.
+
+**My instinct was to find a better measure, and I spent a while proving that no better measure exists.** Bob Marley has 123 records in the core to King Tubby's 15. Madonna has 106. Depeche Mode has 75. If I ranked by connection strength instead, Madonna has 63 ties into the scene and Mozart has 75, against King Tubby's 57. Every threshold I could draw that lifted King Tubby lifted Madonna higher.
+
+That is when it clicked. "Is the ancestor of" is a historical fact. Style tags record what a record sounds like and who else it sounds like, and no amount of co-occurrence adds up to descent. The data cannot know that Berlin was listening to Kingston, because nobody wrote it on the record. If I wanted the tool to know it, I had to say so.
+
+**So I stopped measuring the scene and started measuring what an artist actually makes.** Not "how much of your work is dub techno" but "how much of your work is Jamaican dub", which is style `Dub` on genre `Reggae`, the exact combination the core rule excludes. Jah Shaka 86%, King Tubby 72%, Prince Jammy 67%, Scientist 49%. Madonna 0.2%. Spice Girls, Björk, Depeche Mode, Mozart and The Beatles all at a clean zero. The separation the scene measure could not produce was sitting one column over.
+
+Then the same hole opened again somewhere else. Underground Resistance read very low. So did Drexciya, Kevin Saunderson, Rhythim Is Rhythim and Theo Parrish, because Techno was kept out of the core rule for being too broad, and Berlin's dub techno is a direct answer to Detroit. This one could not be a style rule at all: `Detroit Techno` does not exist as a Discogs style, there are zero records tagged with it, the platform just files it under Techno. So the tradition is named by its rooms instead, ten imprints listed by ID, Metroplex and Transmat and KMS and the rest.
+
+**Then it stopped being about ancestry, and that is the part worth being honest about.** I added afrobeat, and later the jazz scene around Gilles Peterson and Brownswood. Neither is an ancestor of dub techno. There is no line from Fela Kuti to Chain Reaction the way there is from King Tubby, and I knew that when I added it. What I wanted was a map that holds the traditions this music keeps company with instead of ranking them as footnotes. That is a point of view, not a finding, and the tool now says so in different words: the dub and Detroit tags read "the tradition it grew out of", the other two read "a tradition this scene keeps company with".
+
+The discipline I kept was measuring each one before believing it. A general jazz rule failed that test badly: filtering on genre Jazz tagged 11,281 artists, and the top of the list was John Zorn, Peter Brötzmann, Evan Parker and two mastering engineers. They are all in the corpus because Bill Laswell produced half of New York's avant-garde. That is a hub, not a heritage. Naming nine specific rooms instead of a genre is what made the same idea defensible, and Zorn and Brötzmann now sit in the acceptance test as names that must never be tagged.
+
+The other thing measuring caught: Talkin' Loud is Gilles Peterson's own label, so it looked like part of the jazz rule until I read the roster and found Roni Size, Krust and DJ Die on it. Calling Bristol drum and bass "uk jazz" would be nonsense. Dropping it would lose something real, because acid jazz and jungle both carry their own Jamaican inheritance. So it became its own tradition with a lower setting, lifted one step rather than two, because the inheritance is at one remove.
+
+**The interface question was harder than the data question.** For a while the tool showed two things: a measured grade, and a tradition on a separate line. Honest, and unreadable. A search result still showed King Tubby as "very low" with no room for the second line, and a reader was left holding two scales and no rule for combining them.
+
+So they merged into one. A tradition raises the grade to a floor and no further, and the measurement is kept underneath so the page can always say which of the two it is reading. King Tubby now reads:
+
+> Medium, very weak ties with the core dub techno cluster, here for lineage: roots dub, the Jamaican tradition dub techno grew out of
+
+Both facts, one line, neither pretending to be the other. He is not a dub techno artist and the sentence says so, in the same breath as saying why he is near the top of the map anyway.
+
+**What I would keep from this.** Starting fully data driven was right, and it was the only way to find out precisely where the data ran out. If I had hand-curated from the start I would never have learned that Madonna outscores King Tubby on every metric the corpus can compute, which is the fact that justifies the whole editorial turn. The rule I ended up with is: derive everything you can, then write the judgements down somewhere they can be argued with, with the numbers that made them necessary and the names they must never catch. All five traditions are a dozen lines of config and a paragraph of reasoning each, and the acceptance test now checks them in both directions, that King Tubby is tagged and that John Zorn is not.
+
+A tool that hides its judgements is not more objective. It just makes them harder to challenge.
+
+---
+
 ## Future considerations: Graph view (v2)
 
 The graph isn't dead, it's demoted. There is one question it answers better than any list: *how are these two artists connected?* A path of three hops through a shared engineer is a shape, and shapes are what graphs are for. That is worth building.
@@ -115,5 +151,6 @@ The data is already there. Collaborator pairs with shared-release counts are pre
 - **Disciplined scoping.** Gall's Law used not as a slogan but as a scoping tool, with the hard parts deferred deliberately and visibly.
 - **Architecture in service of the experience.** Pushing complexity offline so the product itself stays simple.
 - **Judgement where the data won't decide for you.** Corpus thresholds pinned to acts whose right answer is known, turned into an acceptance test, and a deliberate decision about when to stop tuning and let the interface carry the ambiguity instead.
+- **Knowing when a measure has run out.** Proving that no threshold could rank King Tubby above Madonna before reaching for an editorial rule, then writing that rule down in the open, with the numbers behind it and the names it must never catch, rather than burying it in a dial.
 
 The through-line: the best decision in the project was to make it *less* impressive on the surface, because a digging tool is judged by whether it helps you dig, not by how the screenshot looks.

@@ -1,7 +1,6 @@
 // @ts-check
 import { defineConfig } from "astro/config";
 import node from "@astrojs/node";
-import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
 
 /**
@@ -10,13 +9,13 @@ import tailwindcss from "@tailwindcss/vite";
  * now. In Astro that is the default once an adapter is present, so there is no
  * per-page opt-in to forget.
  *
- * React is here for the three islands only. Everything else is .astro and
- * ships no JavaScript at all.
+ * No UI framework. Every page is .astro, and the only client JavaScript is a
+ * handful of lines in <script> tags plus the router. If something here ever
+ * seems to want React, it is worth checking first whether it wants a link.
  */
 export default defineConfig({
   output: "server",
   adapter: node({ mode: "standalone" }),
-  integrations: [react()],
   vite: {
     plugins: [tailwindcss()],
     // better-sqlite3 is a native module: it must stay a real require on the

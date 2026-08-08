@@ -1,20 +1,21 @@
 ---
-import { getCorpusStats } from "@/lib/db";
-import { AboutMenu } from "./about-menu";
 import SearchField from "./SearchField.astro";
 
 /**
- * Wordmark, search, and the About control.
+ * Wordmark, search, and the About mark.
  *
  * The home page carries its search in the hero, so the header one is suppressed
  * there rather than asking twice for the same thing.
+ *
+ * The three bars are a placeholder: the panel they used to open is being
+ * rebuilt, so for now they are decoration and are marked as such rather than
+ * being left as a button that does nothing.
  */
 interface Props {
   search?: boolean;
 }
 
 const { search = true } = Astro.props;
-const stats = getCorpusStats();
 ---
 
 <header class="border-hairline border-b">
@@ -33,11 +34,10 @@ const stats = getCorpusStats();
       )
     }
 
-    <AboutMenu
-      client:load
-      artists={stats?.artists ?? 0}
-      labels={stats?.labels ?? 0}
-      releases={stats?.releases ?? 0}
-    />
+    <span class="flex shrink-0 flex-col gap-[6px] py-2" aria-hidden="true">
+      <span class="bg-ink block h-[1.5px] w-[26px]"></span>
+      <span class="bg-ink block h-[1.5px] w-[26px]"></span>
+      <span class="bg-ink block h-[1.5px] w-[26px]"></span>
+    </span>
   </div>
 </header>

@@ -11,20 +11,15 @@
   },
   "dependencies": {
     "@astrojs/node": "^11.1.0",
-    "@astrojs/react": "^6.0.2",
     "@fontsource/ibm-plex-mono": "^5.3.0",
     "astro": "^7.2.0",
-    "better-sqlite3": "^12.2.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "better-sqlite3": "^12.2.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@tailwindcss/vite": "^4.1.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.3.0",
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
     "tailwindcss": "^4.1.0",
     "typescript": "^5.9.2"
   }

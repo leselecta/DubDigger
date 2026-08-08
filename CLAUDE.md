@@ -177,9 +177,13 @@ The reasoning behind the original rule still holds as an input: the user reads D
 - Ingest: standalone Node/TypeScript scripts using a streaming XML parser
 - Deploy: a single small VPS running the Node server alongside the SQLite file
 
-**Pages are `.astro` and ship no JavaScript.** Reach for a React island only when something genuinely cannot be done on the server, and say why in a comment. There are three, and they are the bar: the About panel (open/close state), the collapsing bio (needs the rendered line count, which depends on the viewport), and the home page counter. Everything else — tabs, pagination, search — is a link or a plain form carrying state in the URL, which is what keeps a 556 row roster from being serialised into the page as JSON.
+**There is no UI framework, and adding one needs an argument.** Every page is `.astro`. React was here for a week and bought a hamburger menu and a counter for 184 KB, which is the whole case against it. Client behaviour is a `<script>` tag in the component that needs it, driving the DOM through `data-` attributes.
 
-**`ClientRouter` in `Base.astro` is deliberate.** The whole premise is that a pivot costs one click, so the document is swapped rather than reloaded. It is the one piece of framework JavaScript on every page.
+**Client JavaScript is 16 KB on every page, and that is the budget.** All of it is `ClientRouter`, which is deliberate: the premise is that a pivot costs one click, so the document is swapped rather than reloaded. Anything you add comes out of a budget that currently has one line item.
+
+**Prefer the server, then a link, then a script.** Tabs, pagination and search are links and a plain GET form carrying state in the URL. That is what keeps a 556 row roster from being serialised into the page as JSON, and what makes every view a real address. Only reach for a script when the answer genuinely is not knowable on the server: the collapsing bio is the one that qualifies, because whether the text overflows depends on the rendered line count at this viewport.
+
+**Scripts must survive a `ClientRouter` navigation.** A module `<script>` executes once, so bind work to `astro:page-load`, which fires on the first load and again after every swap. A script that only runs at parse time will silently stop working on the second page a visitor opens.
 
 ## Licensing note
 

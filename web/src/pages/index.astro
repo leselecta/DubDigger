@@ -3,7 +3,6 @@ import Base from "@/layouts/Base.astro";
 import SiteHeader from "@/components/SiteHeader.astro";
 import SearchField from "@/components/SearchField.astro";
 import Eyebrow from "@/components/Eyebrow.astro";
-import { CountUp } from "@/components/count-up";
 import { getCorpusStats, getDbPath } from "@/lib/db";
 import { search, type SearchHit } from "@/lib/queries";
 
@@ -190,7 +189,7 @@ function gradeOf(hit: SearchHit): string {
               >
                 <dt class="mono-label">{label}</dt>
                 <dd class="text-stat text-ink-strong mt-3 font-bold tracking-[-0.03em] tabular-nums">
-                  <CountUp client:load value={value} />
+                  {value.toLocaleString("en-GB")}
                 </dd>
               </div>
             ))}

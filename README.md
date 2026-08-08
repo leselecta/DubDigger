@@ -288,11 +288,13 @@ so plainly instead of rendering an empty search that looks like an answer.
 ## Stack
 
 Astro and TypeScript, server rendered on every request, with SQLite as a read
-only file. The pages are `.astro` and ship no JavaScript; three React islands
-carry the only things that need it, the About panel, the collapsing bio, and the
-counter on the home page. Tailwind v4, configured as tokens in `globals.css`.
-Ingest is standalone Node and TypeScript scripts using a streaming XML parser.
-Deployment is a single small VPS running the Node server next to the SQLite file.
+only file. There is no UI framework: every page is `.astro`, and the 16 KB of
+client JavaScript is the router that keeps a pivot from reloading the document.
+The one piece of behaviour that cannot be decided on the server, whether a bio
+overflows its clamp, is a short script in the component that needs it. Tailwind
+v4, configured as tokens in `globals.css`. Ingest is standalone Node and
+TypeScript scripts using a streaming XML parser. Deployment is a single small
+VPS running the Node server next to the SQLite file.
 
 ## Roadmap
 

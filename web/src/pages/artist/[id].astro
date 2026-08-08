@@ -12,7 +12,7 @@ import Tabs from "@/components/Tabs.astro";
 import LoadMore from "@/components/LoadMore.astro";
 import ProfileText from "@/components/ProfileText.astro";
 import OutboundLinks from "@/components/OutboundLinks.astro";
-import { CollapsibleText } from "@/components/collapsible-text";
+import CollapsibleText from "@/components/CollapsibleText.astro";
 import {
   getArtist,
   getCollaborators,
@@ -180,7 +180,7 @@ const route =
     {
       artist.profile && (
         <LabelledBand label="Bio">
-          <CollapsibleText client:load>
+          <CollapsibleText>
             <div class="text-body text-[#d4d4d4] leading-[1.6] whitespace-pre-line">
               <ProfileText text={artist.profile} names={getProfileNames(artist.profile)} />
             </div>

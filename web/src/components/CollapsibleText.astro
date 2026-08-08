@@ -1,0 +1,92 @@
+---
+/**
+ * Bio and label info, clamped with a fade until asked to open.
+ *
+ * The control only appears when the text actually overflows the clamp, which
+ * cannot be known from the server: it depends on the rendered line count at
+ * this viewport. So the height is measured after paint, and a short bio simply
+ * renders as a paragraph with nothing to click.
+ *
+ * Unclamped in the markup, clamped by the script. That order is deliberate:
+ * with no JavaScript the whole bio is readable, where clamping first would
+ * leave a reader stuck at four lines with no way to open them.
+ */
+---
+
+<div class="max-w-[720px]" data-collapsible>
+  <div class="relative overflow-hidden" data-clamp>
+    <div data-inner><slot /></div>
+    <div
+      class="pointer-events-none absolute right-0 bottom-0 left-0 hidden h-12"
+      style="background: linear-gradient(rgb(6 6 6 / 0), rgb(6 6 6))"
+      data-fade
+    >
+    </div>
+  </div>
+
+  <button
+    type="button"
+    hidden
+    class="text-ink-muted hover:text-ink mt-[18px] inline-flex cursor-pointer items-center gap-[9px] font-mono text-xs tracking-[0.16em] uppercase"
+    data-toggle
+  >
+    <span data-toggle-label>Read more</span>
+    <span class="inline-flex transition-transform duration-200" data-chevron>
+      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+        <path
+          d="M2 4l4 4 4-4"
+          stroke="currentColor"
+          stroke-width="1.5"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+      </svg>
+    </span>
+  </button>
+</div>
+
+<script>
+  const CLAMP_PX = 84;
+
+  function setUp(root: HTMLElement) {
+    const clamp = root.querySelector<HTMLElement>("[data-clamp]");
+    const inner = root.querySelector<HTMLElement>("[data-inner]");
+    const fade = root.querySelector<HTMLElement>("[data-fade]");
+    const toggle = root.querySelector<HTMLButtonElement>("[data-toggle]");
+    const label = root.querySelector<HTMLElement>("[data-toggle-label]");
+    const chevron = root.querySelector<HTMLElement>("[data-chevron]");
+    if (!clamp || !inner || !fade || !toggle || !label || !chevron) return;
+
+    let open = false;
+    let overflows = false;
+
+    const paint = () => {
+      const clamped = overflows && !open;
+      clamp.style.maxHeight = clamped ? `${CLAMP_PX}px` : "";
+      fade.hidden = !clamped;
+      toggle.hidden = !overflows;
+      label.textContent = open ? "Collapse" : "Read more";
+      chevron.style.transform = open ? "rotate(180deg)" : "";
+    };
+
+    const measure = () => {
+      // Only meaningful while closed: once open the element is its full height
+      // by definition, so re-measuring would always report no overflow.
+      if (!open) overflows = inner.scrollHeight > CLAMP_PX + 1;
+      paint();
+    };
+
+    toggle.addEventListener("click", () => {
+      open = !open;
+      paint();
+    });
+
+    new ResizeObserver(measure).observe(inner);
+    measure();
+  }
+
+  // Fires on the first load and again after every ClientRouter navigation.
+  document.addEventListener("astro:page-load", () => {
+    document.querySelectorAll<HTMLElement>("[data-collapsible]").forEach(setUp);
+  });
+</script>

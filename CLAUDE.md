@@ -153,21 +153,27 @@ These three are load-bearing and hold regardless of how the interface looks:
 - **Show data absence honestly.** "No credits recorded" must be visibly distinct from "worked solo." Never render an empty result that looks like a positive answer. The same honesty extends to connection strength: relevance grades and the collaborator/label-mate distinction exist so a peripheral artist looks peripheral. Never present a weak tie as a strong one. And it runs the other way too: a grade the corpus cannot measure must not be reported as a low score. That is what Lineage is for, and why a lifted grade always says it was lifted.
 - **One question, one vocabulary.** Relevance reads in the same four steps wherever it appears — the results column, the artist page, the label page — with the reason for the step alongside it in grey. A page that answers "how close to the scene" in words its own search results do not use is two scales sharing a heading.
 
-### Density: suspended, pending the design pass
+### Density, and the design that delivers it
 
-This used to read "Density is a feature. Small type, tight rows, lots on screen. Resist framework default whitespace, go tighter than Tailwind wants," and it was enforced as `--spacing: 0.2rem` plus a reduced `--text-*` scale in `web/app/globals.css`.
+The rule used to read "Density is a feature. Small type, tight rows, lots on screen. Resist framework default whitespace, go tighter than Tailwind wants," enforced as `--spacing: 0.2rem` and a shrunken `--text-*` scale. Simone suspended it on 2026-08-06 to open the design question, and the design has since landed. It reaches the same goal by a different route, so the design is now the rule. The baseline it replaced is tagged `ui-baseline-v0`.
 
-Simone suspended it on 2026-08-06 to open up the design question: "I want to start thinking of the design without those constraints at first." A design drafted elsewhere is now being implemented here.
+Everything below is set in `web/app/globals.css` as tokens and three utilities. Read that file before adding a size, a grey, or a spacing value.
 
-**Until that design lands, do not tighten spacing or shrink type unprompted, and do not cite the old rule as a constraint.** Follow what the design specifies. The reasoning behind the original rule still stands and is worth weighing (the user reads Discogs pages for fun and wants information per scroll), but it is an input to the design now, not a veto over it.
+- **Spacing is Tailwind's default scale.** There is no `--spacing` override and there should not be one. The vertical rhythm is deliberately open: page heads at `pt-16 pb-16 md:pt-24`, labelled bands at `py-14`, list rows at `py-[18px]`, identity rows at `py-2`. Do not tighten these to fit more in.
+- **Density comes from the ink ramp and the mono, not from crushed spacing.** Four greys below `ink-strong` (`ink`, `ink-muted`, `ink-dim`, `ink-faint`) let one row carry a name, a count, a role string and a year without any of it shouting, and structural text sits at 0.6875–0.8125rem against a 1.25rem name. A page holds a lot because most of it is quiet, not because it is small.
+- **Two families, split by job.** Helvetica Neue for names and headlines. IBM Plex Mono, uppercase and letterspaced, for everything structural: labels, counts, roles, meta, controls. The `mono-label` utility is that pattern written down, so use it rather than respelling it.
+- **Display type is fluid, reading type is fixed.** `--text-hero`, `--text-name`, `--text-name-label` and `--text-stat` are clamps, because the handoff's pixel sizes are wider than a phone (a 104px "Moritz von Oswald" needs 900px of viewport). `--text-row` and `--text-body` are fixed. Add a new size only if the design has one.
+- **Hairlines, not borders.** `--color-hairline`, `--color-hairline-soft`, `--color-edge`: separation without drawing a box. One accent, `#6fcabd`, spent on the eyebrow, the two headline stops, link hover, and a high grade. Spending it more widely is exactly what stops it working.
+- **`link-rule` marks anything that pivots**, at whatever size the type is. With one accent and no room to spend it, that hairline is how a link is told apart from the text beside it.
+- **The content column is the `column` utility**: 1200px, 1.5rem of gutter, 3rem from 768px up. Bands span the full width, their contents stay in the column.
 
-**When the design is implemented, replace this section with the spacing and type rules it actually settles on**, so the written rule and the shipped interface stop disagreeing. The baseline it replaces is tagged `ui-baseline-v0`.
+The reasoning behind the original rule still holds as an input: the user reads Discogs pages for fun and wants information per scroll. The grid and the ink ramp are what serve it now. If a change would genuinely improve information per scroll, argue it against the design, not against the deleted rule.
 
 ## Stack
 
 - Next.js + TypeScript, server components for the dense pages
 - SQLite as a read-only file (no DB server)
-- Tailwind, spacing and type scale set by the design pass (see UI principles)
+- Tailwind v4, configured as tokens in `globals.css` (see Density above)
 - Ingest: standalone Node/TypeScript scripts using a streaming XML parser
 - Deploy: a single small VPS running the Next.js process alongside the SQLite file
 

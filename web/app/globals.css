@@ -86,6 +86,18 @@ button:focus-visible {
   }
 }
 
+/*
+ * The hairline under a clickable name.
+ *
+ * In a design with one accent colour and no room to spend it, this rule is how
+ * a link is told apart from the text beside it. Anything that pivots carries
+ * it, whatever size the type is: release titles, search results, the label on
+ * a release row.
+ */
+@utility link-rule {
+  border-bottom: 1px solid rgb(255 255 255 / 0.25);
+}
+
 /* Mono, uppercase, letterspaced: every label, count and control in the design. */
 @utility mono-label {
   font-family: var(--font-mono);

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import {
@@ -160,7 +161,12 @@ function Collaborators({ artist, limit }: { artist: Artist; limit: number }) {
 
   return (
     <>
-      <ListHeader name="Name" count="Shared" />
+      {/*
+       * "Shared" alone did not say shared what, and plain "Releases" would be
+       * worse: the same column on the Labels tab means that artist's releases
+       * on that label, so the two would read as the same figure.
+       */}
+      <ListHeader name="Name" count="Released together" />
       <ul>
         {rows.map((c) => (
           <CreditRow
@@ -214,7 +220,20 @@ function Releases({ artistId, limit }: { artistId: number; limit: number }) {
             name={r.title}
             external
             detail={r.roles.join(" · ")}
-            meta={r.label}
+            meta={
+              /*
+               * The release title leaves for Discogs, so without this the only
+               * outbound link on the row is one that ends the dig. The label is
+               * the pivot that keeps it going.
+               */
+              r.labelId ? (
+                <Link href={`/label/${r.labelId}`} className="link-rule">
+                  {r.label}
+                </Link>
+              ) : (
+                r.label
+              )
+            }
           />
         ))}
       </ul>

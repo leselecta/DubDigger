@@ -100,8 +100,7 @@ export function CreditRow({
   external?: boolean;
 }) {
   const nameProps = {
-    className: "text-row justify-self-start font-bold tracking-[-0.01em]",
-    style: { borderBottom: "1px solid rgb(255 255 255 / 0.25)" },
+    className: "link-rule text-row justify-self-start font-bold tracking-[-0.01em]",
   };
 
   return (

@@ -529,6 +529,12 @@ export interface ArtistRelease {
   title: string;
   year: number | null;
   label: string | null;
+  /**
+   * The label to pivot to, when `label` is a label name. Null on the label
+   * page, where the same field carries a catalogue number and has nowhere to
+   * go: you are already on that label's page.
+   */
+  labelId: number | null;
   /** What this artist did on it. Empty means they were on the artist line. */
   roles: string[];
 }
@@ -542,7 +548,9 @@ export function getArtistReleases(artistId: number, limit = 300): ArtistRelease[
     .prepare(
       `SELECT r.id, r.title, r.year,
               group_concat(DISTINCT c.role) AS roles,
-              (SELECT l.name FROM release_labels l WHERE l.release_id = r.id LIMIT 1) AS label
+              (SELECT l.name FROM release_labels l WHERE l.release_id = r.id LIMIT 1) AS label,
+              (SELECT l.label_id FROM release_labels l WHERE l.release_id = r.id LIMIT 1)
+                AS label_id
          FROM releases r
          JOIN (SELECT release_id FROM release_artists WHERE artist_id = ?
                UNION SELECT release_id FROM release_credits WHERE artist_id = ?) mine
@@ -558,6 +566,7 @@ export function getArtistReleases(artistId: number, limit = 300): ArtistRelease[
     year: number | null;
     roles: string | null;
     label: string | null;
+    label_id: number | null;
   }[];
 
   return rows.map((r) => ({
@@ -565,6 +574,7 @@ export function getArtistReleases(artistId: number, limit = 300): ArtistRelease[
     title: r.title,
     year: r.year,
     label: r.label,
+    labelId: r.label_id,
     roles: r.roles ? r.roles.split(",").filter(Boolean) : [],
   }));
 }
@@ -607,6 +617,7 @@ export function getLabelReleases(labelId: number, limit = 300): ArtistRelease[] 
     title: r.title,
     year: r.year,
     label: r.catno,
+    labelId: null,
     roles: r.by_line ? [r.by_line] : [],
   }));
 }

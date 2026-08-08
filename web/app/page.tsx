@@ -165,8 +165,7 @@ function ResultRow({ hit }: { hit: SearchHit }) {
     >
       <Link
         href={`/${hit.kind}/${hit.id}`}
-        className="text-row min-w-0 justify-self-start font-bold tracking-[-0.01em]"
-        style={{ borderBottom: "1px solid rgb(255 255 255 / 0.25)" }}
+        className="link-rule text-row min-w-0 justify-self-start font-bold tracking-[-0.01em]"
       >
         {hit.name}
       </Link>

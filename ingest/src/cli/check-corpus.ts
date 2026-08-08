@@ -143,6 +143,13 @@ const ARTISTS_LINEAGE: [name: string, tradition: string][] = [
   ["Bradley Zero", "uk jazz"],
   // Talkin' Loud, and the reason it is not "uk jazz": drum and bass on the
   // same imprint. Both read as the acid jazz line, one step rather than two.
+  // The generation above the dub line: reggae, and not a dub record between
+  // them. Toots is the name that prompted the rule, reading level with the
+  // Spice Girls until it existed.
+  ["Toots & The Maytals", "reggae"],
+  ["Burning Spear", "reggae"],
+  ["Culture", "reggae"],
+  ["Bob Marley", "reggae"],
   ["Roni Size", "acid jazz and DNB"],
   ["Krust", "acid jazz and DNB"],
   ["Galliano", "acid jazz and DNB"],
@@ -191,11 +198,12 @@ const ARTISTS_AT_LEAST_MEDIUM = [
 /**
  * Lifted, but only one step.
  *
- * The acid jazz line floors at low, so these must be present and graded, and
- * must NOT reach medium. Roni Size on the same footing as King Tubby would be
- * the floor doing more than it was asked to.
+ * The acid jazz and reggae lines floor at low, so these must be present and
+ * graded, and must NOT reach medium. Bob Marley on the same footing as King
+ * Tubby would be the floor doing more than it was asked to: reggae is where dub
+ * came from, which is a step further out than dub itself.
  */
-const ARTISTS_LOW_ONLY = ["Roni Size", "Krust"];
+const ARTISTS_LOW_ONLY = ["Roni Size", "Krust", "Toots & The Maytals", "Bob Marley"];
 
 const db = openDbReadOnly();
 let failures = 0;

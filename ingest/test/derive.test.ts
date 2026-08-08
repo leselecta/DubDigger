@@ -348,6 +348,32 @@ test("afrobeat and detroit techno are traditions too", async () => {
   assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 13").pluck().get(), "detroit techno");
 });
 
+test("a tradition can be read off the genre alone", async () => {
+  // Reggae, and the reason it has to be: 17 of Toots & The Maytals' 45 records
+  // carry a genre and no style at all, so a style rule cannot see them.
+  const db = corpus(tradition(19, { genres: ["Reggae"] }));
+  await runDerive(db);
+
+  assert.deepEqual(coverageOf(db, 19), {
+    seed_releases: 0,
+    seed_share: null,
+    scene_relevance: "none",
+    relevance: "low",
+    lineage: "reggae",
+  });
+});
+
+test("dub claims a Jamaican artist before reggae does", async () => {
+  // Both rules match a dub record on genre Reggae. The dub line is the closer
+  // relation, and it runs first, so it wins and the grade is a step higher.
+  const db = corpus(tradition(20, { styles: ["Dub"], genres: ["Reggae"] }));
+  await runDerive(db);
+
+  const row = coverageOf(db, 20) as { relevance: string; lineage: string };
+  assert.equal(row.lineage, "roots dub");
+  assert.equal(row.relevance, "medium");
+});
+
 test("a tradition lifts to its own floor, not to a shared one", async () => {
   // Acid jazz and jungle carry a Jamaican inheritance at one remove, so Talkin'
   // Loud lifts one step where the dub line lifts two.

@@ -233,25 +233,30 @@ export async function runDerive(
   `);
 
   // One INSERT per tradition, in precedence order, OR IGNORE so the first match
-  // keeps the artist. Styles before labels: a Jamaican player who also cut for
+  // keeps the artist. Tags before labels: a Jamaican player who also cut for
   // Metroplex reads "roots dub", which is the truer of the two.
   step("tagging traditions");
-  for (const t of lineage.byStyle) {
+  for (const t of lineage.byTag) {
+    // Three shapes. Style with a genre gate (roots dub), style alone
+    // (afrobeat), and genre alone (reggae, whose records often carry no style
+    // at all: 17 of Toots & The Maytals' 45 are tagged Reggae and nothing else).
+    const releases = t.style
+      ? `SELECT s.release_id FROM release_styles s
+          WHERE s.style = '${t.style}'
+            ${
+              t.genre
+                ? `AND EXISTS (SELECT 1 FROM release_genres g
+                                WHERE g.release_id = s.release_id AND g.genre = '${t.genre}')`
+                : ""
+            }`
+      : `SELECT g.release_id FROM release_genres g WHERE g.genre = '${t.genre}'`;
+
     db.exec(`
       INSERT OR IGNORE INTO lineage_tag (artist_id, name)
       SELECT p.artist_id, '${t.name}'
         FROM release_people p
         JOIN cov v ON v.artist_id = p.artist_id
-       WHERE p.release_id IN (
-               SELECT s.release_id FROM release_styles s
-                WHERE s.style = '${t.style}'
-                  ${
-                    t.genre
-                      ? `AND EXISTS (SELECT 1 FROM release_genres g
-                                      WHERE g.release_id = s.release_id AND g.genre = '${t.genre}')`
-                      : ""
-                  }
-             )
+       WHERE p.release_id IN (${releases})
        GROUP BY p.artist_id
       HAVING count(DISTINCT p.release_id) >= ${t.minReleases}
          AND 1.0 * count(DISTINCT p.release_id) / v.release_count >= ${t.minShare};
@@ -306,7 +311,7 @@ export async function runDerive(
   // Most traditions floor at medium; acid jazz and DNB at low, because that
   // inheritance is at one remove.
   step("applying the lineage floor");
-  for (const t of [...lineage.byStyle, ...lineage.byLabel]) {
+  for (const t of [...lineage.byTag, ...lineage.byLabel]) {
     const below = lineage.liftsFrom[t.floor];
     if (!below) throw new Error(`Tradition "${t.name}" has no rule for floor "${t.floor}"`);
 

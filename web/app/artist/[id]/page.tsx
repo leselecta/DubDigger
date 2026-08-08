@@ -258,6 +258,7 @@ const SCENE_REASON: Record<string, string> = {
  */
 const LINEAGE_REASON: Record<string, string> = {
   "roots dub": "the Jamaican tradition dub techno grew out of",
+  reggae: "the tradition dub itself came out of",
   "detroit techno": "the tradition Berlin was answering",
   afrobeat: "a tradition this scene keeps company with",
   "uk jazz": "the scene around Gilles Peterson and Brownswood",

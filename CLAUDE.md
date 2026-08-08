@@ -100,7 +100,7 @@ Derived tables (precomputed, what the app reads):
 - `label_roster` — per label, artists ranked by release count
 - coverage flags per artist — distinguish "no credits recorded" from "worked solo"; seed vs. one-hop membership, tagged with provenance (Channel A collaboration / Channel B label-membership / both)
 - `scene_relevance` per artist — the measurement: `high` / `medium` / `low` graded on seed release count AND seed share of their whole output (both, since either alone misranks); `none` for one-hop artists with no seed work, where the provenance above is what the UI shows instead. Dials in `ingest/src/config.ts`, pinned to named acts and asserted by `check-corpus`.
-- lineage per artist — a tradition the scene came out of or keeps company with: `roots dub`, `detroit techno`, `afrobeat`, `uk jazz`, `acid jazz and DNB`, or NULL. See "Lineage" below.
+- lineage per artist — a tradition the scene came out of or keeps company with: `roots dub`, `reggae`, `detroit techno`, `afrobeat`, `uk jazz`, `acid jazz and DNB`, or NULL. See "Lineage" below.
 - `relevance` per artist — **what the interface shows**: `scene_relevance`, raised to the tradition's floor when a lineage applies. One scale, one column, so a result reads the same in search as on its page.
 
 Never show `relevance` as a bare word where there is room to say what it stands on. Two different things put an artist on a step, and a page that says "medium" without saying which is claiming cluster work that may not exist. The artist page pattern: `Medium, very weak ties with the core dub techno cluster, here for lineage: roots dub, the Jamaican tradition dub techno grew out of`. The search results column is the one place the word stands alone, and that is a known cost of merging, not a licence to do it elsewhere.
@@ -119,24 +119,28 @@ Everything else in this corpus is derived. These are judgements, written down ra
 
 **No measure of the scene fixes it, and that was proved before reaching for a rule.** Bob Marley has 123 seed releases to King Tubby's 15, Madonna 106, Depeche Mode 75. On connection strength Madonna has 63 ties into the seed and Mozart 75, against Tubby's 57. Every threshold that lifts Tubby lifts Madonna higher. "Ancestor of" is a historical fact and style co-occurrence cannot express it, so it is asserted instead.
 
-**The five traditions**, all dialled in `ingest/src/config.ts` and asserted by `check-corpus` in both directions. Two mechanisms: what an artist records (style, sometimes gated by genre) and where they released it (a curated list of label IDs).
+**The six traditions**, all dialled in `ingest/src/config.ts` and asserted by `check-corpus` in both directions. Two mechanisms: `byTag`, what an artist records (a style, a genre, or a style gated by a genre), and `byLabel`, where they released it (a curated list of label IDs).
 
 | | mechanism | dials | floor | tagged / lifted |
 |---|---|---|---|---|
 | `roots dub` | style `Dub` on genre `Reggae` | 5+, 20% | medium | 3,896 / 1,560 |
-| `detroit techno` | ten Detroit imprints, by label ID | 3+, 10% | medium | 256 / 193 |
+| `reggae` | genre `Reggae`, any style | 5+, 20% | **low** | 3,274 / 1,866 |
+| `detroit techno` | ten Detroit imprints, by label ID | 3+, 10% | medium | 255 / 192 |
 | `afrobeat` | style `Afrobeat` | 5+, 20% | medium | 209 / 132 |
-| `uk jazz` | Brownswood and eight neighbouring rooms | 2+, 10% | medium | 194 / 146 |
+| `uk jazz` | Brownswood and eight neighbouring rooms | 2+, 10% | medium | 193 / 145 |
 | `acid jazz and DNB` | Talkin' Loud | 3+, 10% | **low** | 88 / 60 |
+
+**The dub line runs three deep, and the floors say so.** Dub techno came out of dub, dub came out of reggae. So `roots dub` lifts to medium, `reggae` lifts one step to low, and a pop record lifts not at all: King Tubby medium, Toots & The Maytals low, Spice Girls very low. `reggae` runs last in `byTag` so anything more specific claims the artist first, which is why a Jamaican dub engineer reads `roots dub` rather than `reggae`.
 
 **Rules about the rules:**
 - **A tradition lifts to its floor and no further.** It cannot promote someone past the floor and cannot demote someone already above it. `scene_relevance` keeps the measurement, so the page never implies cluster work that is not in the data. Which grades a floor may raise is `lineage.liftsFrom`.
-- **One tag per artist, styles before labels, then array order, first match wins.** A Jamaican player who also cut for Metroplex reads `roots dub`. Gilles Peterson reads `uk jazz` rather than `acid jazz and DNB`, which is why that pair is ordered the way it is.
+- **One tag per artist, tags before labels, then array order, first match wins.** A Jamaican player who also cut for Metroplex reads `roots dub`. Gilles Peterson reads `uk jazz` rather than `acid jazz and DNB`, which is why that pair is ordered the way it is.
 - **They are not the same claim, and the interface must not flatten them.** Roots dub and Detroit are descent ("grew out of", "the tradition Berlin was answering"). Afrobeat and uk jazz are kinship ("keeps company with", "the scene around Gilles Peterson and Brownswood"). Acid jazz and DNB is inheritance at one remove, which is why it is the one tradition that lifts a single step. Keep those wordings distinct.
 - **Afrobeat and uk jazz are Simone's editorial calls, recorded as such.** There is no documented line from Fela Kuti or from Brownswood to dub techno the way there is from King Tubby, and the counter-argument was on the table when he made both. What they express: this tool is a map of a scene's roots and neighbours, and it should hold the traditions the music keeps company with rather than rank them as footnotes. Don't quietly "correct" them, and don't cite them as precedent for a tradition with no argument behind it.
 - **Tresor is deliberately not a Detroit label.** It is the Detroit-Berlin bridge and would tag several hundred Berlin artists as Detroit descent. The cost is Drexciya, whose corpus presence is 45 Tresor releases and nothing else, so they stay ungraded. A wrong tag on hundreds beats a right one on one.
 - **Talkin' Loud is deliberately not `uk jazz`.** It is Gilles Peterson's own label, so it looked like part of that rule until the roster was read: Roni Size, Krust, DJ Die and Reprazent next to Galliano and Young Disciples. Calling Bristol drum and bass "uk jazz" would be wrong, and dropping it would lose a real thread, since both acid jazz and jungle carry a Jamaican inheritance of their own. Hence its own tag and the lower floor.
 - **A genre-wide jazz rule was measured and rejected.** Genre `Jazz` at these dials tags 11,281 artists and lifts 4,360, headed by John Zorn, Peter Brötzmann, Evan Parker and two mastering engineers. They are here because Bill Laswell produced half of New York's avant-garde: a hub, not a heritage. Naming nine rooms instead is what made `uk jazz` honest. Sun Ra, John Zorn, Brötzmann and Parker are in the `check-corpus` must-not list to keep it that way.
+- **`reggae` is read off the genre, not a style, and that is load-bearing.** 17 of Toots & The Maytals' 45 releases carry `Reggae` and no style at all, so a style rule cannot see them. It is the only genre-only rule and the reason `byStyle` was renamed `byTag`.
 - **Shabaka Hutchings is a miss, not a rejection.** On 1 of 13, because the corpus holds his Impulse! and Verve records rather than his Brownswood ones. Loosening the dial to reach him would admit anyone with a single compilation credit. He is deliberately in neither `check-corpus` list, so nothing pins the wrong outcome.
 - **Adding a tradition is an editorial decision, not a config tweak, and the bar rose when the axes merged.** A tradition no longer annotates a grade, it sets one, and the results column shows the word with no room for the reason. Argue it here first, with the numbers that separate it from the acts it must not catch. The full story, and why this project stopped being purely derived, is in `case-study-credit-graph.md` under "When the measure ran out".
 

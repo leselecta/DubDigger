@@ -427,11 +427,30 @@ export const lineage = {
    * The interface says "keeps company with" for this one and "grew out of" for
    * the dub line, because those are different claims and only one is descent.
    */
-  byStyle: [
+  byTag: [
     /** Style and genre together. Either alone is a different music. */
     { name: "roots dub", style: "Dub", genre: "Reggae", minReleases: 5, minShare: 0.2, floor: "medium" },
     /** Afrobeat is specific enough as a style that no genre gate is needed. */
     { name: "afrobeat", style: "Afrobeat", genre: null, minReleases: 5, minShare: 0.2, floor: "medium" },
+    /**
+     * Genre alone, and last, so anything more specific claims the artist first.
+     *
+     * The generation above roots dub. Toots & The Maytals read very low, level
+     * with the Spice Girls, and unlike King Tubby no dub rule could reach them:
+     * they are ska, rocksteady and roots reggae, with exactly one Dub-tagged
+     * record in 45. Reggae is where dub came from and dub is where this scene
+     * came from, so it belongs on the map at one step less than the dub line.
+     *
+     * Genre rather than style because 17 of those 45 releases carry no style at
+     * all, just `Reggae`. A style rule cannot see them.
+     *
+     * The separation is as clean as the dub one: Toots, Burning Spear and
+     * Culture at 100%, Desmond Dekker 97%, Bob Marley 90%, Jimmy Cliff 60%,
+     * against Massive Attack 5% and a flat zero for Spice Girls, Madonna,
+     * Mozart, The Beatles and Iron Maiden. The Clash sits at 19%, just under,
+     * and is already medium on scene work anyway.
+     */
+    { name: "reggae", style: null, genre: "Reggae", minReleases: 5, minShare: 0.2, floor: "low" },
   ],
 
   /**

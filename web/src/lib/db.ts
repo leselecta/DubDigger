@@ -1,4 +1,3 @@
-import "server-only";
 import Database from "better-sqlite3";
 import path from "node:path";
 
@@ -17,9 +16,9 @@ let cached: Database.Database | null = null;
 /**
  * Returns the database, or null when no ingest has been run yet.
  *
- * Opening and catching beats an existsSync check: it avoids dragging the whole
- * project into Next's file tracing, and it treats "missing" and "unreadable"
- * the same way, which is what the caller actually cares about.
+ * Opening and catching beats an existsSync check: it treats "missing" and
+ * "unreadable" the same way, which is what the caller actually cares about,
+ * and it does not race a check against the open that follows it.
  */
 export function getDb(): Database.Database | null {
   if (cached) return cached;

@@ -1,0 +1,22 @@
+---
+import { LIST_GRID } from "./list-grid";
+
+interface Props {
+  name: string;
+  count: string;
+  meta?: string;
+}
+
+const { name, count, meta } = Astro.props;
+---
+
+<div
+  class:list={[
+    "border-hairline text-ink-faint grid gap-x-[22px] border-b pb-3 font-mono text-[0.6875rem] tracking-[0.2em] uppercase",
+    LIST_GRID,
+  ]}
+>
+  <span>{name}</span>
+  <span>{count}</span>
+  <span class="hidden md:block">{meta ?? ""}</span>
+</div>

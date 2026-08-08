@@ -1,0 +1,55 @@
+---
+export interface Tab {
+  key: string;
+  label: string;
+  count: number;
+}
+
+/**
+ * The list switcher on the artist and label pages.
+ *
+ * Links carrying a search param rather than client state, for three reasons
+ * that all point the same way: the lists stay server rendered so a 556 row
+ * roster is never serialised into the page as JSON, every tab is a real URL
+ * that can be linked and gone back to, and it works before any JavaScript
+ * arrives. The ClientRouter in the layout swaps them without a reload, so it
+ * still feels like a tab.
+ */
+interface Props {
+  tabs: Tab[];
+  active: string;
+  basePath: string;
+}
+
+const { tabs, active, basePath } = Astro.props;
+---
+
+{/*
+ * The hairline sits on the wrapper rather than on the scrolling row, so the
+ * active tab's heavier underline lands on top of it instead of being clipped
+ * away by the scroll container.
+ */}
+<div class="border-hairline mb-2 border-b">
+  <nav class="flex gap-6 overflow-x-auto sm:gap-[34px]">
+    {
+      tabs.map((tab) => {
+        const isActive = tab.key === active;
+        return (
+          <a
+            href={tab.key === tabs[0]!.key ? basePath : `${basePath}?tab=${tab.key}`}
+            aria-current={isActive ? "page" : undefined}
+            class:list={[
+              "shrink-0 pb-4 font-mono text-[0.8125rem] tracking-[0.14em] whitespace-nowrap uppercase",
+              isActive ? "text-ink-strong border-b-[1.5px] border-white" : "text-[#7c7c7c]",
+            ]}
+          >
+            {tab.label}{" "}
+            <span class={isActive ? "text-ink-faint" : "text-[#5a5a5a]"}>
+              {tab.count.toLocaleString("en-GB")}
+            </span>
+          </a>
+        );
+      })
+    }
+  </nav>
+</div>

@@ -1,0 +1,16 @@
+---
+/** A `[label | value]` row in the identity block, separated by hairlines. */
+interface Props {
+  label: string;
+  accent?: boolean;
+}
+
+const { label, accent = false } = Astro.props;
+---
+
+<div
+  class="border-hairline grid grid-cols-[7rem_1fr] gap-x-6 border-t py-2 font-mono text-[0.8125rem] sm:grid-cols-[180px_1fr]"
+>
+  <dt class="text-ink-faint tracking-[0.12em] uppercase">{label}</dt>
+  <dd class={accent ? "text-accent" : "text-[#e6e6e6]"}><slot /></dd>
+</div>

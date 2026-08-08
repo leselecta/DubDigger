@@ -62,7 +62,7 @@ Two workspaces, and the boundary between them is the whole point.
 | | |
 |---|---|
 | [`ingest/`](ingest/) | Offline, run rarely. Streams the Discogs dumps, selects the corpus, precomputes the rankings into SQLite. All the hard work lives here. |
-| [`web/`](web/) | Online, trivial. A Next.js app that reads one small read only SQLite file. No database server, no Redis, no search cluster. |
+| [`web/`](web/) | Online, trivial. An Astro app that reads one small read only SQLite file. No database server, no Redis, no search cluster. |
 
 The Discogs releases dump is over 100 GB of XML uncompressed. Instead of standing
 up infrastructure to handle that, it gets processed once on a laptop: stream
@@ -278,7 +278,7 @@ sceptic would type must not.
 ## Running the web app
 
 ```sh
-npm run dev      # http://localhost:3000
+npm run dev      # http://localhost:4321
 ```
 
 Point it at a database with the `DUBDIGGER_DB` environment variable, or drop the
@@ -287,10 +287,12 @@ so plainly instead of rendering an empty search that looks like an answer.
 
 ## Stack
 
-Next.js and TypeScript with server components for the dense pages, Tailwind with
-a tightened spacing scale, and SQLite as a read only file. Ingest is standalone
-Node and TypeScript scripts using a streaming XML parser. Deployment is a single
-small VPS running the Next.js process next to the SQLite file.
+Astro and TypeScript, server rendered on every request, with SQLite as a read
+only file. The pages are `.astro` and ship no JavaScript; three React islands
+carry the only things that need it, the About panel, the collapsing bio, and the
+counter on the home page. Tailwind v4, configured as tokens in `globals.css`.
+Ingest is standalone Node and TypeScript scripts using a streaming XML parser.
+Deployment is a single small VPS running the Node server next to the SQLite file.
 
 ## Roadmap
 

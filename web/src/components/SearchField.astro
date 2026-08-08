@@ -1,0 +1,47 @@
+---
+/**
+ * The search box, in the two sizes the design specifies: the 66px hero on the
+ * home page and the 44px one that sits in the header everywhere else.
+ *
+ * A plain GET form, so search works with no JavaScript and every result page is
+ * a real URL that can be linked or gone back to.
+ */
+interface Props {
+  size: "hero" | "header";
+  value?: string;
+}
+
+const { size, value } = Astro.props;
+const hero = size === "hero";
+
+const iconSize = hero ? 18 : 15;
+const r = hero ? 6 : 5;
+const c = hero ? 8 : 6.5;
+const from = c + r * 0.75;
+---
+
+<form action="/" class="relative w-full">
+  <input
+    type="search"
+    name="q"
+    value={value}
+    autofocus={hero}
+    placeholder={hero
+      ? "Basic Channel, Chain Reaction, Maurizio…"
+      : "Basic Channel, Chain Reaction…"}
+    aria-label="Search artists and labels"
+    class:list={[
+      "border-edge text-ink placeholder:text-ink-faint w-full border bg-transparent font-mono outline-none",
+      hero ? "h-16 pr-14 pl-6 text-[0.9375rem]" : "h-11 pr-11 pl-4 text-[0.8125rem]",
+    ]}
+  />
+  <span
+    class="pointer-events-none absolute top-1/2 -translate-y-1/2"
+    style={{ right: hero ? "24px" : "16px" }}
+  >
+    <svg width={iconSize} height={iconSize} viewBox={`0 0 ${iconSize} ${iconSize}`} fill="none" aria-hidden="true">
+      <circle cx={c} cy={c} r={r} stroke="#8a8a8a" stroke-width="1.4"></circle>
+      <line x1={from} y1={from} x2={iconSize - 1} y2={iconSize - 1} stroke="#8a8a8a" stroke-width="1.4"></line>
+    </svg>
+  </span>
+</form>

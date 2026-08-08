@@ -2,22 +2,25 @@
   "name": "@dub-digger/web",
   "private": true,
   "version": "0.1.0",
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "build:readable": "READABLE_BUILD=1 next build",
-    "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "dev": "astro dev",
+    "build": "astro build",
+    "start": "node ./dist/server/entry.mjs",
+    "typecheck": "astro check"
   },
   "dependencies": {
+    "@astrojs/node": "^11.1.0",
+    "@astrojs/react": "^6.0.2",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "astro": "^7.2.0",
     "better-sqlite3": "^12.2.0",
-    "next": "^16.3.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "server-only": "^0.0.1"
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.0",
+    "@astrojs/check": "^0.9.10",
+    "@tailwindcss/vite": "^4.1.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.3.0",
     "@types/react": "^19.1.0",

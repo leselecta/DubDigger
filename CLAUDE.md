@@ -35,7 +35,7 @@ Each is a later evolution of a working core. If a task seems to need one of thes
 **All heavy work happens offline, on the developer's machine. The server only ever reads a small precomputed SQLite file.**
 
 - **Ingest** (offline, run rarely): stream-parse the ~100+ GB Discogs releases dump, select the corpus, project to a thin field set, write raw SQLite tables, then precompute aggregations into query-ready derived tables.
-- **App** (online, trivial): a Next.js app that reads the derived SQLite file read-only. No database server, no Redis, no search cluster.
+- **App** (online, trivial): an Astro app that reads the derived SQLite file read-only. No database server, no Redis, no search cluster.
 
 Keep ingest scripts entirely separate from the web app. The app must never parse a dump or hit the Discogs API.
 
@@ -171,11 +171,15 @@ The reasoning behind the original rule still holds as an input: the user reads D
 
 ## Stack
 
-- Next.js + TypeScript, server components for the dense pages
+- Astro + TypeScript, `output: "server"` so every request reads the file on disk
 - SQLite as a read-only file (no DB server)
 - Tailwind v4, configured as tokens in `globals.css` (see Density above)
 - Ingest: standalone Node/TypeScript scripts using a streaming XML parser
-- Deploy: a single small VPS running the Next.js process alongside the SQLite file
+- Deploy: a single small VPS running the Node server alongside the SQLite file
+
+**Pages are `.astro` and ship no JavaScript.** Reach for a React island only when something genuinely cannot be done on the server, and say why in a comment. There are three, and they are the bar: the About panel (open/close state), the collapsing bio (needs the rendered line count, which depends on the viewport), and the home page counter. Everything else — tabs, pagination, search — is a link or a plain form carrying state in the URL, which is what keeps a 556 row roster from being serialised into the page as JSON.
+
+**`ClientRouter` in `Base.astro` is deliberate.** The whole premise is that a pivot costs one click, so the document is swapped rather than reloaded. It is the one piece of framework JavaScript on every page.
 
 ## Licensing note
 

@@ -1,0 +1,43 @@
+---
+import { getCorpusStats } from "@/lib/db";
+import { AboutMenu } from "./about-menu";
+import SearchField from "./SearchField.astro";
+
+/**
+ * Wordmark, search, and the About control.
+ *
+ * The home page carries its search in the hero, so the header one is suppressed
+ * there rather than asking twice for the same thing.
+ */
+interface Props {
+  search?: boolean;
+}
+
+const { search = true } = Astro.props;
+const stats = getCorpusStats();
+---
+
+<header class="border-hairline border-b">
+  <div class="column flex h-[76px] items-center justify-between gap-8">
+    <a href="/" class="shrink-0 text-xl font-semibold tracking-[-0.02em]">
+      dub<span class="text-accent">.</span>digger
+    </a>
+
+    {
+      search ? (
+        <div class="hidden max-w-[420px] flex-1 sm:block">
+          <SearchField size="header" />
+        </div>
+      ) : (
+        <span class="flex-1" />
+      )
+    }
+
+    <AboutMenu
+      client:load
+      artists={stats?.artists ?? 0}
+      labels={stats?.labels ?? 0}
+      releases={stats?.releases ?? 0}
+    />
+  </div>
+</header>

@@ -1,0 +1,38 @@
+---
+import { ClientRouter } from "astro:transitions";
+import SiteFooter from "@/components/SiteFooter.astro";
+import "@/styles/globals.css";
+
+/**
+ * The shell every page sits in.
+ *
+ * ClientRouter is here for one reason: this tool is a map you hop around, and
+ * the whole premise is that a pivot costs one click. Swapping the document
+ * instead of reloading it keeps that feeling, and keeps the scroll position on
+ * a tab change. It is the one piece of framework JavaScript the site ships on
+ * every page, and it earns it.
+ */
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Dub Digger — the dub techno index",
+  description = "Follow the credits, not the algorithm. A map of scenes drawn from Discogs credit data.",
+} = Astro.props;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <ClientRouter />
+  </head>
+  <body class="flex min-h-screen flex-col">
+    <div class="flex-1"><slot /></div>
+    <SiteFooter />
+  </body>
+</html>

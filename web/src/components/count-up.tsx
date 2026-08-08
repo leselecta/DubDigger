@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useLayoutEffect, useState } from "react";
 
 const DURATION_MS = 900;
@@ -13,10 +11,14 @@ const STORAGE_KEY = "dubdigger:stats-counted";
 const useBeforePaint = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /**
- * Decided once per page load, before any figure mounts, so all three agree and
- * the second one does not read a flag the first one just wrote. Search is a
- * plain GET form, so every query is a fresh load of this page: without the
- * session flag the corpus would count itself up again on each one.
+ * Decided once, before any figure mounts, so all three agree and the second one
+ * does not read a flag the first one just wrote.
+ *
+ * Two layers, because there are two ways back to this page. The module variable
+ * covers a client side navigation, where the island remounts but the JavaScript
+ * context survives. sessionStorage covers a real reload, which resets the
+ * module. Without both, searching would roll the corpus up again on every
+ * query.
  */
 let shouldPlay: boolean | null = null;
 

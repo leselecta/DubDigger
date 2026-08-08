@@ -1,0 +1,41 @@
+---
+import { LIST_GRID } from "./list-grid";
+
+interface Props {
+  count: string | number;
+  href: string;
+  name: string;
+  /** Long text, wrapped under the name. Roles, mostly. */
+  detail?: string | null;
+  /** Short text for the third column. Years, a catalogue number. */
+  meta?: string | null;
+  external?: boolean;
+}
+
+const { count, href, name, detail, meta, external = false } = Astro.props;
+
+const nameClass = "link-rule text-row justify-self-start font-bold tracking-[-0.01em]";
+---
+
+<li
+  class:list={[
+    "border-hairline-soft grid items-baseline gap-x-[22px] border-b py-[18px]",
+    LIST_GRID,
+  ]}
+>
+  <div class="min-w-0">
+    <a href={href} class={nameClass} rel={external ? "noreferrer" : undefined}>{name}</a>
+    {
+      detail && (
+        <p class="text-ink-dim mt-2 max-w-[920px] font-mono text-xs leading-[1.65]">{detail}</p>
+      )
+    }
+  </div>
+
+  <span class="text-ink-faint font-mono text-[0.8125rem] font-medium tabular-nums">{count}</span>
+
+  <span class="text-ink-faint col-start-1 font-mono text-[0.8125rem] tabular-nums md:col-start-3">
+    {/* A slot so a row can put a link here, with the plain string as the usual case. */}
+    <slot name="meta">{meta}</slot>
+  </span>
+</li>

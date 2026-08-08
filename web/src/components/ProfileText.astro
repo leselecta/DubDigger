@@ -1,0 +1,71 @@
+---
+/**
+ * Renders a Discogs profile, which arrives as their own markup:
+ *
+ *   [a123] [l456]        typed references, by id
+ *   [a=Name] [l=Name]    typed references, by name only
+ *   [b] [i] [u]          emphasis
+ *   [url=http://x]y[/url]
+ *
+ * The id forms are the interesting ones: they turn a bio into more threads to
+ * follow, linking straight into this tool's own pages. The name-only forms have
+ * no id to resolve, so they render as plain text rather than as a guess.
+ */
+interface Props {
+  text: string;
+  names?: Record<string, string>;
+}
+
+const { text, names = {} } = Astro.props;
+
+const TOKEN = /\[(a|l)(\d+)\]|\[(a|l)=([^\]]+)\]|\[url=([^\]]+)\]([^[]*)\[\/url\]|\[\/?[biu]\]/gi;
+
+type Part =
+  | { kind: "text"; value: string }
+  | { kind: "link"; href: string; label: string; outbound: boolean };
+
+const parts: Part[] = [];
+let cursor = 0;
+
+for (const match of text.matchAll(TOKEN)) {
+  const at = match.index;
+  if (at > cursor) parts.push({ kind: "text", value: text.slice(cursor, at) });
+  cursor = at + match[0].length;
+
+  const [, kindById, id, , nameOnly, href, label] = match;
+
+  if (kindById && id) {
+    const path = kindById.toLowerCase() === "a" ? "artist" : "label";
+    // Falls back to the bare id only when the entity is outside this corpus.
+    parts.push({
+      kind: "link",
+      href: `/${path}/${id}`,
+      label: names[`${kindById.toLowerCase()}${id}`] ?? `${path} ${id}`,
+      outbound: false,
+    });
+  } else if (nameOnly) {
+    parts.push({ kind: "text", value: nameOnly });
+  } else if (href) {
+    parts.push({ kind: "link", href, label: label || href, outbound: true });
+  }
+  // Emphasis tags fall through: the tag is dropped, its text is already kept.
+}
+
+if (cursor < text.length) parts.push({ kind: "text", value: text.slice(cursor) });
+---
+
+{
+  parts.map((part) =>
+    part.kind === "text" ? (
+      part.value
+    ) : (
+      <a
+        href={part.href}
+        rel={part.outbound ? "noreferrer nofollow" : undefined}
+        class="underline underline-offset-2"
+      >
+        {part.label}
+      </a>
+    ),
+  )
+}

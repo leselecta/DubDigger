@@ -1,0 +1,13 @@
+---
+/** A full-width band with a mono section label down the left. */
+interface Props {
+  label: string;
+}
+
+const { label } = Astro.props;
+---
+
+<div class="border-hairline grid gap-6 border-t py-14 md:grid-cols-[180px_1fr]">
+  <h2 class="mono-label">{label}</h2>
+  <div><slot /></div>
+</div>

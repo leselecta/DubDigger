@@ -1,3 +1,4 @@
+---
 /**
  * Links out to Discogs and to the entity's own sites.
  *
@@ -42,45 +43,39 @@ function nameFor(url: string): string | null {
   return KNOWN_HOSTS.find(([suffix]) => host.endsWith(suffix))?.[1] ?? host;
 }
 
-export function OutboundLinks({
-  kind,
-  id,
-  urls,
-}: {
+interface Props {
   kind: "artist" | "label";
   id: number;
   urls: string[];
-}) {
-  const seen = new Set<string>();
-  const links: { href: string; name: string }[] = [];
-
-  for (const url of urls) {
-    const name = nameFor(url);
-    if (name === null || seen.has(name)) continue;
-    seen.add(name);
-    links.push({ href: url, name });
-    if (links.length === 5) break;
-  }
-
-  return (
-    <span className="flex flex-wrap gap-x-4 gap-y-1">
-      <a
-        href={`https://www.discogs.com/${kind}/${id}`}
-        rel="noreferrer"
-        className="border-b border-[rgb(255_255_255_/_0.3)]"
-      >
-        Discogs
-      </a>
-      {links.map((l) => (
-        <a
-          key={l.href}
-          href={l.href}
-          rel="noreferrer nofollow"
-          className="border-b border-[rgb(255_255_255_/_0.3)]"
-        >
-          {l.name}
-        </a>
-      ))}
-    </span>
-  );
 }
+
+const { kind, id, urls } = Astro.props;
+
+const seen = new Set<string>();
+const links: { href: string; name: string }[] = [];
+
+for (const url of urls) {
+  const name = nameFor(url);
+  if (name === null || seen.has(name)) continue;
+  seen.add(name);
+  links.push({ href: url, name });
+  if (links.length === 5) break;
+}
+---
+
+<span class="flex flex-wrap gap-x-4 gap-y-1">
+  <a
+    href={`https://www.discogs.com/${kind}/${id}`}
+    rel="noreferrer"
+    class="border-b border-[rgb(255_255_255_/_0.3)]"
+  >
+    Discogs
+  </a>
+  {
+    links.map((l) => (
+      <a href={l.href} rel="noreferrer nofollow" class="border-b border-[rgb(255_255_255_/_0.3)]">
+        {l.name}
+      </a>
+    ))
+  }
+</span>

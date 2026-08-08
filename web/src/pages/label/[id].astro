@@ -1,0 +1,153 @@
+---
+import Base from "@/layouts/Base.astro";
+import SiteHeader from "@/components/SiteHeader.astro";
+import Eyebrow from "@/components/Eyebrow.astro";
+import FieldRow from "@/components/FieldRow.astro";
+import LabelledBand from "@/components/LabelledBand.astro";
+import ListHeader from "@/components/ListHeader.astro";
+import CreditRow from "@/components/CreditRow.astro";
+import Absence from "@/components/Absence.astro";
+import Tabs from "@/components/Tabs.astro";
+import LoadMore from "@/components/LoadMore.astro";
+import ProfileText from "@/components/ProfileText.astro";
+import OutboundLinks from "@/components/OutboundLinks.astro";
+import { CollapsibleText } from "@/components/collapsible-text";
+import { getLabel, getRoster, getProfileNames, getLabelReleases } from "@/lib/queries";
+import { PAGE_SIZE, pageSize, percent, years } from "@/lib/view";
+
+const label = getLabel(Number(Astro.params.id));
+if (!label) return Astro.rewrite("/404");
+
+const params = Astro.url.searchParams;
+const limit = pageSize(params.get("show") ?? undefined);
+const base = `/label/${label.id}`;
+
+const tabs = [
+  { key: "roster", label: "Roster", count: label.artistCount },
+  { key: "releases", label: "Releases", count: label.releaseCount },
+];
+const asked = params.get("tab") ?? "roster";
+const active = tabs.some((t) => t.key === asked) ? asked : "roster";
+const total = tabs.find((t) => t.key === active)!.count;
+
+const roster = active === "roster" ? getRoster(label.id, limit) : [];
+const releases = active === "releases" ? getLabelReleases(label.id, limit) : [];
+
+/**
+ * How close to the cluster, in the words the search results use.
+ *
+ * Labels are not on the artist scale, but they have a measure of their own: a
+ * seed label is a cluster label by roster concentration. The grade comes first
+ * for the same reason it does on the artist page, one vocabulary whichever page
+ * you land on, and the reason rides alongside it, since a label's grade rests
+ * entirely on a percentage worth reading.
+ *
+ * A one artist label is not a thin roster, it is an imprint, and saying
+ * "partial roster" about Purpose Maker would be describing complete data as
+ * incomplete.
+ */
+const reason = label.isImprint
+  ? "artist-run imprint, one artist on every release"
+  : label.seedRatio !== null
+    ? `${percent(label.seedRatio)} of roster in the dub techno cluster`
+    : "here through its artists, not as a label in the dub techno cluster";
+---
+
+<Base title={`${label.name} — Dub Digger`}>
+  <SiteHeader />
+
+  <div class="column pt-16 pb-16 md:pt-24">
+    <Eyebrow>Label</Eyebrow>
+    <h1 class="text-name-label text-ink-strong mt-6 leading-[0.9] font-bold tracking-[-0.045em]">
+      {label.name}
+    </h1>
+
+    {/*
+     * No scene share here, unlike the artist stat line. The Relevance row below
+     * carries the same percentage, and the two sit close enough that repeating
+     * it reads as a mistake.
+     */}
+    <p class="text-ink-muted mt-10 font-mono text-[0.8125rem] tracking-[0.06em] uppercase">
+      {label.releaseCount.toLocaleString("en-GB")} releases &nbsp;·&nbsp; {
+        label.artistCount.toLocaleString("en-GB")
+      } artists
+    </p>
+
+    <dl class="mt-9 max-w-[760px]">
+      <FieldRow label="Date active">{years(label.firstYear, label.lastYear) || "—"}</FieldRow>
+      <FieldRow label="Relevance" accent={label.isSeed}>
+        {label.isSeed ? "High" : "Low"}
+        <span class="text-ink-faint">, {reason}</span>
+      </FieldRow>
+      <div class="border-hairline border-b">
+        <FieldRow label="View on">
+          <OutboundLinks kind="label" id={label.id} urls={label.urls} />
+        </FieldRow>
+      </div>
+    </dl>
+  </div>
+
+  {
+    label.profile && (
+      <div class="column">
+        <LabelledBand label="Info">
+          <CollapsibleText client:load>
+            <div class="text-body text-[#d4d4d4] leading-[1.6] whitespace-pre-line">
+              <ProfileText text={label.profile} names={getProfileNames(label.profile)} />
+            </div>
+          </CollapsibleText>
+        </LabelledBand>
+      </div>
+    )
+  }
+
+  <div class="column pt-14 pb-32">
+    <Tabs tabs={tabs} active={active} basePath={base} />
+
+    {
+      active === "roster" ? (
+        roster.length === 0 ? (
+          <Absence>No roster recorded for this label.</Absence>
+        ) : (
+          <>
+            <ListHeader name="Artist" count="Releases" meta="Active" />
+            <ul>
+              {roster.map((a) => (
+                <CreditRow
+                  count={a.releaseCount}
+                  href={`/artist/${a.id}`}
+                  name={a.name}
+                  meta={years(a.firstYear, a.lastYear)}
+                />
+              ))}
+            </ul>
+          </>
+        )
+      ) : releases.length === 0 ? (
+        <Absence>No releases in this corpus.</Absence>
+      ) : (
+        <>
+          <ListHeader name="Release" count="Year" meta="Cat no." />
+          <ul>
+            {releases.map((r) => (
+              <CreditRow
+                count={r.year ?? "—"}
+                href={`https://www.discogs.com/release/${r.id}`}
+                name={r.title}
+                external
+                detail={r.roles.join(" · ")}
+                meta={r.label}
+              />
+            ))}
+          </ul>
+        </>
+      )
+    }
+
+    {
+      limit < total && (
+        <LoadMore href={`${base}?tab=${active}&show=${limit + PAGE_SIZE}`} remaining={total - limit} />
+      )
+    }
+  </div>
+</Base>

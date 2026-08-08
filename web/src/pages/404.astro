@@ -1,0 +1,33 @@
+---
+import Base from "@/layouts/Base.astro";
+import SiteHeader from "@/components/SiteHeader.astro";
+import Eyebrow from "@/components/Eyebrow.astro";
+
+/**
+ * Reached by a rewrite from an artist or label id that is not in the corpus, as
+ * well as by a bad URL. Both cases get the same honest answer rather than an
+ * empty page: this slice is deliberately partial, and a miss is usually the
+ * boundary working.
+ */
+---
+
+<Base title="Not found — Dub Digger">
+  <SiteHeader />
+
+  <div class="column pt-16 pb-32 md:pt-24">
+    <Eyebrow>Not found</Eyebrow>
+    <h1 class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]">
+      Nothing here
+    </h1>
+    <p class="text-body text-ink-muted mt-10 max-w-[720px] leading-relaxed">
+      This corpus is a slice centred on dub techno, not all of Discogs, so plenty of real artists
+      and labels are legitimately absent. That is the boundary working, not a gap.
+    </p>
+    <a
+      href="/"
+      class="border-edge-strong hover:bg-ink hover:text-bg mt-10 inline-block border px-8 py-[15px] font-mono text-xs tracking-[0.2em] uppercase transition-colors"
+    >
+      Start digging
+    </a>
+  </div>
+</Base>

@@ -1,0 +1,202 @@
+---
+import Base from "@/layouts/Base.astro";
+import SiteHeader from "@/components/SiteHeader.astro";
+import SearchField from "@/components/SearchField.astro";
+import Eyebrow from "@/components/Eyebrow.astro";
+import { CountUp } from "@/components/count-up";
+import { getCorpusStats, getDbPath } from "@/lib/db";
+import { search, type SearchHit } from "@/lib/queries";
+
+const q = Astro.url.searchParams.get("q") ?? undefined;
+const stats = getCorpusStats();
+const searching = Boolean(q);
+const results = q ? search(q) : null;
+
+const columns: [string, number][] = stats
+  ? [
+      ["Artists", stats.artists],
+      ["Labels", stats.labels],
+      ["Releases", stats.releases],
+    ]
+  : [];
+
+/** The column widths, shared by the header row and every result, so they line up. */
+const RESULT_GRID = "grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_11rem_5rem]";
+
+/**
+ * How close to the scene a result sits.
+ *
+ * Shown because breadth is only an asset when a distant act looks distant.
+ * Mozart is genuinely in this corpus, on 85 releases that really do credit
+ * someone here, and saying so is honest where hiding him would not be.
+ *
+ * Four steps, not three. An artist with no seed work at all is not the same as
+ * one with a single record in it, so they read "very low" rather than being
+ * folded into the "low" above them. Whether they arrived as a collaborator or
+ * as a label mate is a different question from how close they are, and the
+ * artist page answers it; a column being scanned forty rows at a time wants one
+ * scale, not a grade for some rows and a reason for others.
+ *
+ * The shade tracks the grade rather than the fact of being graded. Accenting
+ * anything that carried a grade meant an artist reading "low" was highlighted
+ * while a label reading "Low" was not, which is the opposite of what the colour
+ * should say.
+ *
+ * Labels are graded on the same words, from the measure they do have: a seed
+ * label is a scene label by roster concentration. The underlying test is not
+ * the artist one, but one column asking one question in one vocabulary beats
+ * two scales sharing a heading.
+ */
+const RELEVANCE_SHADE: Record<string, string> = {
+  high: "text-accent",
+  medium: "text-ink",
+  low: "text-ink-muted",
+  "very low": "text-ink-faint",
+};
+
+function gradeOf(hit: SearchHit): string {
+  if (hit.kind === "label") return hit.coreLabel ? "high" : "low";
+  return hit.relevance === null || hit.relevance === "none" ? "very low" : hit.relevance;
+}
+---
+
+<Base>
+  <SiteHeader search={false} />
+
+  {/*
+   * Searching drops the tagline and keeps everything else. A headline
+   * announcing what the site is has done its job by the time someone has
+   * typed into it, and the results are what they came back for.
+   */}
+  <div
+    class:list={[
+      "column text-center",
+      searching ? "pt-14 pb-12" : "pt-24 pb-16 md:pt-[130px] md:pb-24",
+    ]}
+  >
+    <Eyebrow>The Dub Techno Index</Eyebrow>
+
+    {
+      !searching && (
+        <h1 class="text-hero text-ink-strong mt-9 leading-[0.98] font-bold tracking-[-0.035em]">
+          Dig the Extended Scene<span class="text-accent">.</span>
+          <br />
+          Dub Techno First<span class="text-accent">.</span>
+        </h1>
+      )
+    }
+
+    <div class:list={["mx-auto max-w-[640px]", searching ? "mt-8" : "mt-16"]}>
+      <SearchField size="hero" value={q} />
+    </div>
+    <p class="mt-[18px] font-mono text-xs tracking-[0.14em] text-[#5f5f5f] uppercase">
+      Search artists · labels · releases
+    </p>
+  </div>
+
+  {
+    stats === null ? (
+      /*
+       * An empty result that looks like an answer is worse than an honest "no
+       * data". That principle starts here: before any ingest has run, say so
+       * plainly rather than rendering a search box that silently returns nothing.
+       */
+      <div class="column pb-32">
+        <div class="border-hairline max-w-[720px] border-t pt-10">
+          <h2 class="mono-label">No database yet</h2>
+          <p class="text-body text-ink-muted mt-4 leading-relaxed">
+            Nothing has been ingested. The app expects a precomputed SQLite file at:
+          </p>
+          <p class="text-ink-faint mt-4 font-mono text-xs break-all">{getDbPath()}</p>
+          <p class="text-body text-ink-muted mt-4 leading-relaxed">
+            Run the ingest steps in <span class="font-mono text-sm">ingest/</span>, then publish the
+            result into <span class="font-mono text-sm">web/data/</span>.
+          </p>
+        </div>
+      </div>
+    ) : (
+      <>
+        {searching && results && (
+          <div class="column pb-24">
+            <p class="mono-label mb-6">
+              {results.hits.length === 0
+                ? `Nothing found for “${q}”`
+                : results.truncated
+                  ? `Closest ${results.hits.length} for “${q}”`
+                  : `${results.hits.length} found for “${q}”`}
+            </p>
+
+            {results.hits.length === 0 ? (
+              <p class="text-body text-ink-muted max-w-[720px] py-10 leading-relaxed">
+                This corpus is a slice centred on dub techno, not all of Discogs, so plenty of real
+                artists are legitimately absent. That is the boundary working, not a gap.
+              </p>
+            ) : (
+              <>
+                <div
+                  class:list={[
+                    "border-hairline text-ink-faint grid gap-x-[22px] border-b pb-3 font-mono text-[0.6875rem] tracking-[0.2em] uppercase",
+                    RESULT_GRID,
+                  ]}
+                >
+                  <span>Name</span>
+                  <span>Releases</span>
+                  <span class="hidden md:block">Relevance</span>
+                  <span class="hidden md:block">Type</span>
+                </div>
+
+                <ul>
+                  {results.hits.map((hit) => (
+                    <li
+                      class:list={[
+                        "border-hairline-soft grid items-baseline gap-x-[22px] border-b py-[18px]",
+                        RESULT_GRID,
+                      ]}
+                    >
+                      <a
+                        href={`/${hit.kind}/${hit.id}`}
+                        class="link-rule text-row min-w-0 justify-self-start font-bold tracking-[-0.01em]"
+                      >
+                        {hit.name}
+                      </a>
+
+                      <span class="text-ink-faint font-mono text-[0.8125rem] font-medium tabular-nums">
+                        {hit.releaseCount.toLocaleString("en-GB")}
+                      </span>
+
+                      <span class="col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:col-start-3">
+                        <span class={RELEVANCE_SHADE[gradeOf(hit)]}>{gradeOf(hit)}</span>
+                      </span>
+
+                      <span class="text-ink col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:col-start-4">
+                        {hit.kind}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        )}
+
+        <div class="column pt-6 pb-32">
+          <dl class="border-hairline grid border-t sm:grid-cols-3">
+            {columns.map(([label, value], i) => (
+              <div
+                class:list={[
+                  "px-0 py-10 sm:px-10 sm:py-14",
+                  i < columns.length - 1 && "border-hairline border-b sm:border-r sm:border-b-0",
+                ]}
+              >
+                <dt class="mono-label">{label}</dt>
+                <dd class="text-stat text-ink-strong mt-3 font-bold tracking-[-0.03em] tabular-nums">
+                  <CountUp client:load value={value} />
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </>
+    )
+  }
+</Base>

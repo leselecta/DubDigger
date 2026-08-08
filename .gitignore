@@ -18,10 +18,9 @@ web/data/*.sqlite
 web/data/*.sqlite-wal
 web/data/*.sqlite-shm
 
-# Next.js
-web/.next/
-web/out/
-web/next-env.d.ts
+# Astro
+web/dist/
+web/.astro/
 *.tsbuildinfo
 
 .env

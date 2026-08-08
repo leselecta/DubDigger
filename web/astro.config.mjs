@@ -16,6 +16,20 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   output: "server",
   adapter: node({ mode: "standalone" }),
+
+  /**
+   * Ship the HTML indented, the way the templates are written.
+   *
+   * Astro collapses whitespace by default. Turning that off costs almost
+   * nothing once the response is compressed, because runs of spaces are the
+   * easiest thing in the world for gzip to encode. Measured over the wire:
+   * the artist page 4,422 to 4,661 bytes, the label page 3,742 to 3,921, the
+   * home page 1,358 to 1,440. Under 250 bytes at the worst of them, to turn
+   * the source a reader sees in devtools from one long line into something
+   * they can follow. Worth it for a tool whose audience reads pages for fun.
+   */
+  compressHTML: false,
+
   vite: {
     plugins: [tailwindcss()],
     // better-sqlite3 is a native module: it must stay a real require on the

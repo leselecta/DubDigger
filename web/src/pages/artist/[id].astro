@@ -22,6 +22,7 @@ import {
   getArtistReleases,
   type Relation,
 } from "@/lib/queries";
+import { creditLine } from "@/lib/roles";
 import { PAGE_SIZE, pageSize, percent, years } from "@/lib/view";
 
 const artist = getArtist(Number(Astro.params.id));
@@ -245,7 +246,7 @@ const route =
                   count={c.sharedReleases}
                   href={`/artist/${c.id}`}
                   name={c.name}
-                  detail={c.roles.join(" · ")}
+                  detail={creditLine(c.roles)}
                 />
               ))}
             </ul>
@@ -288,7 +289,7 @@ const route =
                   href={`https://www.discogs.com/release/${r.id}`}
                   name={r.title}
                   external
-                  detail={r.roles.join(" · ")}
+                  detail={creditLine(r.roles)}
                   meta={r.label}
                 >
                   {/*

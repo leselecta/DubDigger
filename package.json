@@ -13,7 +13,7 @@
     "ingest": "npm run --workspace ingest",
     "preview": "npm run preview --workspace web",
     "start": "npm run start --workspace web",
-    "test": "npm run test --workspace ingest",
+    "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "engines": {

@@ -574,7 +574,13 @@ export function getArtistReleases(artistId: number, limit = 300): ArtistRelease[
     year: r.year,
     label: r.label,
     labelId: r.label_id,
-    roles: r.roles ? r.roles.split(",").filter(Boolean) : [],
+    /*
+     * group_concat(DISTINCT ...) can only join on a comma, and a role carries
+     * commas of its own: "Engineer [Sigma Sound, New York]". Splitting here
+     * would cut through that, so the joined string is handed over whole and
+     * the credit parser, which knows about the brackets, does the splitting.
+     */
+    roles: r.roles ? [r.roles] : [],
   }));
 }
 

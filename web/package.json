@@ -8,6 +8,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "start": "node ./dist/server/entry.mjs",
+    "test": "tsx --test test/**/*.test.ts",
     "typecheck": "astro check"
   },
   "dependencies": {
@@ -22,6 +23,7 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.3.0",
     "tailwindcss": "^4.1.0",
+    "tsx": "^4.20.5",
     "typescript": "^5.9.2"
   }
 }

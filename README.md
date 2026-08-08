@@ -278,12 +278,30 @@ sceptic would type must not.
 ## Running the web app
 
 ```sh
-npm run dev      # http://localhost:4321
+npm run dev                        # http://localhost:4321
+npm run build && npm run preview   # the real build, http://localhost:4321
+npm run preview -- --port 4322     # somewhere else, to sit beside dev
 ```
 
-Point it at a database with the `DUBDIGGER_DB` environment variable, or drop the
-file at `web/data/dubdigger.sqlite`. With no database present the home page says
-so plainly instead of rendering an empty search that looks like an answer.
+Astro runs `dev` and `preview` as background processes and returns your prompt,
+so closing the terminal does not stop them. Stop them by name rather than by
+hunting for the port:
+
+```sh
+npm --workspace web exec astro dev stop
+npm --workspace web exec astro preview stop
+```
+
+`preview` serves what `build` produced, so a stale page means a stale build. If
+something looks a version behind, run `build` again before believing it.
+
+For deployment there is `npm start`, which runs the built server directly and
+takes its port from the `PORT` environment variable rather than a flag.
+
+Point the app at a database with the `DUBDIGGER_DB` environment variable, or
+drop the file at `web/data/dubdigger.sqlite`. With no database present the home
+page says so plainly instead of rendering an empty search that looks like an
+answer.
 
 ## Stack
 

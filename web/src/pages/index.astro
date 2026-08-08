@@ -57,6 +57,9 @@ function gradeOf(hit: SearchHit): string {
   if (hit.kind === "label") return hit.coreLabel ? "high" : "low";
   return hit.relevance === null || hit.relevance === "none" ? "very low" : hit.relevance;
 }
+
+/** Graded up here, so the row below reads as markup rather than as a function. */
+const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
 ---
 
 <Base>
@@ -145,7 +148,7 @@ function gradeOf(hit: SearchHit): string {
                 </div>
 
                 <ul>
-                  {results.hits.map((hit) => (
+                  {rows.map(({ hit, grade }) => (
                     <li
                       class:list={[
                         "border-hairline-soft grid items-baseline gap-x-[22px] border-b py-[18px]",
@@ -164,7 +167,7 @@ function gradeOf(hit: SearchHit): string {
                       </span>
 
                       <span class="col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:col-start-3">
-                        <span class={RELEVANCE_SHADE[gradeOf(hit)]}>{gradeOf(hit)}</span>
+                        <span class={RELEVANCE_SHADE[grade]}>{grade}</span>
                       </span>
 
                       <span class="text-ink col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:col-start-4">

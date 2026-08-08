@@ -40,24 +40,33 @@ export interface CorpusStats {
   artists: number;
   labels: number;
   releases: number;
-  seedArtists: number;
-  seedLabels: number;
-  distinctRoles: number;
 }
 
+/**
+ * Counted once per process, because the file cannot change under it.
+ *
+ * The database is a static artifact regenerated out of band, so these three
+ * numbers are fixed for the life of the server. Counting them per request cost
+ * the home page 87 ms on `artists` alone, which made it ten times slower than
+ * an artist page that does real work. Re-ingesting means restarting the server
+ * anyway, which is what publish already tells you to do.
+ */
+let cachedStats: CorpusStats | null = null;
+
 export function getCorpusStats(): CorpusStats | null {
+  if (cachedStats) return cachedStats;
+
   const db = getDb();
   if (!db) return null;
 
   const count = (table: string): number =>
     (db.prepare(`SELECT count(*) AS n FROM ${table}`).get() as { n: number }).n;
 
-  return {
+  cachedStats = {
     artists: count("artists"),
     labels: count("labels"),
     releases: count("releases"),
-    seedArtists: count("seed_artists"),
-    seedLabels: count("seed_labels"),
-    distinctRoles: count("roles_seen"),
   };
+
+  return cachedStats;
 }

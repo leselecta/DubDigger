@@ -37,6 +37,14 @@ const NOT_SERVED = [
   "label_artist_pairs",
   "seed_artist_totals",
   "seed_artist_totals_meta",
+  // Ingest bookkeeping. roles_seen is the log of every distinct role string
+  // encountered, kept so unmapped roles are never silently dropped; seed_artists
+  // is the definitional core of the corpus, kept so "why is this person in?" can
+  // be answered. Both matter, and both matter in the working database. The
+  // server has no query for either.
+  "roles_seen",
+  "seed_artists",
+  "ingest_runs",
 ];
 
 const dest =
@@ -58,8 +66,26 @@ console.log("  dropping tables the app never reads...");
 const copy = openDb(staging);
 for (const table of NOT_SERVED) copy.exec(`DROP TABLE IF EXISTS ${table}`);
 
+// Give the planner statistics. Without sqlite_stat1 it picks indexes from
+// hard-coded guesses about selectivity, which is a gamble worth not taking on a
+// file this size when the fix costs seconds and runs once.
+console.log("  analysing...");
+copy.exec("ANALYZE");
+
 console.log("  reclaiming space...");
 copy.exec("VACUUM");
+
+/*
+ * Hand over a genuinely standalone file.
+ *
+ * VACUUM INTO produces one in journal_mode=delete, and then openDb above puts
+ * it straight back into WAL because that is what ingest wants. A WAL database
+ * cannot be opened, even read-only, without creating a -shm file beside it, so
+ * the served artifact silently required a writable data directory and grew the
+ * sidecars this script's own header says it avoids. Set it back last, after the
+ * final write.
+ */
+copy.pragma("journal_mode = DELETE");
 copy.close();
 
 fs.mkdirSync(path.dirname(dest), { recursive: true });

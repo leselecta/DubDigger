@@ -35,5 +35,25 @@ export default defineConfig({
     // better-sqlite3 is a native module: it must stay a real require on the
     // server rather than being pulled into the bundle.
     ssr: { external: ["better-sqlite3"] },
+
+    build: {
+      rollupOptions: {
+        output: {
+          /**
+           * Name the stylesheet after what it is.
+           *
+           * globals.css is imported once, in Base.astro, so every page shares
+           * one CSS chunk and Rollup names it after a module that happens to
+           * be inside: it was shipping as Eyebrow.[hash].css, the alphabetically
+           * first component present on all four pages. A file holding the whole
+           * design system should not be named after a caption.
+           */
+          assetFileNames: (asset) =>
+            asset.names?.some((n) => n.endsWith(".css"))
+              ? "_astro/dubdigger.[hash][extname]"
+              : "_astro/[name].[hash][extname]",
+        },
+      },
+    },
   },
 });

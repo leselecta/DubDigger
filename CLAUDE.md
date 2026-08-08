@@ -21,7 +21,6 @@ Deliberately small, per Gall's Law: a working simple system first.
 
 ### Explicitly OUT of scope for v1 — do not add these unprompted
 - MusicBrainz integration / dual-source model
-- Role-string normalisation into a controlled vocabulary
 - Alias/project resolution beyond what Discogs already provides
 - Provenance markers
 - Graph / force-directed visualisation in v1 (potential v2 feature, see "Future considerations: Graph view" in `case-study-credit-graph.md`)
@@ -77,7 +76,7 @@ Four monthly gzipped XML files: `artists`, `labels`, `masters`, `releases`. We u
 The `releases` file is enormous (100+ GB uncompressed) and holds the credits. Everything about performance is about not paying full freight on it.
 
 ### XML quirks to handle
-- **Credits live in `<extraartists>`** — an artist reference plus a free-text `<role>` string. Roles are uncontrolled: `Engineer`, `Engineer [Recording]`, `Recorded By` may all mean the same thing. In v1 we do NOT normalise these — store the raw string and **log every distinct role encountered** for later. Never silently drop an unmapped or unexpected role.
+- **Credits live in `<extraartists>`** — an artist reference plus a free-text `<role>` string. Roles are uncontrolled: `Engineer`, `Engineer [Recording]`, `Recorded By` may all mean the same thing. Ingest stores the raw string and **logs every distinct role encountered** in `roles_seen`. Never silently drop an unmapped or unexpected role. The naming happens at the other end, in the app: see "Credit roles" below.
 - **Multi-artist join phrases** — releases and credits can list multiple artists with join text ("feat.", "&"). Preserve the artist IDs; don't parse the join phrase semantically in v1.
 - **Aliases and name variations** exist in the `artists` dump. Use what Discogs gives directly; do not attempt cross-entity alias resolution in v1.
 - **Various-artists releases** have a special artist reference — handle without crashing the collaboration logic.
@@ -143,6 +142,21 @@ Everything else in this corpus is derived. These are judgements, written down ra
 - **`reggae` is read off the genre, not a style, and that is load-bearing.** 17 of Toots & The Maytals' 45 releases carry `Reggae` and no style at all, so a style rule cannot see them. It is the only genre-only rule and the reason `byStyle` was renamed `byTag`.
 - **Shabaka Hutchings is a miss, not a rejection.** On 1 of 13, because the corpus holds his Impulse! and Verve records rather than his Brownswood ones. Loosening the dial to reach him would admit anyone with a single compilation credit. He is deliberately in neither `check-corpus` list, so nothing pins the wrong outcome.
 - **Adding a tradition is an editorial decision, not a config tweak, and the bar rose when the axes merged.** A tradition no longer annotates a grade, it sets one, and the results column shows the word with no room for the reason. Argue it here first, with the numbers that separate it from the acts it must not catch. The full story, and why this project stopped being purely derived, is in `case-study-credit-graph.md` under "When the measure ran out".
+
+## Credit roles — named at display time
+
+In scope since 2026-08-08, and deliberately at one end only. Discogs role strings are uncontrolled, so a row that prints them prints the data entry rather than the work: Rhett Davies engineered for Eno sixteen ways across 335 records, and the row listed all sixteen.
+
+**The split is the point.** Ingest stores the dump's string verbatim and keeps logging every distinct one in `roles_seen`, because that string is the record. The app names it. Nothing about this is baked into the SQLite file, so the vocabulary can change without a re-derive, and a wrong name is a code fix rather than a re-ingest.
+
+**Where:** `web/src/lib/roles.ts`, one table, read by `creditLine()` in the pages. It does three things and they are separate: drops the bracketed qualifier (`Engineer [At Basing Street Studios]` is still engineering), collapses the variants Discogs spells differently, and states each role once.
+
+**Rules:**
+- **The table's order is the display order, and it is load-bearing.** What someone made comes before how it was cut, before what they played, before the sleeve and the office. A digger scanning a row reads left to right and should hit the substantive credit first.
+- **There is no cap.** The collapsing is what shortens a row: David Byrne's 101 credits with Eno are 24 roles. Show all 24. A "+N more" was tried and removed, since a row that stops early is answering a question nobody asked.
+- **An unrecognised role keeps its raw wording and sorts last.** Never dropped, never guessed at. That keeps a rare credit visible and keeps the gap in the table visible with it, which is the same honesty rule the rest of the interface runs on.
+- **A merge is a claim, so only merge what means the same work.** Instruments group up (`Violin`/`Cello`/`Harp` into Strings) because a digger wants the section, not the chair. `Executive Producer` stays out of Production because it is a business credit, not a studio one. `Direct Metal Mastering By` is deliberately unmapped: it is neither mastering nor a lacquer cut, and a near-enough name would be wrong.
+- **Measure after changing the table.** Coverage is currently 97.8% of 5.7M credit occurrences. `roles_seen` is ingest bookkeeping and is not published, so measure against `ingest/data/dubdigger.sqlite`, not the web copy.
 
 ## UI principles
 

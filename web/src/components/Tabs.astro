@@ -14,6 +14,14 @@ interface Tab {
  * that can be linked and gone back to, and it works before any JavaScript
  * arrives. The ClientRouter in the layout swaps them without a reload, so it
  * still feels like a tab.
+ *
+ * A tab must not move the page. Switching list is not going anywhere, so the
+ * viewport stays exactly where it was and only the rows underneath change,
+ * which is how this behaved before the port off React. A fragment was tried
+ * first, to keep it a link and spend nothing from the client budget, but a
+ * fragment can only say "put the tab bar at the top", and that still moves the
+ * page when you switch from a third of the way down. Holding the offset is the
+ * thing being asked for, and the script below is the only way to say it.
  */
 interface Props {
   tabs: Tab[];
@@ -37,6 +45,7 @@ const { tabs, active, basePath } = Astro.props;
         return (
           <a
             href={tab.key === tabs[0]!.key ? basePath : `${basePath}?tab=${tab.key}`}
+            data-tab
             aria-current={isActive ? "page" : undefined}
             class:list={[
               "shrink-0 pb-4 font-mono text-[0.8125rem] tracking-[0.14em] whitespace-nowrap uppercase",
@@ -53,3 +62,38 @@ const { tabs, active, basePath } = Astro.props;
     }
   </nav>
 </div>
+
+<script>
+  /**
+   * Hold the scroll position across a tab switch.
+   *
+   * The ClientRouter scrolls a swapped document to the top, which is right when
+   * you pivot to another artist and wrong here: the tab is the same page with a
+   * different list under it. This records where the reader was and puts them
+   * back, so the tab bar stays under the pointer.
+   *
+   * astro:after-swap fires after the router has finished its own scrolling
+   * (router.js moves the location, then triggers the event), and both run in
+   * one task, so this lands last and nothing is painted in between.
+   *
+   * Both listeners are on `document`, which is the same object after a swap.
+   * That is why there is no astro:page-load rebinding: nothing here is bound to
+   * an element that the swap replaces, so it cannot quietly stop working on the
+   * second page a visitor opens. The destination is recorded alongside the
+   * offset and checked before restoring, so a click that never navigates cannot
+   * strand a position and apply it to some later pivot.
+   */
+  let held: { href: string; y: number } | null = null;
+
+  document.addEventListener("click", (event) => {
+    const tab = (event.target as Element | null)?.closest?.("[data-tab]");
+    held = tab instanceof HTMLAnchorElement ? { href: tab.href, y: window.scrollY } : null;
+  });
+
+  document.addEventListener("astro:after-swap", () => {
+    if (held && location.href === held.href) {
+      window.scrollTo({ top: held.y, behavior: "instant" });
+    }
+    held = null;
+  });
+</script>

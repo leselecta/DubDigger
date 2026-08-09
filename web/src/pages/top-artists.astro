@@ -1,0 +1,97 @@
+---
+import Base from "@/layouts/Base.astro";
+import SiteHeader from "@/components/SiteHeader.astro";
+import Eyebrow from "@/components/Eyebrow.astro";
+import ListHeader from "@/components/ListHeader.astro";
+import CreditRow from "@/components/CreditRow.astro";
+import Absence from "@/components/Absence.astro";
+import LoadMore from "@/components/LoadMore.astro";
+import { getTopArtists, TOP_LIST_SIZE } from "@/lib/queries";
+import { PAGE_SIZE, pageSize, percent } from "@/lib/view";
+
+const limit = pageSize(Astro.url.searchParams.get("show") ?? undefined);
+const artists = getTopArtists();
+const shown = artists.slice(0, limit);
+
+/**
+ * What put an entry where it is.
+ *
+ * Deliberately not the words the relevance grade uses. That scale answers "how
+ * much of this artist's work is in the style seed" and this one answers "how
+ * central are they to the scene", and a page that borrowed its vocabulary would
+ * be two scales sharing a heading. Core and Named are assertions, said as
+ * assertions; everything below is measured, and says the measurement instead.
+ */
+const STANDING: Record<string, { word: string; shade: string }> = {
+  core: { word: "Core", shade: "text-accent" },
+  named: { word: "Named", shade: "text-ink" },
+  found: { word: "", shade: "text-ink-faint" },
+};
+---
+
+<Base title="Top Artists — Dub Digger">
+  <SiteHeader />
+
+  <div class="column pt-16 pb-16 md:pt-24">
+    <Eyebrow>Top Artists</Eyebrow>
+    <h1 class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]">
+      The Core Artists<span class="text-accent">.</span>
+    </h1>
+
+    <p class="text-body text-ink-muted mt-10 max-w-[760px] leading-[1.6]">
+      The {artists.length.toLocaleString("en-GB")} artists closest to the scene. Unlike a search, this
+      list is a mix of curation and data.
+    </p>
+
+  </div>
+
+  <div class="column pb-32">
+    {
+      artists.length === 0 ? (
+        <Absence>No artists graded. Nothing has been ingested yet.</Absence>
+      ) : (
+        <>
+          <ListHeader name="Artist" count="In scene" meta="Standing" />
+          <ul>
+            {shown.map((artist) => (
+              <CreditRow
+                count={artist.sceneReleases.toLocaleString("en-GB")}
+                href={`/artist/${artist.id}`}
+                name={artist.name}
+                detail={
+                  artist.sceneReleases === artist.lineReleases
+                    ? `All ${artist.lineReleases.toLocaleString("en-GB")} of their releases are in the scene`
+                    : `${artist.sceneReleases.toLocaleString("en-GB")} of ${artist.lineReleases.toLocaleString("en-GB")} releases are in the scene`
+                }
+              >
+                <span slot="meta" class={STANDING[artist.standing]!.shade}>
+                  {STANDING[artist.standing]!.word ||
+                    percent(artist.sceneReleases / artist.lineReleases)}
+                </span>
+              </CreditRow>
+            ))}
+          </ul>
+        </>
+      )
+    }
+
+    {
+      limit < artists.length && (
+        <LoadMore
+          href={`/top-artists?show=${limit + PAGE_SIZE}`}
+          remaining={artists.length - limit}
+        />
+      )
+    }
+
+    {
+      limit >= artists.length &&
+        artists.length === TOP_LIST_SIZE && (
+          <p class="text-ink-faint mt-10 font-mono text-xs tracking-[0.14em] uppercase">
+            The top {TOP_LIST_SIZE.toLocaleString("en-GB")}. More artists are in the corpus,
+            reachable by search.
+          </p>
+        )
+    }
+  </div>
+</Base>

@@ -1,0 +1,95 @@
+---
+import Base from "@/layouts/Base.astro";
+import SiteHeader from "@/components/SiteHeader.astro";
+import Eyebrow from "@/components/Eyebrow.astro";
+import ListHeader from "@/components/ListHeader.astro";
+import CreditRow from "@/components/CreditRow.astro";
+import Absence from "@/components/Absence.astro";
+import LoadMore from "@/components/LoadMore.astro";
+import { getTopLabels, TOP_LIST_SIZE } from "@/lib/queries";
+import { PAGE_SIZE, pageSize, percent } from "@/lib/view";
+
+const limit = pageSize(Astro.url.searchParams.get("show") ?? undefined);
+const labels = getTopLabels();
+const shown = labels.slice(0, limit);
+
+/** Who is on the roster, said in the same two words the artist list uses. */
+function roster(core: number, named: number): string {
+  const say = (n: number, word: string) => `${n} ${word} ${n === 1 ? "artist" : "artists"}`;
+  const parts = [];
+  if (core > 0) parts.push(say(core, "core"));
+  if (named > 0) parts.push(say(named, "named"));
+  return parts.length === 0
+    ? "No named scene artists on the roster"
+    : `${parts.join(" and ")} on the roster`;
+}
+---
+
+<Base title="Top Labels — Dub Digger">
+  <SiteHeader />
+
+  <div class="column pt-16 pb-16 md:pt-24">
+    <Eyebrow>Top Labels</Eyebrow>
+    <h1 class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]">
+      The Core Labels<span class="text-accent">.</span>
+    </h1>
+
+    <p class="text-body text-ink-muted mt-10 max-w-[760px] leading-[1.6]">
+      The {labels.length.toLocaleString("en-GB")} labels the scene records for. Unlike a search, this
+      list is a mix of curation and data.
+    </p>
+
+  </div>
+
+  <div class="column pb-32">
+    {
+      labels.length === 0 ? (
+        <Absence>No labels recorded. Nothing has been ingested yet.</Absence>
+      ) : (
+        <>
+          <ListHeader name="Label" count="Releases" meta="Standing" />
+          <ul>
+            {shown.map((label) => (
+              <CreditRow
+                count={label.releaseCount.toLocaleString("en-GB")}
+                href={`/label/${label.id}`}
+                name={label.name}
+                detail={roster(label.coreArtists, label.namedArtists)}
+              >
+                <span
+                  slot="meta"
+                  class={label.standing === "core" ? "text-accent" : "text-ink-faint"}
+                >
+                  {label.standing === "core"
+                    ? "Scene label"
+                    : percent(label.sceneReleases / label.releaseCount)}
+                </span>
+              </CreditRow>
+            ))}
+          </ul>
+        </>
+      )
+    }
+
+    {
+      limit < labels.length && (
+        <LoadMore href={`/top-labels?show=${limit + PAGE_SIZE}`} remaining={labels.length - limit} />
+      )
+    }
+
+    {
+      limit >= labels.length &&
+        labels.length === TOP_LIST_SIZE && (
+          /*
+           * The list is capped, and a page that simply stops looks like the end
+           * of the data rather than the end of the page. Search reaches the
+           * rest.
+           */
+          <p class="text-ink-faint mt-10 font-mono text-xs tracking-[0.14em] uppercase">
+            The top {TOP_LIST_SIZE.toLocaleString("en-GB")}. More labels are in the corpus, reachable
+            by search.
+          </p>
+        )
+    }
+  </div>
+</Base>

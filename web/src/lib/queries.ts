@@ -1,4 +1,5 @@
 import { getDb } from "./db";
+import { ALIAS_BAND_FLOOR, CORE_ARTISTS, NAMED_ARTISTS, SCENE_LABELS } from "./scene";
 
 /**
  * Every query here reads a precomputed table. Nothing is aggregated at request
@@ -328,6 +329,231 @@ export function getRoster(labelId: number, limit = 200): RosterEntry[] {
     firstYear: r.first_year,
     lastYear: r.last_year,
   }));
+}
+
+/**
+ * The two ranked lists, built once.
+ *
+ * Both rank against the curated scene in `scene.ts` rather than against the
+ * style seed, for the reasons set out there. The work is a handful of joins
+ * over the ~19,000 releases the scene touches, which is fine once and wrong on
+ * every request, so each list is built on first use and kept. The SQLite file
+ * is a static artifact the app never refreshes, so there is nothing to
+ * invalidate: a re-ingest means a restart either way.
+ */
+export const TOP_LIST_SIZE = 1000;
+
+/** Where an entry sits: named as canon, named as relevant, or found by the data. */
+export type Standing = "core" | "named" | "found";
+
+export interface TopArtist {
+  id: number;
+  name: string;
+  standing: Standing;
+  /** Their artist-line releases that belong to the scene. */
+  sceneReleases: number;
+  /** Their artist-line releases in total. The pair is the honest statement. */
+  lineReleases: number;
+}
+
+export interface TopLabel {
+  id: number;
+  name: string;
+  standing: Standing;
+  releaseCount: number;
+  /** How much of the catalogue belongs to the scene. The pair is the statement. */
+  sceneReleases: number;
+  /** Core and named artists on the roster: who chose to release here. */
+  coreArtists: number;
+  namedArtists: number;
+}
+
+/**
+ * Discogs placeholders. Never a person, and "UNKNOWN ARTIST" ranks first on any
+ * count of the artist line, so it is excluded by name and by id.
+ */
+const NOT_A_PERSON = `a.id <> 355 AND a.name NOT IN ('Various', 'UNKNOWN ARTIST', 'No Artist')`;
+
+let lists: { artists: TopArtist[]; labels: TopLabel[] } | null = null;
+
+/**
+ * Standing first, then how much scene work there is, discounted by what share
+ * of the artist it is. Count alone puts Aphex Twin's 61 R&S releases above a
+ * producer whose whole catalogue is dub techno; the share term is what says
+ * 61 of 1,003 is a visit and 65 of 73 is a home.
+ */
+const BAND: Record<Standing, number> = { core: 0, named: 1, found: 2 };
+const weight = (scene: number, line: number) => (scene * scene) / line;
+
+function build(): { artists: TopArtist[]; labels: TopLabel[] } {
+  const db = getDb();
+  if (!db) return { artists: [], labels: [] };
+
+  // Aliases are the same person under another name, so they carry the standing
+  // of the artist they belong to. Read in both directions, since the dump does
+  // not always record both sides.
+  const alias = db.prepare(
+    `SELECT related_id AS id FROM artist_relations WHERE artist_id = ? AND kind = 'alias'
+      UNION SELECT artist_id FROM artist_relations WHERE related_id = ? AND kind = 'alias'`,
+  );
+  const aliasesOf = (ids: number[]) => {
+    const found = new Set<number>();
+    for (const id of ids) {
+      for (const row of alias.all(id, id) as { id: number }[]) {
+        if (!ids.includes(row.id)) found.add(row.id);
+      }
+    }
+    return found;
+  };
+  const coreAliases = aliasesOf(CORE_ARTISTS);
+  const namedAliases = aliasesOf(NAMED_ARTISTS);
+  const anchors = [
+    ...new Set([...CORE_ARTISTS, ...NAMED_ARTISTS, ...coreAliases, ...namedAliases]),
+  ];
+
+  /*
+   * A scene release, by the two channels the corpus itself was built from: put
+   * out by a label the scene records for, or carrying a scene artist on its
+   * artist line.
+   *
+   * Written as a CTE and repeated rather than held in a temp table, because the
+   * connection is opened `query_only` and that blocks writes of every kind,
+   * temp ones included. Repeating the text costs nothing: this runs twice, once
+   * per process.
+   */
+  const SCENE_RELEASE = `scene_release AS (
+      SELECT release_id FROM release_labels WHERE label_id IN (${SCENE_LABELS.join(",")})
+      UNION
+      SELECT release_id FROM release_artists WHERE artist_id IN (${anchors.join(",")})
+    )`;
+
+  /*
+   * Driven from the scene rather than from every credit: the join starts at the
+   * ~19,000 releases the scene touches instead of walking all 1.18M artist-line
+   * rows, and only the artists that survive pay for a total.
+   */
+  const artistRows = db
+    .prepare(
+      `WITH ${SCENE_RELEASE},
+            scene_count AS (
+              SELECT ra.artist_id, count(DISTINCT ra.release_id) AS scene
+                FROM scene_release s
+                JOIN release_artists ra ON ra.release_id = s.release_id
+               GROUP BY ra.artist_id
+            )
+       SELECT a.id, a.name, c.scene,
+              (SELECT count(DISTINCT release_id) FROM release_artists WHERE artist_id = a.id) AS line
+         FROM scene_count c
+         JOIN artists a ON a.id = c.artist_id
+        WHERE ${NOT_A_PERSON}`,
+    )
+    .all() as { id: number; name: string; scene: number; line: number }[];
+
+  const standingOf = (id: number, scene: number): Standing => {
+    if (CORE_ARTISTS.includes(id)) return "core";
+    if (NAMED_ARTISTS.includes(id)) return "named";
+    if (scene < ALIAS_BAND_FLOOR) return "found";
+    if (coreAliases.has(id)) return "core";
+    if (namedAliases.has(id)) return "named";
+    return "found";
+  };
+
+  const artists: TopArtist[] = artistRows
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      standing: standingOf(r.id, r.scene),
+      sceneReleases: r.scene,
+      lineReleases: r.line,
+      rank: weight(r.scene, r.line),
+    }))
+    .sort(
+      (a, b) =>
+        BAND[a.standing] - BAND[b.standing] || b.rank - a.rank || a.name.localeCompare(b.name),
+    )
+    .slice(0, TOP_LIST_SIZE)
+    .map(({ rank: _, ...artist }) => artist);
+
+  /*
+   * A label is ranked by who chose to release on it, weighting a core artist at
+   * three, and discounted by how much of the catalogue is scene work at all.
+   * Without that share term Resident Advisor leads on 18 scene artists across
+   * 1,123 releases, which is a podcast, not a label.
+   *
+   * Only the banded artists are counted, so the roster join is restricted to
+   * about a hundred ids rather than walking every roster in the corpus.
+   */
+  const core = artists.filter((a) => a.standing === "core").map((a) => a.id);
+  const named = artists.filter((a) => a.standing === "named").map((a) => a.id);
+
+  const labelRows = db
+    .prepare(
+      `WITH ${SCENE_RELEASE},
+            banded AS (
+              SELECT rl.label_id,
+                     count(DISTINCT CASE WHEN ra.artist_id IN (${core.join(",")})
+                                         THEN ra.artist_id END) AS core_artists,
+                     count(DISTINCT CASE WHEN ra.artist_id IN (${named.join(",")})
+                                         THEN ra.artist_id END) AS named_artists
+                FROM release_labels rl
+                JOIN release_artists ra ON ra.release_id = rl.release_id
+               WHERE ra.artist_id IN (${[...core, ...named].join(",")})
+               GROUP BY rl.label_id
+            ),
+            totals AS (
+              SELECT label_id,
+                     count(DISTINCT release_id) AS releases,
+                     count(DISTINCT CASE WHEN release_id IN (SELECT release_id FROM scene_release)
+                                         THEN release_id END) AS scene
+                FROM release_labels GROUP BY label_id
+            )
+       SELECT l.id, l.name, t.releases, t.scene,
+              coalesce(b.core_artists, 0)  AS core_artists,
+              coalesce(b.named_artists, 0) AS named_artists
+         FROM totals t
+         JOIN labels l ON l.id = t.label_id
+         LEFT JOIN banded b ON b.label_id = t.label_id
+        WHERE b.label_id IS NOT NULL OR l.id IN (${SCENE_LABELS.join(",")})`,
+    )
+    .all() as {
+    id: number;
+    name: string;
+    releases: number;
+    scene: number;
+    core_artists: number;
+    named_artists: number;
+  }[];
+
+  const labels: TopLabel[] = labelRows
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      standing: (SCENE_LABELS.includes(r.id) ? "core" : "found") as Standing,
+      releaseCount: r.releases,
+      sceneReleases: r.scene,
+      coreArtists: r.core_artists,
+      namedArtists: r.named_artists,
+      rank: (3 * r.core_artists + r.named_artists) * (r.releases ? r.scene / r.releases : 0),
+    }))
+    .filter((l) => l.rank > 0 || l.standing === "core")
+    .sort(
+      (a, b) =>
+        BAND[a.standing] - BAND[b.standing] || b.rank - a.rank || a.name.localeCompare(b.name),
+    )
+    .slice(0, TOP_LIST_SIZE)
+    .map(({ rank: _, ...label }) => label);
+
+  return { artists, labels };
+}
+
+export function getTopArtists(): TopArtist[] {
+  lists ??= build();
+  return lists.artists;
+}
+
+export function getTopLabels(): TopLabel[] {
+  lists ??= build();
+  return lists.labels;
 }
 
 export interface SearchResults {

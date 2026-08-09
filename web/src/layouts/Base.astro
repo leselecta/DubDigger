@@ -34,5 +34,44 @@ const {
   <body class="flex min-h-screen flex-col">
     <div class="flex-1"><slot /></div>
     <SiteFooter />
+
+    <script>
+      /**
+       * Hold the scroll position across a link marked `data-hold-scroll`.
+       *
+       * ClientRouter scrolls a swapped document to the top, which is right when
+       * you pivot to another artist and wrong when the page is answering the
+       * same question with more of it: a tab switch, or another forty rows. Both
+       * of those leave the reader where they were.
+       *
+       * It sits in the layout rather than in Tabs or LoadMore because both need
+       * it and neither implies the other, and one script costs the client budget
+       * less than the same script twice.
+       *
+       * astro:after-swap fires after the router has done its own scrolling
+       * (router.js moves the location, then triggers the event), and both run in
+       * one task, so this lands last and nothing is painted in between.
+       *
+       * Both listeners are on `document`, which is the same object after a swap.
+       * That is why there is no astro:page-load rebinding: nothing here is bound
+       * to an element the swap replaces, so it cannot quietly stop working on
+       * the second page a visitor opens. The destination is recorded alongside
+       * the offset and checked before restoring, so a click that never navigates
+       * cannot strand a position and apply it to some later pivot.
+       */
+      let held: { href: string; y: number } | null = null;
+
+      document.addEventListener("click", (event) => {
+        const link = (event.target as Element | null)?.closest?.("[data-hold-scroll]");
+        held = link instanceof HTMLAnchorElement ? { href: link.href, y: window.scrollY } : null;
+      });
+
+      document.addEventListener("astro:after-swap", () => {
+        if (held && location.href === held.href) {
+          window.scrollTo({ top: held.y, behavior: "instant" });
+        }
+        held = null;
+      });
+    </script>
   </body>
 </html>

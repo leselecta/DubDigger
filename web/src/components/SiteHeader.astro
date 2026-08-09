@@ -2,14 +2,15 @@
 import SearchField from "./SearchField.astro";
 
 /**
- * Wordmark, search, and the About mark.
+ * Wordmark and search, over the top level navigation.
  *
  * The home page carries its search in the hero, so the header one is suppressed
  * there rather than asking twice for the same thing.
  *
- * The three bars are a placeholder: the panel they used to open is being
- * rebuilt, so for now they are decoration and are marked as such rather than
- * being left as a button that does nothing.
+ * The three bars that used to sit on the right are gone. They were decoration
+ * standing in for a panel that was never rebuilt, and the mobile question they
+ * belong to is being taken on its own terms rather than pre-empted by a menu
+ * icon with nothing behind it.
  */
 interface Props {
   search?: boolean;
@@ -33,11 +34,52 @@ const { search = true } = Astro.props;
         <span class="flex-1" />
       )
     }
-
-    <span class="flex shrink-0 flex-col gap-[6px] py-2" aria-hidden="true">
-      <span class="bg-ink block h-[1.5px] w-[26px]"></span>
-      <span class="bg-ink block h-[1.5px] w-[26px]"></span>
-      <span class="bg-ink block h-[1.5px] w-[26px]"></span>
-    </span>
   </div>
 </header>
+
+{/*
+ * The top level sections.
+ *
+ * "What is this?" has no destination yet, so it is an anchor with no href.
+ * That is what the spec calls a placeholder link, and it is the honest shape:
+ * an href="#" would be a real link that lies about going somewhere, and a span
+ * would have to be rewritten into an anchor later. Add the href when the page
+ * exists.
+ *
+ * The type is spelled out rather than reaching for `mono-label` because this
+ * row needs its own resting and hover colours and the utility fixes one grey
+ * for everything. It sits a step below the tab bar: this navigates between
+ * sections, the tab bar switches the list you are reading, and the smaller
+ * type says which is which.
+ *
+ * Each cell carries its own left hairline and the last one closes the row, so
+ * the dividers start at the column edge and stop with the text rather than
+ * running the full width the way the band's own rules do.
+ */}
+<nav class="border-hairline border-b" aria-label="Sections">
+  <div class="column flex overflow-x-auto">
+    <a
+      href="/"
+      class="border-hairline text-ink hover:text-ink-strong border-l px-5 py-3 font-mono text-[0.6875rem] tracking-[0.14em] whitespace-nowrap uppercase transition-colors"
+    >
+      Index
+    </a>
+    <a
+      href="/top-labels"
+      class="border-hairline text-ink hover:text-ink-strong border-l px-5 py-3 font-mono text-[0.6875rem] tracking-[0.14em] whitespace-nowrap uppercase transition-colors"
+    >
+      Top Labels
+    </a>
+    <a
+      href="/top-artists"
+      class="border-hairline text-ink hover:text-ink-strong border-l px-5 py-3 font-mono text-[0.6875rem] tracking-[0.14em] whitespace-nowrap uppercase transition-colors"
+    >
+      Top Artists
+    </a>
+    <a
+      class="border-hairline text-ink-muted border-r border-l px-5 py-3 font-mono text-[0.6875rem] tracking-[0.14em] whitespace-nowrap uppercase"
+    >
+      What is this?
+    </a>
+  </div>
+</nav>

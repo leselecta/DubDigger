@@ -10,24 +10,28 @@
  * Unclamped in the markup, clamped by the script. That order is deliberate:
  * with no JavaScript the whole bio is readable, where clamping first would
  * leave a reader stuck at four lines with no way to open them.
+ *
+ * The opening and closing are animated, and closing scrolls the page so the
+ * control stays where the reader left it. Both live in the script below.
  */
 ---
 
 <div class="max-w-[720px]" data-collapsible>
-  {/*
-   * The opening itself is a CSS transition, so the script only ever sets two
-   * pixel values and the browser does the rest. `motion-reduce` turns it off
-   * for a reader who has asked for that, which a JavaScript animation would
-   * have had to check for by hand.
-   */}
-  <div
-    class="relative overflow-hidden transition-[max-height] duration-300 ease-out motion-reduce:transition-none"
-    data-clamp
-  >
+  <div class="relative overflow-hidden" data-clamp>
     <div data-inner><slot /></div>
+
+    {/*
+     * The `hidden` attribute, not the `hidden` class, and that is the whole of
+     * this fix. The element carried both: the script toggles the attribute, and
+     * the class sets `display: none` unconditionally, so the class won every
+     * time and the gradient never appeared. Hidden here in the markup for the
+     * same reason the button is, since with no JavaScript the text is never
+     * clamped and there is nothing to fade out.
+     */}
     <div
-      class="pointer-events-none absolute right-0 bottom-0 left-0 hidden h-12"
-      style="background: linear-gradient(rgb(6 6 6 / 0), rgb(6 6 6))"
+      class="pointer-events-none absolute right-0 bottom-0 left-0 h-12"
+      style="background: linear-gradient(transparent, var(--color-bg))"
+      hidden
       data-fade
     >
     </div>
@@ -59,10 +63,11 @@
    * How much shows before the fade, in pixels rather than lines, because the
    * clamp is a max-height and the text it holds is not always one size.
    *
-   * 145 against the bio's 30.4px line is 4.75 lines. Landing on the three
-   * quarter line is deliberate and the reason this is not a round number: a
-   * clamp that stops on a clean line break reads as the end of the text, and
-   * the fade then looks like decoration rather than a cut.
+   * 145 against the bio's 27.2px line is 5.33 lines. Stopping part way through
+   * a line is deliberate and the reason this is not a round number: a clamp
+   * that lands on a clean line break reads as the end of the text, and the fade
+   * then looks like decoration rather than a cut. It was 4.75 lines when body
+   * copy was 19px, so a change to `--text-body` changes what this shows.
    */
   const CLAMP_PX = 145;
 
@@ -78,40 +83,15 @@
     let open = false;
     let overflows = false;
 
-    /**
-     * `animate` is only true for a click. Measuring and the first paint set the
-     * height outright, because a bio that slid open on load would be answering
-     * a question nobody asked.
-     *
-     * A transition needs two pixel values, and one end of it is always missing.
-     * Opening runs from the clamp, which is already on the element, to the
-     * text's own height, since `none` is not a number and cannot be animated
-     * towards. Closing runs the other way and has to pin the full height first,
-     * because that end is the `none` the open state left behind.
-     */
-    const paint = (animate = false) => {
+    /** The resting state: no animation, no measuring, just the two heights. */
+    const paint = () => {
       const clamped = overflows && !open;
-
-      if (animate) {
-        clamp.style.maxHeight = `${open ? CLAMP_PX : inner.scrollHeight}px`;
-        void clamp.offsetHeight;
-        clamp.style.maxHeight = `${clamped ? CLAMP_PX : inner.scrollHeight}px`;
-      } else {
-        clamp.style.maxHeight = clamped ? `${CLAMP_PX}px` : "";
-      }
-
+      clamp.style.maxHeight = clamped ? `${CLAMP_PX}px` : "";
       fade.hidden = !clamped;
       toggle.hidden = !overflows;
       label.textContent = open ? "Collapse" : "Read more";
       chevron.style.transform = open ? "rotate(180deg)" : "";
     };
-
-    // The open state is a height in pixels while it animates, and that number
-    // is stale the moment the window narrows and the text rewraps. Dropping it
-    // once the transition lands hands the box back to its own content.
-    clamp.addEventListener("transitionend", (event) => {
-      if (event.propertyName === "max-height" && open) clamp.style.maxHeight = "";
-    });
 
     const measure = () => {
       // Only meaningful while closed: once open the element is its full height
@@ -120,9 +100,94 @@
       paint();
     };
 
+    /**
+     * Collapsing takes the reader with it.
+     *
+     * The box shrinks by everything it was holding, so the page below jumps up
+     * by the same amount and a reader who was looking at the bio ends up in the
+     * middle of the collaborator list. Holding the control at a fixed point on
+     * the screen, and letting the page move under it, is what keeps their
+     * place. Expanding needs none of this: the box grows downwards and the top
+     * of the bio never moves.
+     *
+     * `top` is where the control sat before any of this ran, and it has to be
+     * read in the click handler rather than here: by the time this is called
+     * `paint()` has already collapsed the layout, so the control has moved and
+     * measuring it now would anchor it to the place the reader is complaining
+     * about.
+     *
+     * The correction runs per frame against a measured position rather than
+     * scrolling by a computed delta, so it tracks the animation exactly and
+     * lands right even where the page cannot scroll far enough to comply.
+     */
+    const hold = (top: number, animation: Animation | undefined) => {
+      const settle = () => {
+        const drift = toggle.getBoundingClientRect().top - top;
+        if (drift) window.scrollBy(0, drift);
+      };
+
+      if (!animation) return settle();
+
+      let running = true;
+      const stop = () => {
+        running = false;
+        settle();
+      };
+      animation.finished.then(stop, stop);
+
+      const step = () => {
+        settle();
+        if (running) requestAnimationFrame(step);
+      };
+      step();
+    };
+
+    /**
+     * The script owns `max-height` in pixels for as long as the box is moving,
+     * and `paint()` owns it again at rest.
+     *
+     * Pinning `from` before the animation exists is what makes opening animate.
+     * Without it the element is left at its destination between the style write
+     * and the animation's first frame, and where that destination is `none`, as
+     * it is when opening, the box is already at full height when the frame is
+     * painted: an open that snaps. Closing looked right through the same fault
+     * only because there the destination is a number, and a frame showing it
+     * early is a frame showing where the box was going anyway.
+     *
+     * `fill: "forwards"` then holds the last frame until `paint()` has put the
+     * resting value back, so the box does not drop to `from` in the gap. The
+     * fill is cancelled immediately after, since an animation left filling
+     * would outrank the inline style for good and pin the box at that height.
+     */
+    const slide = (from: number, to: number) => {
+      clamp.style.maxHeight = `${from}px`;
+
+      const animation = clamp.animate(
+        { maxHeight: [`${from}px`, `${to}px`] },
+        { duration: 300, easing: "ease-out", fill: "forwards" },
+      );
+
+      const settle = () => {
+        paint();
+        animation.cancel();
+      };
+      animation.finished.then(settle, settle);
+
+      return animation;
+    };
+
     toggle.addEventListener("click", () => {
+      const from = clamp.getBoundingClientRect().height;
+      const anchor = toggle.getBoundingClientRect().top;
+
       open = !open;
-      paint(true);
+      paint();
+      const to = clamp.getBoundingClientRect().height;
+
+      const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const animation = still ? undefined : slide(from, to);
+
+      if (!open) hold(anchor, animation);
     });
 
     new ResizeObserver(measure).observe(inner);

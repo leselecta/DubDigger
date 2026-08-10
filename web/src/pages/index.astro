@@ -106,11 +106,11 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
       <div class="column pb-32">
         <div class="border-hairline max-w-[720px] border-t pt-10">
           <h2 class="mono-label">No database yet</h2>
-          <p class="text-body text-ink-muted mt-4 leading-relaxed">
+          <p class="text-body text-ink-muted mt-4">
             Nothing has been ingested. The app expects a precomputed SQLite file at:
           </p>
           <p class="text-ink-faint mt-4 font-mono text-xs break-all">{getDbPath()}</p>
-          <p class="text-body text-ink-muted mt-4 leading-relaxed">
+          <p class="text-body text-ink-muted mt-4">
             Run the ingest steps in <span class="font-mono text-sm">ingest/</span>, then publish the
             result into <span class="font-mono text-sm">web/data/</span>.
           </p>
@@ -129,7 +129,7 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
             </p>
 
             {results.hits.length === 0 ? (
-              <p class="text-body text-ink-muted max-w-[720px] py-10 leading-relaxed">
+              <p class="text-body text-ink-muted max-w-[720px] py-10">
                 This corpus is a slice centred on dub techno, not all of Discogs, so plenty of real
                 artists are legitimately absent. That is the boundary working, not a gap.
               </p>

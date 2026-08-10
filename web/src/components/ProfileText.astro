@@ -37,14 +37,33 @@ const TOKEN = /\[(a|l)(\d+)\]|\[(a|l)=([^\]]+)\]|\[url=([^\]]+)\]([^[]*)\[\/url\
 
 type Part =
   | { kind: "text"; value: string }
+  | { kind: "break" }
   | { kind: "link"; href: string; label: string; outbound: boolean };
 
 const parts: Part[] = [];
 let cursor = 0;
 
+/**
+ * A profile's own line breaks, as breaks rather than as whitespace.
+ *
+ * The wrapper used to carry `white-space: pre-line` and that was wrong: the
+ * only newlines in a Discogs profile are the ones the writer typed, but the
+ * only newlines the browser sees are the ones this template is indented with.
+ * A bio on one line came out with a blank line above it, from the newline after
+ * the opening div, and with its linked label on a line of its own, from the
+ * newlines around the anchor. Emitting the real breaks here means the markup
+ * can be formatted like markup again.
+ */
+function pushText(value: string) {
+  value.split(/\r?\n/).forEach((line, i) => {
+    if (i > 0) parts.push({ kind: "break" });
+    if (line !== "") parts.push({ kind: "text", value: line });
+  });
+}
+
 for (const match of text.matchAll(TOKEN)) {
   const at = match.index;
-  if (at > cursor) parts.push({ kind: "text", value: text.slice(cursor, at) });
+  if (at > cursor) pushText(text.slice(cursor, at));
   cursor = at + match[0].length;
 
   const [, kindById, id, , nameOnly, href, label] = match;
@@ -59,32 +78,38 @@ for (const match of text.matchAll(TOKEN)) {
       outbound: false,
     });
   } else if (nameOnly) {
-    parts.push({ kind: "text", value: nameOnly });
+    pushText(nameOnly);
   } else if (href) {
     if (safeHref(href)) {
       parts.push({ kind: "link", href, label: label || href, outbound: true });
     } else {
-      parts.push({ kind: "text", value: label || href });
+      pushText(label || href);
     }
   }
   // Emphasis tags fall through: the tag is dropped, its text is already kept.
 }
 
-if (cursor < text.length) parts.push({ kind: "text", value: text.slice(cursor) });
+if (cursor < text.length) pushText(text.slice(cursor));
 ---
 
+{/*
+ * Each part is written tight against the next, with nothing but the expression
+ * between them. A newline here is a space in the sentence, and the anchor is on
+ * one line for that reason: broken over three, "he founded Noton." gained a
+ * space before its full stop.
+ */}
 {
   parts.map((part) =>
-    part.kind === "text" ? (
+    part.kind === "break" ? (
+      <br />
+    ) : part.kind === "text" ? (
       part.value
     ) : (
       <a
         href={part.href}
         rel={part.outbound ? "noreferrer nofollow" : undefined}
-        class="underline underline-offset-2"
+        class="underline underline-offset-2">{part.label}</a
       >
-        {part.label}
-      </a>
     ),
   )
 }

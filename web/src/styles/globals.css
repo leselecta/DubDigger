@@ -46,7 +46,26 @@
   --text-name-label: clamp(2.5rem, 9vw, 7.5rem);
   --text-stat: clamp(2.5rem, 6vw, 4.125rem);
   --text-row: 1.25rem;
-  --text-body: 1.1875rem;
+
+  /*
+   * Two reading sizes, told apart by the job rather than by the page.
+   *
+   * `--text-lead` is the paragraph directly under a headline, which is a
+   * subheading doing a headline's work: it says what the page is before anyone
+   * decides to read it. `--text-body` is prose you settle into, the bio and the
+   * bands on the About page, and it sits a step down so the two are visibly not
+   * the same voice. They were both 1.1875rem, which made a standfirst and four
+   * paragraphs of explanation read as one undifferentiated block.
+   *
+   * The line height rides on the token, so a paragraph asks for a size and gets
+   * the leading that belongs to it. Eleven call sites used to respell 1.6 by
+   * hand, three of them as `leading-relaxed`, which is 1.625 and was nobody's
+   * decision.
+   */
+  --text-lead: 1.1875rem;
+  --text-lead--line-height: 1.6;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.6;
 }
 
 /*

@@ -5,6 +5,25 @@
  *
  * A plain GET form, so search works with no JavaScript and every result page is
  * a real URL that can be linked or gone back to.
+ *
+ * The border carries focus rather than the ring the rest of the page uses: a
+ * ring sits 3px outside the box, and the hero is the widest thing on the home
+ * page.
+ *
+ * The two sizes ask for the accent in opposite ways, because they are reached
+ * for in opposite ways. The hero wears it from the start, since it is why the
+ * home page exists, and marks focus by doubling the edge: the border stays 1px
+ * and an inset shadow lays a second pixel inside it. A shadow rather than a
+ * thicker border because a border eats its own padding box, so growing one
+ * shunts the text and the placeholder sideways every time you click in. Weight
+ * has to carry the whole signal here, the colour no longer changing and
+ * `outline-none` having taken the ring away. The header one is a thing you
+ * reach for while reading something else, so it rests quiet on the hairline and
+ * only takes the accent when you do reach for it.
+ *
+ * The magnifier is the submit button, not decoration. It fills the full height
+ * of the field so the target is the whole right end rather than an 18px glyph,
+ * while its right padding keeps the icon exactly where the design puts it.
  */
 interface Props {
   size: "hero" | "header";
@@ -31,17 +50,24 @@ const from = c + r * 0.75;
       : "Basic Channel, Chain Reaction…"}
     aria-label="Search artists and labels"
     class:list={[
-      "border-edge text-ink placeholder:text-ink-faint w-full border bg-transparent font-mono outline-none",
+      "text-ink placeholder:text-ink-faint w-full border bg-transparent font-mono outline-none",
+      hero
+        ? "border-accent transition-shadow focus:shadow-[inset_0_0_0_1px_var(--color-accent)]"
+        : "border-edge transition-colors focus:border-accent",
       hero ? "h-16 pr-14 pl-6 text-[0.9375rem]" : "h-11 pr-11 pl-4 text-[0.8125rem]",
     ]}
   />
-  <span
-    class="pointer-events-none absolute top-1/2 -translate-y-1/2"
-    style={{ right: hero ? "24px" : "16px" }}
+  <button
+    type="submit"
+    aria-label="Search"
+    class:list={[
+      "absolute inset-y-0 right-0 flex cursor-pointer items-center pl-2 text-ink-muted transition-colors hover:text-accent",
+      hero ? "pr-6" : "pr-4",
+    ]}
   >
     <svg width={iconSize} height={iconSize} viewBox={`0 0 ${iconSize} ${iconSize}`} fill="none" aria-hidden="true">
-      <circle cx={c} cy={c} r={r} stroke="#8a8a8a" stroke-width="1.4"></circle>
-      <line x1={from} y1={from} x2={iconSize - 1} y2={iconSize - 1} stroke="#8a8a8a" stroke-width="1.4"></line>
+      <circle cx={c} cy={c} r={r} stroke="currentColor" stroke-width="1.4"></circle>
+      <line x1={from} y1={from} x2={iconSize - 1} y2={iconSize - 1} stroke="currentColor" stroke-width="1.4"></line>
     </svg>
-  </span>
+  </button>
 </form>

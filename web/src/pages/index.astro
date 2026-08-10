@@ -91,7 +91,7 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
     <div class:list={["mx-auto max-w-[640px]", searching ? "mt-8" : "mt-16"]}>
       <SearchField size="hero" value={q} />
     </div>
-    <p class="mt-[18px] font-mono text-xs tracking-[0.14em] text-[#5f5f5f] uppercase">
+    <p class="mt-[18px] font-mono text-xs tracking-[0.14em] text-ink-faint uppercase">
       Search artists · labels · releases
     </p>
   </div>

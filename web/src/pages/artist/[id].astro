@@ -23,7 +23,7 @@ import {
   type Relation,
 } from "@/lib/queries";
 import { creditLine } from "@/lib/roles";
-import { PAGE_SIZE, pageSize, percent, years } from "@/lib/view";
+import { PAGE_SIZE, pageSize, years } from "@/lib/view";
 
 const artist = getArtist(Number(Astro.params.id));
 if (!artist) return Astro.rewrite("/404");
@@ -117,21 +117,19 @@ const route =
       {artist.name}
     </h1>
 
-    <p class="text-ink-muted mt-10 font-mono text-[0.8125rem] tracking-[0.06em] uppercase">
-      {artist.releaseCount.toLocaleString("en-GB")} releases &nbsp;·&nbsp; {
-        artist.collaboratorCount.toLocaleString("en-GB")
-      } collaborators &nbsp;·&nbsp; {artist.labelCount.toLocaleString("en-GB")} labels{
-        artist.seedReleases > 0 && (
-          <>
-            {" "}
-            &nbsp;·&nbsp;{" "}
-            <span class="text-accent">
-              {artist.seedReleases.toLocaleString("en-GB")} in the dub techno cluster
-              {artist.seedShare !== null && `, ${percent(artist.seedShare)} of output`}
-            </span>
-          </>
-        )
-      }
+    {/*
+     * Three counts and nothing else. The seed tally that used to close this line
+     * ("2 in the dub techno cluster, 100% of output") is the working of the
+     * grade rather than a fact about the artist, and the Relevance row below
+     * already says what it comes to in words. Nothing is lost: it is the same
+     * measurement, read out once instead of twice.
+     */}
+    <p class="text-accent mt-10 font-mono text-[0.8125rem] tracking-[0.06em] uppercase">
+      {artist.releaseCount.toLocaleString("en-GB")} releases <span class="text-ink-strong"
+        >&nbsp;·&nbsp;</span
+      > {artist.collaboratorCount.toLocaleString("en-GB")} collaborators <span
+        class="text-ink-strong">&nbsp;·&nbsp;</span
+      > {artist.labelCount.toLocaleString("en-GB")} labels
     </p>
 
     <dl class="mt-9 max-w-[760px]">
@@ -182,7 +180,7 @@ const route =
       artist.profile && (
         <LabelledBand label="Bio">
           <CollapsibleText>
-            <div class="text-body text-[#d4d4d4] leading-[1.6] whitespace-pre-line">
+            <div class="text-body text-ink-muted leading-[1.6] whitespace-pre-line">
               <ProfileText text={artist.profile} names={getProfileNames(artist.profile)} />
             </div>
           </CollapsibleText>
@@ -235,11 +233,15 @@ const route =
         ) : (
           <>
             {/*
-             * "Shared" alone did not say shared what, and plain "Releases" would
-             * be worse: the same column on the Labels tab means that artist's
-             * releases on that label, so the two would read as the same figure.
+             * The unit stays in the heading because the figure is a count of
+             * records, not of partnerships: Rhett Davies and Eno are 335 here,
+             * which "Collaborations" would read as 335 separate team-ups rather
+             * than one long working relationship. Plain "Releases" cannot be
+             * used, since the same column on the Labels tab means that artist's
+             * releases on that label and the two would read as one figure.
+             * "Shared" was tried and never said shared what.
              */}
-            <ListHeader name="Name" count="Released together" />
+            <ListHeader name="Name" count="Releases together" />
             <ul>
               {collaborators.map((c) => (
                 <CreditRow

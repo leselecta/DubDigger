@@ -11,7 +11,7 @@ const { href, name, count } = Astro.props;
 
 <a
   href={href}
-  class="hover:border-accent hover:text-accent inline-flex items-baseline gap-2 border border-[rgb(255_255_255_/_0.18)] px-[14px] py-2 font-mono text-[0.8125rem] text-[#e6e6e6] transition-colors"
+  class="hover:border-accent hover:text-accent inline-flex items-baseline gap-2 border border-edge px-[14px] py-2 font-mono text-[0.8125rem] text-ink transition-colors"
 >
   {name}
   {count !== undefined && count > 0 && <span class="text-ink-faint">{count}</span>}

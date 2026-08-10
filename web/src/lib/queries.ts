@@ -354,6 +354,9 @@ export interface TopArtist {
   sceneReleases: number;
   /** Their artist-line releases in total. The pair is the honest statement. */
   lineReleases: number;
+  /** Read off their coverage row, the same span the artist's own page reports. */
+  firstYear: number | null;
+  lastYear: number | null;
 }
 
 export interface TopLabel {
@@ -366,6 +369,9 @@ export interface TopLabel {
   /** Core and named artists on the roster: who chose to release here. */
   coreArtists: number;
   namedArtists: number;
+  /** Read off the roster, the same span the label's own page reports. */
+  firstYear: number | null;
+  lastYear: number | null;
 }
 
 /**
@@ -442,12 +448,21 @@ function build(): { artists: TopArtist[]; labels: TopLabel[] } {
                GROUP BY ra.artist_id
             )
        SELECT a.id, a.name, c.scene,
-              (SELECT count(DISTINCT release_id) FROM release_artists WHERE artist_id = a.id) AS line
+              (SELECT count(DISTINCT release_id) FROM release_artists WHERE artist_id = a.id) AS line,
+              v.first_year, v.last_year
          FROM scene_count c
          JOIN artists a ON a.id = c.artist_id
+         LEFT JOIN artist_coverage v ON v.artist_id = a.id
         WHERE ${NOT_A_PERSON}`,
     )
-    .all() as { id: number; name: string; scene: number; line: number }[];
+    .all() as {
+    id: number;
+    name: string;
+    scene: number;
+    line: number;
+    first_year: number | null;
+    last_year: number | null;
+  }[];
 
   const standingOf = (id: number, scene: number): Standing => {
     if (CORE_ARTISTS.includes(id)) return "core";
@@ -465,6 +480,8 @@ function build(): { artists: TopArtist[]; labels: TopLabel[] } {
       standing: standingOf(r.id, r.scene),
       sceneReleases: r.scene,
       lineReleases: r.line,
+      firstYear: r.first_year,
+      lastYear: r.last_year,
       rank: weight(r.scene, r.line),
     }))
     .sort(
@@ -506,13 +523,19 @@ function build(): { artists: TopArtist[]; labels: TopLabel[] } {
                      count(DISTINCT CASE WHEN release_id IN (SELECT release_id FROM scene_release)
                                          THEN release_id END) AS scene
                 FROM release_labels GROUP BY label_id
+            ),
+            active AS (
+              SELECT label_id, min(first_year) AS first_year, max(last_year) AS last_year
+                FROM label_roster GROUP BY label_id
             )
        SELECT l.id, l.name, t.releases, t.scene,
               coalesce(b.core_artists, 0)  AS core_artists,
-              coalesce(b.named_artists, 0) AS named_artists
+              coalesce(b.named_artists, 0) AS named_artists,
+              v.first_year, v.last_year
          FROM totals t
          JOIN labels l ON l.id = t.label_id
          LEFT JOIN banded b ON b.label_id = t.label_id
+         LEFT JOIN active v ON v.label_id = t.label_id
         WHERE b.label_id IS NOT NULL OR l.id IN (${SCENE_LABELS.join(",")})`,
     )
     .all() as {
@@ -522,6 +545,8 @@ function build(): { artists: TopArtist[]; labels: TopLabel[] } {
     scene: number;
     core_artists: number;
     named_artists: number;
+    first_year: number | null;
+    last_year: number | null;
   }[];
 
   const labels: TopLabel[] = labelRows
@@ -533,6 +558,8 @@ function build(): { artists: TopArtist[]; labels: TopLabel[] } {
       sceneReleases: r.scene,
       coreArtists: r.core_artists,
       namedArtists: r.named_artists,
+      firstYear: r.first_year,
+      lastYear: r.last_year,
       rank: (3 * r.core_artists + r.named_artists) * (r.releases ? r.scene / r.releases : 0),
     }))
     .filter((l) => l.rank > 0 || l.standing === "core")

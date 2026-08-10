@@ -6,39 +6,38 @@ import ListHeader from "@/components/ListHeader.astro";
 import CreditRow from "@/components/CreditRow.astro";
 import Absence from "@/components/Absence.astro";
 import LoadMore from "@/components/LoadMore.astro";
+import SortBy from "@/components/SortBy.astro";
 import { getTopLabels, TOP_LIST_SIZE } from "@/lib/queries";
-import { PAGE_SIZE, pageSize, percent } from "@/lib/view";
+import { PAGE_SIZE, pageSize, years } from "@/lib/view";
 
-const limit = pageSize(Astro.url.searchParams.get("show") ?? undefined);
+const params = Astro.url.searchParams;
+const limit = pageSize(params.get("show") ?? undefined);
+const sort = params.get("sort") === "name" ? "name" : "ranking";
+
+/*
+ * Sorted after the ranking, never instead of it: the list is the top
+ * TOP_LIST_SIZE by scene weight, and A–Z reorders that same set rather than
+ * reaching alphabetically into the whole corpus.
+ */
 const labels = getTopLabels();
-const shown = labels.slice(0, limit);
-
-/** Who is on the roster, said in the same two words the artist list uses. */
-function roster(core: number, named: number): string {
-  const say = (n: number, word: string) => `${n} ${word} ${n === 1 ? "artist" : "artists"}`;
-  const parts = [];
-  if (core > 0) parts.push(say(core, "core"));
-  if (named > 0) parts.push(say(named, "named"));
-  return parts.length === 0
-    ? "No named scene artists on the roster"
-    : `${parts.join(" and ")} on the roster`;
-}
+const ordered =
+  sort === "name" ? [...labels].sort((a, b) => a.name.localeCompare(b.name)) : labels;
+const shown = ordered.slice(0, limit);
 ---
 
-<Base title="Top Labels — Dub Digger">
+<Base title="Core Labels — Dub Digger">
   <SiteHeader />
 
   <div class="column pt-16 pb-16 md:pt-24">
-    <Eyebrow>Top Labels</Eyebrow>
+    <Eyebrow>The labels the scene records for</Eyebrow>
     <h1 class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]">
       The Core Labels<span class="text-accent">.</span>
     </h1>
 
     <p class="text-body text-ink-muted mt-10 max-w-[760px] leading-[1.6]">
-      The {labels.length.toLocaleString("en-GB")} labels the scene records for. Unlike a search, this
-      list is a mix of curation and data.
+      Unlike a search, this list is a mix of curation and data. It's an experimental feature, so
+      expect to find errors and inconsistencies.
     </p>
-
   </div>
 
   <div class="column pb-32">
@@ -47,24 +46,16 @@ function roster(core: number, named: number): string {
         <Absence>No labels recorded. Nothing has been ingested yet.</Absence>
       ) : (
         <>
-          <ListHeader name="Label" count="Releases" meta="Standing" />
+          <SortBy basePath="/core-labels" active={sort} />
+          <ListHeader name="Label" count="Releases" meta="Active" />
           <ul>
             {shown.map((label) => (
               <CreditRow
                 count={label.releaseCount.toLocaleString("en-GB")}
                 href={`/label/${label.id}`}
                 name={label.name}
-                detail={roster(label.coreArtists, label.namedArtists)}
-              >
-                <span
-                  slot="meta"
-                  class={label.standing === "core" ? "text-accent" : "text-ink-faint"}
-                >
-                  {label.standing === "core"
-                    ? "Scene label"
-                    : percent(label.sceneReleases / label.releaseCount)}
-                </span>
-              </CreditRow>
+                meta={years(label.firstYear, label.lastYear)}
+              />
             ))}
           </ul>
         </>
@@ -73,7 +64,10 @@ function roster(core: number, named: number): string {
 
     {
       limit < labels.length && (
-        <LoadMore href={`/top-labels?show=${limit + PAGE_SIZE}`} remaining={labels.length - limit} />
+        <LoadMore
+          href={`/core-labels?sort=${sort}&show=${limit + PAGE_SIZE}`}
+          remaining={labels.length - limit}
+        />
       )
     }
 

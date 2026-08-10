@@ -1,0 +1,53 @@
+---
+interface Props {
+  /** The page's own path. The default sort is the bare URL, not a parameter. */
+  basePath: string;
+  active: "ranking" | "name";
+}
+
+/**
+ * How the list is ordered, on the two ranked pages.
+ *
+ * Links carrying a search param, for the same reasons the tab bar is: the sort
+ * stays server side so a 1,000 row list is never handed to the browser to
+ * reorder, and every ordering is a real URL that can be linked and gone back to.
+ *
+ * `data-hold-scroll`, the same as the tab bar and "Load more". The argument for
+ * leaving it off was that a re-sorted list is a different list, so the row you
+ * were looking at is no longer there. True, but it answers the wrong question:
+ * the control you just clicked is on screen, and the page throwing you to the
+ * top takes it away from you and asks you to scroll back to try the other
+ * order. Holding keeps the control under the cursor. The list beneath it having
+ * changed is the point of the click.
+ *
+ * "Ranking" rather than "Relevance", though that is what this orders by in the
+ * plain sense of the word. Relevance is spoken for: it is the four step grade a
+ * search result and an artist page both show, and this sorts by the scene
+ * weighting instead, which is a different measure. One question, one vocabulary.
+ */
+const { basePath, active } = Astro.props;
+
+const item = "font-mono text-[0.6875rem] tracking-[0.2em] uppercase transition-colors";
+const on = "text-ink-strong border-b border-ink-strong pb-1";
+const off = "text-ink-faint hover:text-ink pb-1";
+---
+
+<div class="mb-10 flex items-baseline justify-end gap-5">
+  <span class={`${item} text-ink-faint`}>Sort by</span>
+  <a
+    href={basePath}
+    data-hold-scroll
+    aria-current={active === "ranking" ? "true" : undefined}
+    class:list={[item, active === "ranking" ? on : off]}
+  >
+    Ranking
+  </a>
+  <a
+    href={`${basePath}?sort=name`}
+    data-hold-scroll
+    aria-current={active === "name" ? "true" : undefined}
+    class:list={[item, active === "name" ? on : off]}
+  >
+    A–Z
+  </a>
+</div>

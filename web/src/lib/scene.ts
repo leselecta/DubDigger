@@ -80,12 +80,18 @@ export const NAMED_ARTISTS = [
  * than carried as dead ids: nCompass (181470) and Know Thyself (370582).
  * Basic Channel, Chain Reaction and Rhythm & Sound arrive as one row on that
  * list and are three labels here.
+ *
+ * Force Inc. Music Works (269) was on the list by mistake and is deliberately
+ * out. It is Frankfurt rather than the scene: the corpus finds Wolfgang Voigt
+ * and Vladislav Delay there under four alias names, which is a neighbouring
+ * room showing up as a home. Its three sibling ids (3843, 22828, 2790407) were
+ * never listed and stay out with it.
  */
 export const SCENE_LABELS = [
   255, 234, 768, 79724, 89598, 715, 144751, 31, 10999, 46981, 207711, 5306, 1465, 393581, 457, 1851,
   132653, 78265, 694039, 980123, 188482, 439777, 478570, 635170, 1707457, 97088, 588461, 95752,
-  416176, 669382, 862058, 969622, 246087, 269, 640495, 260, 81833, 178535, 256140, 179045, 17087,
-  245, 212599, 985, 59, 594019, 1626, 7647, 9520, 387813, 8367, 120499, 2525,
+  416176, 669382, 862058, 969622, 246087, 640495, 260, 81833, 178535, 256140, 179045, 17087, 245,
+  212599, 985, 59, 594019, 1626, 7647, 9520, 387813, 8367, 120499, 2525,
 ];
 
 /**

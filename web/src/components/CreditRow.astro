@@ -9,6 +9,11 @@ interface Props {
   detail?: string | null;
   /** Short text for the third column. Years, a catalogue number. */
   meta?: string | null;
+  /**
+   * The name leaves the site. Marks the row with an arrow, opens a new tab, and
+   * says both in the accessible name, since a link that behaves differently
+   * should look and sound different before it is followed.
+   */
   external?: boolean;
 }
 
@@ -24,7 +29,36 @@ const nameClass = "link-rule text-row justify-self-start font-bold tracking-[-0.
   ]}
 >
   <div class="min-w-0">
-    <a href={href} class={nameClass} rel={external ? "noreferrer" : undefined}>{name}</a>
+    {/*
+     * After the title and outside the anchor. Outside so `link-rule` stays
+     * under the title rather than running on beneath the glyph, and closed up
+     * against it so the gap is the margin and nothing else: a newline between
+     * the two would collapse to a space and widen it.
+     */}
+    <a
+      href={href}
+      class={nameClass}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noreferrer" : undefined}
+      >{name}{external && <span class="sr-only">on Discogs, opens in a new tab</span>}</a
+    >{external && (
+      <svg
+        class="text-ink-faint ml-2 inline-block align-baseline"
+        width="10"
+        height="10"
+        viewBox="0 0 10 10"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M1.6 8.4L8.4 1.6M4.4 1.6h4v4"
+          stroke="currentColor"
+          stroke-width="1.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    )}
     {
       detail && (
         <p class="text-ink-dim mt-2 max-w-[920px] font-mono text-xs leading-[1.65]">{detail}</p>

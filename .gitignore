@@ -18,10 +18,15 @@ web/data/*.sqlite
 web/data/*.sqlite-wal
 web/data/*.sqlite-shm
 
-# Astro
+# Astro. The root .astro/ appears when a command is run from the repo root
+# rather than from web/; it is the same generated types directory either way.
 web/dist/
 web/.astro/
+.astro/
 *.tsbuildinfo
+
+# Local machine settings. The shared .claude/settings.json is committed.
+.claude/settings.local.json
 
 .env
 .env.local

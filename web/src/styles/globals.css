@@ -49,38 +49,80 @@
   --text-body: 1.1875rem;
 }
 
-html {
-  background: var(--color-bg);
-}
+/*
+ * The ground rules, in `base` so a class can still override them.
+ *
+ * Written unlayered these win against every Tailwind utility whatever the
+ * specificity, which is not a rule about weight but about cascade layers:
+ * unlayered declarations sit after all of them. That silently voided the colour
+ * a link set on itself — `a { color: inherit }` beat the grey on a tab, and
+ * `a:hover` beat the dark type the nav cells, "Load more" and the 404 button
+ * need on their inverted ground. In `base` they do the job they were written
+ * for, undoing the browser defaults, and stop there.
+ */
+@layer base {
+  html {
+    background: var(--color-bg);
+  }
 
-body {
-  background: var(--color-bg);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
 
-/* Digging is hopping between pages, so links are the primary control. */
-a {
-  color: inherit;
-  text-decoration: none;
-}
+  /* Digging is hopping between pages, so links are the primary control. */
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 
-a:hover {
-  color: var(--color-accent);
-}
+  a:hover {
+    color: var(--color-accent);
+  }
 
-a:focus-visible,
-input:focus-visible,
-button:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 3px;
-}
+  a:focus-visible,
+  input:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+  }
 
-::selection {
-  background: var(--color-accent);
-  color: var(--color-bg);
+  /*
+   * Chrome paints its own near-white ground on a field it has autofilled, and
+   * background-color is the one property it will not let a page set there.
+   *
+   * Clipping that ground to the glyphs is what removes it, and the text-fill
+   * colour then paints over what is left, so the field keeps the page's own
+   * background. The obvious alternative, an inset shadow big enough to cover
+   * the box, was tried and is wrong here: the hero marks focus with an inset
+   * shadow of its own, and one element has one box-shadow, so the focus ring
+   * and the cover would take turns winning. Clipping touches no property the
+   * design is already using.
+   */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: var(--color-ink);
+    caret-color: var(--color-ink);
+
+    /*
+     * Chrome swaps the family out too, and that one it applies above an
+     * ordinary author rule, so the field's own `font-mono` loses to it. The
+     * only `!important` written in this file, and it is spent taking back a
+     * property the page had already set rather than on an argument with itself.
+     */
+    font-family: var(--font-mono) !important;
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
 }
 
 /*

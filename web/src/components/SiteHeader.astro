@@ -17,13 +17,49 @@ interface Props {
 }
 
 const { search = true } = Astro.props;
+
+/*
+ * Which section is being read. Trailing slashes are stripped so "/core-labels/"
+ * and "/core-labels" mark the same cell; an artist or label page matches none of
+ * them, which is correct, since neither is a section.
+ */
+const section = Astro.url.pathname.replace(/\/+$/, "") || "/";
+
+/*
+ * The one cell, and the two states it can be in.
+ *
+ * Accent fills the cell rather than tinting the type, so the section you are in
+ * is legible at a glance from the far side of the row. `text-bg` is what keeps
+ * the label readable on it, and it also has to beat the global `a:hover` rule
+ * that would otherwise turn the type accent on an accent ground.
+ */
+const cell =
+  "border-hairline border-l px-5 py-3 font-mono text-[0.6875rem] tracking-[0.14em] whitespace-nowrap uppercase transition-colors";
+const resting = "text-ink hover:bg-accent hover:text-bg";
+const current = "bg-accent text-bg";
 ---
 
 <header class="border-hairline border-b">
   <div class="column flex h-[76px] items-center justify-between gap-8">
-    <a href="/" class="shrink-0 text-xl font-semibold tracking-[-0.02em]">
-      dub<span class="text-accent">.</span>digger
-    </a>
+    {/*
+     * The state of the thing, in the column-header voice: same size, tracking
+     * and grey as the labels over a list, so it reads as a note about the page
+     * rather than a badge. Baseline-aligned, which sits its caps on the
+     * wordmark's own bottom edge, and outside the anchor because it is not part
+     * of what "go home" means.
+     */}
+    {/*
+     * Half the nav cell's `px-5`, so the wordmark is off the column edge and
+     * its hairline without being pushed all the way to where "Search Index"
+     * starts. It reads as a heading over the row rather than a fourth cell in
+     * it, which is what the full 1.25rem made it look like.
+     */}
+    <div class="flex shrink-0 items-baseline gap-2.5 pl-2.5">
+      <a href="/" class="text-xl font-semibold tracking-[-0.02em]">
+        dub<span class="text-accent">.</span>digger
+      </a>
+      <span class="text-ink-faint font-mono text-[0.6875rem] tracking-[0.2em] uppercase">(Beta)</span>
+    </div>
 
     {
       search ? (
@@ -40,46 +76,56 @@ const { search = true } = Astro.props;
 {/*
  * The top level sections.
  *
- * "What is this?" has no destination yet, so it is an anchor with no href.
- * That is what the spec calls a placeholder link, and it is the honest shape:
- * an href="#" would be a real link that lies about going somewhere, and a span
- * would have to be rewritten into an anchor later. Add the href when the page
- * exists.
- *
  * The type is spelled out rather than reaching for `mono-label` because this
- * row needs its own resting and hover colours and the utility fixes one grey
- * for everything. It sits a step below the tab bar: this navigates between
- * sections, the tab bar switches the list you are reading, and the smaller
- * type says which is which.
+ * row needs its own resting, hover and current colours and the utility fixes
+ * one grey for everything. It sits a step below the tab bar: this navigates
+ * between sections, the tab bar switches the list you are reading, and the
+ * smaller type says which is which. The two mark themselves differently for
+ * the same reason: a filled cell here, a heavier underline there.
  *
- * Each cell carries its own left hairline and the last one closes the row, so
- * the dividers start at the column edge and stop with the text rather than
+ * Each cell carries its own left hairline and the group's last cell closes it,
+ * so the dividers start at the column edge and stop with the text rather than
  * running the full width the way the band's own rules do.
+ *
+ * Two groups, split by what they do. Browsing sits left, and "what is this"
+ * sits on its own at the right, because it is not a place in the corpus: it
+ * answers a question about the tool. The gap between them is the distinction;
+ * each group closes its own right edge so neither reads as trailing off.
  */}
 <nav class="border-hairline border-b" aria-label="Sections">
-  <div class="column flex overflow-x-auto">
-    <a
-      href="/"
-      class="border-hairline text-ink hover:text-ink-strong border-l px-5 py-3 font-mono text-[0.6875rem] tracking-[0.14em] whitespace-nowrap uppercase transition-colors"
-    >
-      Index
-    </a>
-    <a
-      href="/top-labels"
-      class="border-hairline text-ink hover:text-ink-strong border-l px-5 py-3 font-mono text-[0.6875rem] tracking-[0.14em] whitespace-nowrap uppercase transition-colors"
-    >
-      Top Labels
-    </a>
-    <a
-      href="/top-artists"
-      class="border-hairline text-ink hover:text-ink-strong border-l px-5 py-3 font-mono text-[0.6875rem] tracking-[0.14em] whitespace-nowrap uppercase transition-colors"
-    >
-      Top Artists
-    </a>
-    <a
-      class="border-hairline text-ink-muted border-r border-l px-5 py-3 font-mono text-[0.6875rem] tracking-[0.14em] whitespace-nowrap uppercase"
-    >
-      What is this?
-    </a>
+  <div class="column flex justify-between overflow-x-auto">
+    <div class="flex shrink-0">
+      <a
+        href="/"
+        aria-current={section === "/" ? "page" : undefined}
+        class:list={[cell, section === "/" ? current : resting]}
+      >
+        Search Index
+      </a>
+      <a
+        href="/core-labels"
+        aria-current={section === "/core-labels" ? "page" : undefined}
+        class:list={[cell, section === "/core-labels" ? current : resting]}
+      >
+        Core Labels
+      </a>
+      <a
+        href="/core-artists"
+        aria-current={section === "/core-artists" ? "page" : undefined}
+        class:list={[cell, "border-r", section === "/core-artists" ? current : resting]}
+      >
+        Core Artists
+      </a>
+    </div>
+
+    <div class="flex shrink-0">
+      <a
+        href="/what-is-this"
+        aria-current={section === "/what-is-this" ? "page" : undefined}
+        class:list={[cell, "border-r", section === "/what-is-this" ? current : resting]}
+      >
+        What is this?
+      </a>
+    </div>
   </div>
 </nav>

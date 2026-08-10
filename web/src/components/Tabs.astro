@@ -39,8 +39,13 @@ const { tabs, active, basePath } = Astro.props;
  * The hairline sits on the wrapper rather than on the scrolling row, so the
  * active tab's heavier underline lands on top of it instead of being clipped
  * away by the scroll container.
+ *
+ * The margin under it is the gap before the list starts. Two hairlines close
+ * together, the tab bar's and the column heads', read as one thick rule and
+ * leave the heads looking like part of the switcher rather than the top of the
+ * table.
  */}
-<div class="border-hairline mb-2 border-b">
+<div class="border-hairline mb-10 border-b">
   <nav class="flex gap-6 overflow-x-auto sm:gap-[34px]">
     {
       tabs.map((tab) => {
@@ -52,13 +57,17 @@ const { tabs, active, basePath } = Astro.props;
             aria-current={isActive ? "page" : undefined}
             class:list={[
               "shrink-0 pb-4 font-mono text-[0.8125rem] tracking-[0.14em] whitespace-nowrap uppercase",
-              isActive ? "text-ink-strong border-b-[1.5px] border-white" : "text-[#7c7c7c]",
+              isActive ? "text-ink-strong border-b-[1.5px] border-ink-strong" : "text-ink-dim",
             ]}
           >
+            {/*
+             * The count sits at one grey in both states. It used to take a
+             * dimmer shade on the inactive tab, which asked the ramp for a step
+             * below `ink-faint` that does not exist, and said the same thing
+             * twice: the label already carries which tab you are on.
+             */}
             {tab.label}{" "}
-            <span class={isActive ? "text-ink-faint" : "text-[#5a5a5a]"}>
-              {tab.count.toLocaleString("en-GB")}
-            </span>
+            <span class="text-ink-faint">{tab.count.toLocaleString("en-GB")}</span>
           </a>
         );
       })

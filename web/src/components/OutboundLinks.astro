@@ -33,13 +33,32 @@ const KNOWN_HOSTS: [suffix: string, name: string][] = [
   ["beatport.com", "Beatport"],
 ];
 
+/**
+ * The name to show, or null for anything that should not become a link.
+ *
+ * The urls column is contributor-entered and holds more than URLs: 3,001 rows
+ * have no scheme at all, some carry profile markup that leaked out of the bio
+ * field, and a few parse as exotic schemes like `facebook:`. Those last ones
+ * are the reason for the two checks rather than one. `new URL()` accepts them,
+ * leaving an empty hostname, so the row used to render as an anchor with no
+ * text: a link you cannot see and cannot avoid clicking.
+ *
+ * Restricting to http and https also means a `javascript:` URL can never reach
+ * an href. There is none in the current dump, but the next dump is a different
+ * file and this is contributed data.
+ */
 function nameFor(url: string): string | null {
-  let host: string;
+  let parsed: URL;
   try {
-    host = new URL(url).hostname.replace(/^www\./, "");
+    parsed = new URL(url);
   } catch {
     return null;
   }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+
+  const host = parsed.hostname.replace(/^www\./, "");
+  if (host === "") return null;
+
   return KNOWN_HOSTS.find(([suffix]) => host.endsWith(suffix))?.[1] ?? host;
 }
 
@@ -67,13 +86,13 @@ for (const url of urls) {
   <a
     href={`https://www.discogs.com/${kind}/${id}`}
     rel="noreferrer"
-    class="border-b border-[rgb(255_255_255_/_0.3)]"
+    class="link-rule"
   >
     Discogs
   </a>
   {
     links.map((l) => (
-      <a href={l.href} rel="noreferrer nofollow" class="border-b border-[rgb(255_255_255_/_0.3)]">
+      <a href={l.href} rel="noreferrer nofollow" class="link-rule">
         {l.name}
       </a>
     ))

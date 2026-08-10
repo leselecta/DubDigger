@@ -10,6 +10,16 @@ interface Props {
   /** Short text for the third column. Years, a catalogue number. */
   meta?: string | null;
   /**
+   * What the third column is called, printed in front of the value once the
+   * column has folded under the name.
+   *
+   * It repeats the string given to `ListHeader`'s `meta`, and it has to: the
+   * header and the rows are separate components, and there is no way for one
+   * to read the other's props. Keep the two in step — a row that says
+   * "Active:" under a column headed "Cat no." is worse than no label at all.
+   */
+  metaLabel?: string;
+  /**
    * The name leaves the site. Marks the row with an arrow, opens a new tab, and
    * says both in the accessible name, since a link that behaves differently
    * should look and sound different before it is followed.
@@ -17,9 +27,18 @@ interface Props {
   external?: boolean;
 }
 
-const { count, href, name, detail, meta, external = false } = Astro.props;
+const { count, href, name, detail, meta, metaLabel, external = false } = Astro.props;
 
 const nameClass = "link-rule text-row justify-self-start font-bold tracking-[-0.01em]";
+
+/*
+ * A column heading that already ends in a full stop keeps it in the header row
+ * and loses it here, where the colon does that job: "Cat no.:" is the same
+ * pause twice. Stripped in the component rather than at the call sites so they
+ * can go on passing the header's own string verbatim, which is what keeps the
+ * two from drifting apart.
+ */
+const metaHeading = metaLabel?.replace(/\.$/, "");
 ---
 
 <li
@@ -69,6 +88,18 @@ const nameClass = "link-rule text-row justify-self-start font-bold tracking-[-0.
   <span class="text-ink-faint font-mono text-[0.8125rem] font-medium tabular-nums">{count}</span>
 
   <span class="text-ink-faint col-start-1 font-mono text-[0.8125rem] tabular-nums md:col-start-3">
+    {/*
+     * The column header, brought down to the value.
+     *
+     * This column drops under the name below `md`, where `ListHeader` has no
+     * room to keep its own heading — so a bare "2002 – 2026" sat under a title
+     * with nothing saying what it counted. It reads "Active: 2002 – 2026" on a
+     * phone and goes back to being a column, unlabelled, from `md` up.
+     *
+     * The space between the two is the newline below, which HTML renders as
+     * one. Nothing sets it, so nothing can set it twice.
+     */}
+    {metaHeading && <span class="md:hidden">{metaHeading}:</span>}
     {/* A slot so a row can put a link here, with the plain string as the usual case. */}
     <slot name="meta">{meta}</slot>
   </span>

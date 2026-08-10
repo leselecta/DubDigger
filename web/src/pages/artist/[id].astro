@@ -270,6 +270,7 @@ const route =
                   href={`/label/${l.id}`}
                   name={l.name}
                   meta={years(l.firstYear, l.lastYear)}
+                  metaLabel="Active"
                 />
               ))}
             </ul>
@@ -293,6 +294,7 @@ const route =
                   external
                   detail={creditLine(r.roles)}
                   meta={r.label}
+                  metaLabel="Label"
                 >
                   {/*
                    * The release title leaves for Discogs, so without this the

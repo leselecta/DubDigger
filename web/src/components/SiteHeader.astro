@@ -7,10 +7,10 @@ import SearchField from "./SearchField.astro";
  * The home page carries its search in the hero, so the header one is suppressed
  * there rather than asking twice for the same thing.
  *
- * The three bars that used to sit on the right are gone. They were decoration
- * standing in for a panel that was never rebuilt, and the mobile question they
- * belong to is being taken on its own terms rather than pre-empted by a menu
- * icon with nothing behind it.
+ * The three bars are back, at the foot of this file rather than here, and this
+ * time there is a panel behind them. They were removed for standing in for
+ * something that was never built; the rule was never that a phone gets four
+ * cells it cannot fit.
  */
 interface Props {
   search?: boolean;
@@ -37,28 +37,68 @@ const cell =
   "border-hairline border-l px-5 py-3 font-mono text-[0.6875rem] tracking-[0.14em] whitespace-nowrap uppercase transition-colors";
 const resting = "text-ink hover:bg-accent hover:text-bg";
 const current = "bg-accent text-bg";
+
+/*
+ * The same cell, stacked. It spells the type out again rather than extending
+ * `cell` because the two differ in every box property they set, and a Tailwind
+ * class list that overrides padding depends on the order the classes happen to
+ * be emitted in. Two explicit strings beat one that works by luck.
+ *
+ * `px-2.5` puts the labels under the wordmark rather than under the desktop
+ * cell's `px-5`: inside the column's own gutter, 20px of inset is a twelfth of
+ * a phone spent on nothing.
+ */
+const row =
+  "border-hairline block border-t px-2.5 py-3.5 font-mono text-[0.6875rem] tracking-[0.14em] uppercase transition-colors";
+
+/*
+ * The stack marks the current section in accent type, not an accent ground.
+ *
+ * A filled cell reads as one item picked out of a row you can see all of. Down
+ * a column, full-bleed, it stops being a marker and becomes a band across the
+ * panel — the loudest thing on the phone, for the one piece of information the
+ * page underneath is already shouting. The type carries it instead.
+ *
+ * Hover is spelled out rather than left to the `a:hover` in globals.css, which
+ * sits in the `base` layer and loses to any utility that sets a colour.
+ */
+const rowResting = "text-ink hover:text-accent";
+const rowCurrent = "text-accent";
+
+/*
+ * Browsing and the Info page, kept apart the way the desktop row keeps them
+ * apart, and listed once so the two layouts cannot drift.
+ */
+const browse = [
+  { href: "/", label: "Search Index" },
+  { href: "/core-labels", label: "Core Labels" },
+  { href: "/core-artists", label: "Core Artists" },
+];
+const info = [{ href: "/info", label: "Info" }];
 ---
 
 <header class="border-hairline border-b">
   <div class="column flex h-[76px] items-center justify-between gap-8">
     {/*
-     * The state of the thing, in the column-header voice: same size, tracking
-     * and grey as the labels over a list, so it reads as a note about the page
-     * rather than a badge. Baseline-aligned, which sits its caps on the
-     * wordmark's own bottom edge, and outside the anchor because it is not part
-     * of what "go home" means.
-     */}
-    {/*
-     * Half the nav cell's `px-5`, so the wordmark is off the column edge and
-     * its hairline without being pushed all the way to where "Search Index"
-     * starts. It reads as a heading over the row rather than a fourth cell in
-     * it, which is what the full 1.25rem made it look like.
+     * `pl-2.5` is half the nav cell's `px-5`, so the wordmark is off the column
+     * edge and its hairline without being pushed all the way to where "Search
+     * Index" starts. It reads as a heading over the row rather than a fourth
+     * cell in it, which is what the full 1.25rem made it look like.
+     *
+     * "(Beta)" is the state of the thing, in the column-header voice: same size
+     * and grey as the labels over a list, so it reads as a note about the site
+     * rather than a badge. Tracked much tighter than those labels though, at
+     * 0.05em against their 0.2em, because it sits beside a wordmark rather than
+     * over a column: the brackets already hold it apart, and the wide setting
+     * made five letters look like a sixth word. Baseline-aligned, which sits
+     * its caps on the wordmark's own bottom edge, and outside the anchor
+     * because it is not part of what "go home" means.
      */}
     <div class="flex shrink-0 items-baseline gap-2.5 pl-2.5">
       <a href="/" class="text-xl font-semibold tracking-[-0.02em]">
         dub<span class="text-accent">.</span>digger
       </a>
-      <span class="text-ink-faint font-mono text-[0.6875rem] tracking-[0.2em] uppercase">(Beta)</span>
+      <span class="text-ink-faint font-mono text-[0.6875rem] tracking-[0.05em] uppercase">(Beta)</span>
     </div>
 
     {
@@ -87,45 +127,303 @@ const current = "bg-accent text-bg";
  * so the dividers start at the column edge and stop with the text rather than
  * running the full width the way the band's own rules do.
  *
- * Two groups, split by what they do. Browsing sits left, and "what is this"
- * sits on its own at the right, because it is not a place in the corpus: it
- * answers a question about the tool. The gap between them is the distinction;
+ * Two groups, split by what they do. Browsing sits left, and Info sits on its
+ * own at the right, because it is not a place in the corpus: it answers a
+ * question about the tool. The gap between them is the distinction;
  * each group closes its own right edge so neither reads as trailing off.
+ *
+ * The four cells measure around 580px, so `md` is where they stop fitting a
+ * phone with the column's gutters either side. Below it they stack behind the
+ * bars. The row keeps `overflow-x-auto` anyway, as the cheap safety valve for
+ * a fallback font setting wider than the one this was measured in.
  */}
 <nav class="border-hairline border-b" aria-label="Sections">
-  <div class="column flex justify-between overflow-x-auto">
+  <div class="column hidden justify-between overflow-x-auto md:flex">
     <div class="flex shrink-0">
-      <a
-        href="/"
-        aria-current={section === "/" ? "page" : undefined}
-        class:list={[cell, section === "/" ? current : resting]}
-      >
-        Search Index
-      </a>
-      <a
-        href="/core-labels"
-        aria-current={section === "/core-labels" ? "page" : undefined}
-        class:list={[cell, section === "/core-labels" ? current : resting]}
-      >
-        Core Labels
-      </a>
-      <a
-        href="/core-artists"
-        aria-current={section === "/core-artists" ? "page" : undefined}
-        class:list={[cell, "border-r", section === "/core-artists" ? current : resting]}
-      >
-        Core Artists
-      </a>
+      {
+        browse.map(({ href, label }, i) => (
+          <a
+            href={href}
+            aria-current={section === href ? "page" : undefined}
+            class:list={[
+              cell,
+              i === browse.length - 1 && "border-r",
+              section === href ? current : resting,
+            ]}
+          >
+            {label}
+          </a>
+        ))
+      }
     </div>
 
     <div class="flex shrink-0">
-      <a
-        href="/what-is-this"
-        aria-current={section === "/what-is-this" ? "page" : undefined}
-        class:list={[cell, "border-r", section === "/what-is-this" ? current : resting]}
-      >
-        What is this?
-      </a>
+      {
+        info.map(({ href, label }) => (
+          <a
+            href={href}
+            aria-current={section === href ? "page" : undefined}
+            class:list={[cell, "border-r", section === href ? current : resting]}
+          >
+            {label}
+          </a>
+        ))
+      }
     </div>
   </div>
+
+  {/*
+   * The phone: one disclosure, no JavaScript.
+   *
+   * `<details>` rather than a button and a script, because the client budget
+   * has three line items and each of them earned its place by being something
+   * the server genuinely cannot answer. Whether a menu is open is not that.
+   * The element is a native disclosure, so it announces its own state, works
+   * with the keyboard, and — the part that would otherwise need code — comes
+   * back closed after a ClientRouter swap, since the swap hands over a freshly
+   * rendered element with no `open` attribute on it.
+   *
+   * The closed bar is the bars and nothing else. It carried the current
+   * section's name for a while, on the reasoning that collapsing the row
+   * should cost no information, but the page under it already says where you
+   * are in type ten times the size — so the label was answering a question
+   * that had been answered, and a lone word floating opposite an icon is worse
+   * than the empty bar it was filling.
+   *
+   * The two groups keep their distance. Across a row `justify-between` says
+   * "these are different kinds of thing" by pushing them to opposite ends;
+   * down a column the same sentence is a band of empty ground, so Info sits
+   * below a gap rather than as a fourth row in the list. Blank space is the
+   * whole argument, which is why there is no extra divider under it: a rule
+   * would draw the group boundary twice.
+   *
+   * Search closes the panel, below a second gap of the same size, and it is
+   * `sm:hidden` because it exists to fill the hole the header leaves rather
+   * than to be a second copy of it. The header field is hidden below `sm` and
+   * this row is hidden below `md`, so between the two there is a band where
+   * both would show at once; each is on screen exactly where the other is not.
+   * The home page suppresses it either way, since the hero is already asking.
+   */}
+  <details class="column md:hidden" data-menu>
+    <summary
+      class="text-ink hover:text-accent flex cursor-pointer list-none items-center justify-end px-2.5 py-3.5 transition-colors [&::-webkit-details-marker]:hidden"
+    >
+      {/*
+       * The bars are the whole control, and the name is there for anything
+       * that cannot see them. `sr-only` rather than an `aria-label` because a
+       * summary takes its accessible name from its contents first, which is
+       * the path that behaves the same across screen readers.
+       */}
+      <span class="sr-only">Menu</span>
+
+      {/*
+       * Three bars that become a cross, and it is the same three bars
+       * throughout: the outer two swing onto the diagonals while the middle
+       * one fades. Two icons swapped by `display` was the first cut and it
+       * cannot animate, since there is no frame in which both exist.
+       *
+       * The transform is in the `<style>` below rather than in class lists
+       * because each bar needs an origin, a transition and a two-step
+       * transform, and six arbitrary-value variants would be a worse way of
+       * writing three rules.
+       */}
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <path class="bar top" d="M2 7h20"></path>
+        <path class="bar mid" d="M2 12h20"></path>
+        <path class="bar bot" d="M2 17h20"></path>
+      </svg>
+    </summary>
+
+    {/*
+     * Everything below the bars, in one box so there is a single height to
+     * animate. It carries no styling of its own: the gutter is still the
+     * `column` on the details, so wrapping the rows changed nothing about
+     * where they sit.
+     */}
+    <div data-panel>
+      {
+        browse.map(({ href, label }) => (
+          <a
+            href={href}
+            aria-current={section === href ? "page" : undefined}
+            class:list={[row, section === href ? rowCurrent : rowResting]}
+          >
+            {label}
+          </a>
+        ))
+      }
+
+      {
+        info.map(({ href, label }, i) => (
+          <a
+            href={href}
+            aria-current={section === href ? "page" : undefined}
+            class:list={[row, i === 0 && "mt-7", section === href ? rowCurrent : rowResting]}
+          >
+            {label}
+          </a>
+        ))
+      }
+
+      {
+        search && (
+          <div class="mt-7 pb-5 sm:hidden">
+            <SearchField size="header" />
+          </div>
+        )
+      }
+    </div>
+  </details>
 </nav>
+
+<style>
+  /*
+   * The bars, and the fold into a cross.
+   *
+   * `transform-box: view-box` is what makes `center` mean the centre of the
+   * icon rather than the centre of each bar. A horizontal line's own bounding
+   * box is 20 wide and 0 tall, so under the fill-box default each bar would
+   * pivot about itself and the two diagonals would never meet.
+   *
+   * Read the transform right to left, the way the browser applies it: the bar
+   * slides the five units onto the centre line first, then rotates about the
+   * icon's middle. Doing it the other way round rotates a bar that is still
+   * offset, and the cross comes out lopsided.
+   */
+  .bar {
+    transform-box: view-box;
+    transform-origin: center;
+    transition:
+      transform 220ms ease,
+      opacity 140ms ease;
+  }
+
+  details[open] .top {
+    transform: rotate(45deg) translateY(5px);
+  }
+
+  details[open] .bot {
+    transform: rotate(-45deg) translateY(-5px);
+  }
+
+  /* The middle bar has nowhere to go, so it leaves. Faster than the fold, so
+     it is gone before the diagonals arrive rather than crossing them. */
+  details[open] .mid {
+    opacity: 0;
+  }
+
+  /*
+   * The cross unfolds with the panel, not after it.
+   *
+   * Closing keeps the element `open` for as long as the slide runs, because
+   * the rows have to stay in the document to be slid. So `[open]` is the wrong
+   * thing for the icon to read on the way out: it would hold the cross through
+   * the whole close and snap back to bars at the end. The script writes what
+   * was actually asked for, and these undo the three rules above.
+   *
+   * Same specificity, so it is source order that decides — keep them last. No
+   * script means no `data-shown`, and the plain `[open]` rules stand.
+   */
+  details[data-shown="false"] .top,
+  details[data-shown="false"] .bot {
+    transform: none;
+  }
+
+  details[data-shown="false"] .mid {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bar {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  /**
+   * Slide the menu panel open and shut.
+   *
+   * `<details>` has no opening of its own: the rows are display-none one frame
+   * and laid out the next, and no CSS reaches that. The pure-CSS answer now
+   * exists — `::details-content` with `interpolate-size` — but it is gated on
+   * Chrome 131, Safari 18.4 and Firefox 139, and an animation that silently
+   * does nothing on an older phone is the bug this was opened to fix. So this
+   * is the fourth item on the client budget, at a few hundred bytes, and it is
+   * the first one that buys decoration rather than a capability.
+   *
+   * The shape is the same as the collapsing bio's: measure both ends, hand the
+   * pixels to the Web Animations API, and let `paint`-equivalent state settle
+   * at the end. Height is animated on the wrapper rather than on the details,
+   * so the summary stays put and only the rows move.
+   */
+  const DURATION = 260;
+
+  function setUp(details: HTMLDetailsElement) {
+    const summary = details.querySelector("summary");
+    const panel = details.querySelector<HTMLElement>("[data-panel]");
+    if (!summary || !panel) return;
+
+    let animation: Animation | null = null;
+
+    summary.addEventListener("click", (event) => {
+      // The browser would toggle `open` immediately, which is exactly the jump
+      // being replaced. Every state change below is made by hand instead.
+      event.preventDefault();
+
+      // Read where the panel is before cancelling what is moving it, so a
+      // click mid-slide picks the animation up rather than restarting it.
+      const from = details.open ? panel.getBoundingClientRect().height : 0;
+      animation?.cancel();
+      animation = null;
+
+      // Intent, not state: a details that is sliding shut is still `open`, so
+      // asking the element would read the direction backwards on a reversal.
+      const opening = details.dataset.shown !== "true";
+      details.dataset.shown = String(opening);
+
+      // Measuring a closed panel returns zero, so it has to exist first. On
+      // the way out this is a no-op that keeps the rows around to be slid.
+      details.open = true;
+      const to = opening ? panel.getBoundingClientRect().height : 0;
+
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        details.open = opening;
+        return;
+      }
+
+      // Only while it moves: a permanent clip would cut the focus ring off
+      // every row in the panel at the left and right.
+      panel.style.overflow = "hidden";
+
+      animation = panel.animate(
+        { height: [`${from}px`, `${to}px`] },
+        { duration: DURATION, easing: "cubic-bezier(0.4, 0, 0.2, 1)" },
+      );
+
+      animation.finished.then(
+        () => {
+          panel.style.overflow = "";
+          animation = null;
+          details.open = opening;
+        },
+        // Cancelled by the next click, which is now the one holding the state.
+        () => {},
+      );
+    });
+  }
+
+  // Fires on the first load and again after every ClientRouter navigation.
+  document.addEventListener("astro:page-load", () => {
+    document.querySelectorAll<HTMLDetailsElement>("details[data-menu]").forEach(setUp);
+  });
+</script>

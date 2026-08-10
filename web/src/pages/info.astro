@@ -21,22 +21,22 @@ import { getCorpusStats } from "@/lib/db";
 const stats = getCorpusStats();
 const n = (value: number) => value.toLocaleString("en-GB");
 
-const body = "text-body text-ink-muted max-w-[760px] space-y-5 leading-[1.6]";
+const body = "text-body text-ink-muted max-w-[760px] space-y-5";
 ---
 
 <Base
-  title="What is this? — Dub Digger"
+  title="Info — Dub Digger"
   description="What Dub Digger is, who it is for, and how it is built from the Discogs credit dumps."
 >
   <SiteHeader />
 
   <div class="column pt-16 pb-16 md:pt-24">
-    <Eyebrow>About this site</Eyebrow>
+    <Eyebrow>What is this?</Eyebrow>
     <h1 class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]">
-      What Is This<span class="text-accent">?</span>
+      Info<span class="text-accent">.</span>
     </h1>
 
-    <p class="text-body text-ink-muted mt-10 max-w-[760px] leading-[1.6]">
+    <p class="text-lead text-ink-muted mt-10 max-w-[760px]">
       Dub Digger is a tool for digging. Type an artist, and you see who they worked with and which
       labels they released on. Every name is a link, so you can pick one and keep going.
     </p>

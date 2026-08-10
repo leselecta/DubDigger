@@ -166,11 +166,22 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
                         {hit.releaseCount.toLocaleString("en-GB")}
                       </span>
 
+                      {/*
+                       * Both of these fold under the name below `md`, where the
+                       * header above has no column left to name them from. So
+                       * they carry their own heading down with them and read
+                       * "Relevance: medium", "Type: label" on a phone. The
+                       * label stays `text-ink-faint` in each, under the value's
+                       * own colour, so the grade's shade is still the thing the
+                       * eye lands on.
+                       */}
                       <span class="col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:col-start-3">
+                        <span class="text-ink-faint md:hidden">Relevance:</span>
                         <span class={RELEVANCE_SHADE[grade]}>{grade}</span>
                       </span>
 
                       <span class="text-ink col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:col-start-4">
+                        <span class="text-ink-faint md:hidden">Type:</span>
                         {hit.kind}
                       </span>
                     </li>

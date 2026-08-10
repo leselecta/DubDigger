@@ -63,14 +63,18 @@ const reason = label.isImprint
     </h1>
 
     {/*
-     * No scene share here, unlike the artist stat line. The Relevance row below
+     * The artist page's stat line, with two counts instead of three: same
+     * accent, same white separators. It is the same thing in the same place on
+     * the sibling page, so it should not be a different colour.
+     *
+     * No scene share here, unlike the artist one. The Relevance row below
      * carries the same percentage, and the two sit close enough that repeating
      * it reads as a mistake.
      */}
-    <p class="text-ink-muted mt-10 font-mono text-[0.8125rem] tracking-[0.06em] uppercase">
-      {label.releaseCount.toLocaleString("en-GB")} releases &nbsp;·&nbsp; {
-        label.artistCount.toLocaleString("en-GB")
-      } artists
+    <p class="text-accent mt-10 font-mono text-[0.8125rem] tracking-[0.06em] uppercase">
+      {label.releaseCount.toLocaleString("en-GB")} releases <span class="text-ink-strong"
+        >&nbsp;·&nbsp;</span
+      > {label.artistCount.toLocaleString("en-GB")} artists
     </p>
 
     <dl class="mt-9 max-w-[760px]">

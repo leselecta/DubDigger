@@ -14,7 +14,16 @@
 ---
 
 <div class="max-w-[720px]" data-collapsible>
-  <div class="relative overflow-hidden" data-clamp>
+  {/*
+   * The opening itself is a CSS transition, so the script only ever sets two
+   * pixel values and the browser does the rest. `motion-reduce` turns it off
+   * for a reader who has asked for that, which a JavaScript animation would
+   * have had to check for by hand.
+   */}
+  <div
+    class="relative overflow-hidden transition-[max-height] duration-300 ease-out motion-reduce:transition-none"
+    data-clamp
+  >
     <div data-inner><slot /></div>
     <div
       class="pointer-events-none absolute right-0 bottom-0 left-0 hidden h-12"
@@ -27,7 +36,7 @@
   <button
     type="button"
     hidden
-    class="text-ink-muted hover:text-ink mt-[18px] inline-flex cursor-pointer items-center gap-[9px] font-mono text-xs tracking-[0.16em] uppercase"
+    class="text-ink-muted hover:text-ink mt-8 inline-flex cursor-pointer items-center gap-[9px] font-mono text-xs tracking-[0.16em] uppercase"
     data-toggle
   >
     <span data-toggle-label>Read more</span>
@@ -46,7 +55,16 @@
 </div>
 
 <script>
-  const CLAMP_PX = 84;
+  /*
+   * How much shows before the fade, in pixels rather than lines, because the
+   * clamp is a max-height and the text it holds is not always one size.
+   *
+   * 145 against the bio's 30.4px line is 4.75 lines. Landing on the three
+   * quarter line is deliberate and the reason this is not a round number: a
+   * clamp that stops on a clean line break reads as the end of the text, and
+   * the fade then looks like decoration rather than a cut.
+   */
+  const CLAMP_PX = 145;
 
   function setUp(root: HTMLElement) {
     const clamp = root.querySelector<HTMLElement>("[data-clamp]");
@@ -60,14 +78,40 @@
     let open = false;
     let overflows = false;
 
-    const paint = () => {
+    /**
+     * `animate` is only true for a click. Measuring and the first paint set the
+     * height outright, because a bio that slid open on load would be answering
+     * a question nobody asked.
+     *
+     * A transition needs two pixel values, and one end of it is always missing.
+     * Opening runs from the clamp, which is already on the element, to the
+     * text's own height, since `none` is not a number and cannot be animated
+     * towards. Closing runs the other way and has to pin the full height first,
+     * because that end is the `none` the open state left behind.
+     */
+    const paint = (animate = false) => {
       const clamped = overflows && !open;
-      clamp.style.maxHeight = clamped ? `${CLAMP_PX}px` : "";
+
+      if (animate) {
+        clamp.style.maxHeight = `${open ? CLAMP_PX : inner.scrollHeight}px`;
+        void clamp.offsetHeight;
+        clamp.style.maxHeight = `${clamped ? CLAMP_PX : inner.scrollHeight}px`;
+      } else {
+        clamp.style.maxHeight = clamped ? `${CLAMP_PX}px` : "";
+      }
+
       fade.hidden = !clamped;
       toggle.hidden = !overflows;
       label.textContent = open ? "Collapse" : "Read more";
       chevron.style.transform = open ? "rotate(180deg)" : "";
     };
+
+    // The open state is a height in pixels while it animates, and that number
+    // is stale the moment the window narrows and the text rewraps. Dropping it
+    // once the transition lands hands the box back to its own content.
+    clamp.addEventListener("transitionend", (event) => {
+      if (event.propertyName === "max-height" && open) clamp.style.maxHeight = "";
+    });
 
     const measure = () => {
       // Only meaningful while closed: once open the element is its full height
@@ -78,7 +122,7 @@
 
     toggle.addEventListener("click", () => {
       open = !open;
-      paint();
+      paint(true);
     });
 
     new ResizeObserver(measure).observe(inner);

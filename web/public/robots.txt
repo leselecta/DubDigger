@@ -1,0 +1,20 @@
+# Dub Digger — https://dubdigger.com
+#
+# The corpus is 420,575 artists and 113,952 labels, and every one of those
+# pages is a live query against a 928 MB SQLite file on one small VPS. So this
+# file is a load rule as much as an indexing one.
+
+User-agent: *
+Allow: /
+
+# Every list carries its state in the query string: ?tab=, ?sort=, ?show=, and
+# ?q= on the home page. Those are the same page answering the same question in
+# a different order, which is what the canonical already says. This keeps a
+# crawler from walking every combination to find that out.
+Disallow: /*?
+
+# Ignored by Google, honoured by Bing, Yandex and Seznam. Five seconds is
+# plenty for a site whose sitemap is two thousand URLs.
+Crawl-delay: 5
+
+Sitemap: https://dubdigger.com/sitemap.xml

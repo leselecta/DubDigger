@@ -1,6 +1,7 @@
 ---
 import { ClientRouter } from "astro:transitions";
 import SiteFooter from "@/components/SiteFooter.astro";
+import { canonicalPath } from "@/lib/seo";
 import "@/styles/globals.css";
 
 /**
@@ -15,12 +16,96 @@ import "@/styles/globals.css";
 interface Props {
   title?: string;
   description?: string;
+  /** The schema.org type of this page. A hub is a CollectionPage, a person or a label a ProfilePage. */
+  pageType?: string;
+  /** For a profile page, the thing the page is about. Folded into the graph as its subject. */
+  mainEntity?: Record<string, unknown>;
+  /** The trail to here, Home excluded: it is always the first step and is added below. */
+  breadcrumbs?: { name: string; href: string }[];
+  /** Keep it out of the index. For pages that are an answer to a bad address, not a page. */
+  noindex?: boolean;
 }
 
 const {
   title = "Dub Digger — the dub techno index",
   description = "Follow the credits, not the algorithm. A map of scenes drawn from Discogs credit data.",
+  pageType = "WebPage",
+  mainEntity,
+  breadcrumbs = [],
+  noindex = false,
 } = Astro.props;
+
+/*
+ * Every absolute URL on the page comes from Astro.site, which is asserted in
+ * astro.config.mjs. The path is stripped of its query first: the tabs and the
+ * sort control are one page answering the same question in a different order,
+ * and each of them nominating itself would enter the index several times over.
+ */
+const canonical = new URL(canonicalPath(Astro.url.pathname), Astro.site).href;
+const card = new URL("/og.jpg", Astro.site).href;
+
+/*
+ * One graph, and it claims only what can be shown.
+ *
+ * There is a WebSite node and a node for this page, cross-referenced by @id so
+ * an engine reads them as one thing rather than as two documents that happen to
+ * share a domain. There is deliberately no Person or Organization: nobody is
+ * named as the author anywhere on the site, and inventing a publisher to fill a
+ * recommended field would be asserting something the pages do not.
+ *
+ * The SearchAction is the one behaviour worth declaring, because it is real: the
+ * home page takes a `q` and answers with results.
+ */
+const site = new URL("/", Astro.site).href;
+
+const graph: Record<string, unknown>[] = [
+  {
+    "@type": "WebSite",
+    "@id": `${site}#website`,
+    url: site,
+    name: "Dub Digger",
+    description:
+      "A map of scenes drawn from Discogs credit data, centred on dub techno: who worked with whom, and the labels they released on.",
+    inLanguage: "en",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: { "@type": "EntryPoint", urlTemplate: `${site}?q={search_term_string}` },
+      "query-input": "required name=search_term_string",
+    },
+  },
+  {
+    "@type": pageType,
+    "@id": `${canonical}#page`,
+    url: canonical,
+    name: title,
+    description,
+    isPartOf: { "@id": `${site}#website` },
+    ...(mainEntity ? { mainEntity } : {}),
+  },
+];
+
+if (breadcrumbs.length > 0) {
+  graph.push({
+    "@type": "BreadcrumbList",
+    "@id": `${canonical}#breadcrumbs`,
+    itemListElement: [{ name: "Home", href: "/" }, ...breadcrumbs].map((step, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: step.name,
+      item: new URL(step.href, Astro.site).href,
+    })),
+  });
+}
+
+/*
+ * `<` is escaped because an artist name is contributor-entered text going into
+ * a script element, where the parser ends the block at the first `</script>`
+ * whatever the JSON around it says. JSON.stringify does not do this for you.
+ */
+const jsonLd = JSON.stringify({ "@context": "https://schema.org", "@graph": graph }).replace(
+  /</g,
+  "\\u003c",
+);
 ---
 
 <html lang="en">
@@ -29,6 +114,32 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    {/*
+     * What a shared link renders as. One card for the whole site rather than one
+     * per page: it is a made asset in the site's own design, not a picture of
+     * anything, so there is nothing per-page for it to say that the title and
+     * description beside it are not already saying.
+     */}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Dub Digger" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={card} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={card} />
+
+    <script type="application/ld+json" is:inline set:html={jsonLd} />
+
     <ClientRouter />
   </head>
   <body class="flex min-h-screen flex-col">

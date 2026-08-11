@@ -13,6 +13,7 @@ import ProfileText from "@/components/ProfileText.astro";
 import OutboundLinks from "@/components/OutboundLinks.astro";
 import CollapsibleText from "@/components/CollapsibleText.astro";
 import { getLabel, getRoster, getProfileNames, getLabelReleases } from "@/lib/queries";
+import { countLine } from "@/lib/seo";
 import { PAGE_SIZE, pageSize, percent, years } from "@/lib/view";
 
 const label = getLabel(Number(Astro.params.id));
@@ -46,6 +47,28 @@ const releases = active === "releases" ? getLabelReleases(label.id, limit) : [];
  * "partial roster" about Purpose Maker would be describing complete data as
  * incomplete.
  */
+/**
+ * The description a search result shows, built from the two tab counts so it is
+ * about this label rather than about labels. It drops whichever is zero, and
+ * when both are it says nothing was recorded, the way the page does.
+ */
+const held = countLine([
+  [label.artistCount, "artist"],
+  [label.releaseCount, "release"],
+]);
+
+const description = held
+  ? `${label.name} on Dub Digger: ${held}, from the Discogs credit dumps.`
+  : `${label.name} is in this corpus, but no roster or releases are recorded for it.`;
+
+/* Organization, not MusicGroup: a label is the room, not the act in it. */
+const mainEntity = {
+  "@type": "Organization",
+  name: label.name,
+  url: `${Astro.site}label/${label.id}`,
+  sameAs: `https://www.discogs.com/label/${label.id}`,
+};
+
 const reason = label.isImprint
   ? "artist-run imprint, one artist on every release"
   : label.seedRatio !== null
@@ -53,7 +76,13 @@ const reason = label.isImprint
     : "here through its artists, not as a label in the dub techno cluster";
 ---
 
-<Base title={`${label.name} — Dub Digger`}>
+<Base
+  title={`${label.name} — Dub Digger`}
+  description={description}
+  pageType="ProfilePage"
+  mainEntity={mainEntity}
+  breadcrumbs={[{ name: label.name, href: base }]}
+>
   <SiteHeader />
 
   <div class="column pt-16 pb-16 md:pt-24">

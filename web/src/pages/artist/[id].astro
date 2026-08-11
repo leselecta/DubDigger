@@ -23,6 +23,7 @@ import {
   type Relation,
 } from "@/lib/queries";
 import { creditLine } from "@/lib/roles";
+import { countLine } from "@/lib/seo";
 import { PAGE_SIZE, pageSize, years } from "@/lib/view";
 
 const artist = getArtist(Number(Astro.params.id));
@@ -98,6 +99,40 @@ const LINEAGE_REASON: Record<string, string> = {
 const lifted = artist.lineage !== null && artist.relevance !== artist.sceneRelevance;
 const grade = artist.relevance === "none" ? "Very low" : artist.relevance;
 
+/**
+ * What this page holds, for the description a search result shows.
+ *
+ * Built from the tab counts, so it is specific to the artist rather than a
+ * template with a name dropped into it, and it drops what the corpus does not
+ * have. When it has nothing at all the sentence says so, for the same reason
+ * the page itself does: an empty answer dressed as a positive one is worse
+ * than a plain "nothing recorded".
+ */
+const held = countLine([
+  [artist.collaboratorCount, "collaborator"],
+  [artist.labelCount, "label"],
+  [artist.releaseCount, "release"],
+]);
+
+const description = held
+  ? `${artist.name} on Dub Digger: ${held}, from the Discogs credit dumps.`
+  : `${artist.name} is in this corpus, but no credits are recorded for them in it.`;
+
+/*
+ * MusicGroup rather than Person, and it is a trade-off worth naming. Discogs
+ * artist ids are held by solo musicians, bands, aliases and projects alike, and
+ * MusicGroup is the one schema.org type that covers all four; Person would
+ * assert an individual, which for this corpus is wrong more often. It is still
+ * wrong for the mastering engineers and sleeve designers who hold artist ids,
+ * and there is no field in the dump that would tell them apart.
+ */
+const mainEntity = {
+  "@type": "MusicGroup",
+  name: artist.name,
+  url: `${Astro.site}artist/${artist.id}`,
+  sameAs: `https://www.discogs.com/artist/${artist.id}`,
+};
+
 const route =
   artist.channelA && artist.channelB
     ? "an occasional collaborator and label mate"
@@ -108,7 +143,13 @@ const route =
         : "an occasional collaborator or label mate";
 ---
 
-<Base title={`${artist.name} — Dub Digger`}>
+<Base
+  title={`${artist.name} — Dub Digger`}
+  description={description}
+  pageType="ProfilePage"
+  mainEntity={mainEntity}
+  breadcrumbs={[{ name: artist.name, href: base }]}
+>
   <SiteHeader />
 
   <div class="column pt-16 pb-16 md:pt-24">

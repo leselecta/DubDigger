@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!--
+    The accent full stop out of the wordmark, on the site's own ground. It is
+    the one mark the design repeats everywhere — dub.digger, every headline,
+    every eyebrow — and a square reads at 16px where four letters would not.
+  -->
+  <rect width="32" height="32" fill="#060606" />
+  <rect x="10" y="10" width="12" height="12" fill="#6fcabd" />
+</svg>

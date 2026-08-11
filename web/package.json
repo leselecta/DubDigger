@@ -8,6 +8,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "start": "node ./dist/server/entry.mjs",
+    "indexnow": "node scripts/indexnow.mjs",
     "test": "tsx --test test/**/*.test.ts",
     "typecheck": "astro check"
   },

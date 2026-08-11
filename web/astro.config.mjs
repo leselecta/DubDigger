@@ -14,6 +14,16 @@ import tailwindcss from "@tailwindcss/vite";
  * seems to want React, it is worth checking first whether it wants a link.
  */
 export default defineConfig({
+  /**
+   * Where this is served from, and the only place it is written down.
+   *
+   * Canonicals, the sitemap and the card a shared link renders all need an
+   * absolute URL, and a page cannot work one out from the request: a proxy in
+   * front of the VPS can rewrite the host, and http/https is not visible from
+   * inside. So it is asserted once here and read as Astro.site everywhere else.
+   */
+  site: "https://dubdigger.com",
+
   output: "server",
   adapter: node({ mode: "standalone" }),
 

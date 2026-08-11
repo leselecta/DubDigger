@@ -44,19 +44,20 @@ const current = "bg-accent text-bg";
  * class list that overrides padding depends on the order the classes happen to
  * be emitted in. Two explicit strings beat one that works by luck.
  *
- * `px-2.5` puts the labels under the wordmark rather than under the desktop
- * cell's `px-5`: inside the column's own gutter, 20px of inset is a twelfth of
- * a phone spent on nothing.
+ * No horizontal padding of its own: the drawer sets the inset once, so the row
+ * runs the full width of it and the hairlines stop where the drawer's own
+ * padding does. A second inset inside the first would indent the labels away
+ * from the edge they are meant to line up with.
  */
 const row =
-  "border-hairline block border-t px-2.5 py-3.5 font-mono text-[0.6875rem] tracking-[0.14em] uppercase transition-colors";
+  "border-hairline block border-t py-3.5 font-mono text-[0.6875rem] tracking-[0.14em] uppercase transition-colors";
 
 /*
  * The stack marks the current section in accent type, not an accent ground.
  *
  * A filled cell reads as one item picked out of a row you can see all of. Down
  * a column, full-bleed, it stops being a marker and becomes a band across the
- * panel — the loudest thing on the phone, for the one piece of information the
+ * drawer — the loudest thing on the phone, for the one piece of information the
  * page underneath is already shouting. The type carries it instead.
  *
  * Hover is spelled out rather than left to the `a:hover` in globals.css, which
@@ -173,15 +174,15 @@ const info = [{ href: "/info", label: "Info" }];
   </div>
 
   {/*
-   * The phone: one disclosure, no JavaScript.
+   * The phone: a drawer off the left edge, still a native disclosure.
    *
-   * `<details>` rather than a button and a script, because the client budget
-   * has three line items and each of them earned its place by being something
-   * the server genuinely cannot answer. Whether a menu is open is not that.
-   * The element is a native disclosure, so it announces its own state, works
-   * with the keyboard, and — the part that would otherwise need code — comes
-   * back closed after a ClientRouter swap, since the swap hands over a freshly
-   * rendered element with no `open` attribute on it.
+   * `<details>` rather than a button and a script, because the element
+   * announces its own state, works with the keyboard, and — the part that
+   * would otherwise need code — comes back closed after a ClientRouter swap,
+   * since the swap hands over a freshly rendered element with no `open`
+   * attribute on it. What changed is where its contents sit: a panel that
+   * pushed the page down is now a sheet that slides over it, so opening the
+   * menu no longer moves the thing you were reading.
    *
    * The closed bar is the bars and nothing else. It carried the current
    * section's name for a while, on the reasoning that collapsing the row
@@ -190,23 +191,14 @@ const info = [{ href: "/info", label: "Info" }];
    * that had been answered, and a lone word floating opposite an icon is worse
    * than the empty bar it was filling.
    *
-   * The two groups keep their distance. Across a row `justify-between` says
-   * "these are different kinds of thing" by pushing them to opposite ends;
-   * down a column the same sentence is a band of empty ground, so Info sits
-   * below a gap rather than as a fourth row in the list. Blank space is the
-   * whole argument, which is why there is no extra divider under it: a rule
-   * would draw the group boundary twice.
-   *
-   * Search closes the panel, below a second gap of the same size, and it is
-   * `sm:hidden` because it exists to fill the hole the header leaves rather
-   * than to be a second copy of it. The header field is hidden below `sm` and
-   * this row is hidden below `md`, so between the two there is a band where
-   * both would show at once; each is on screen exactly where the other is not.
-   * The home page suppresses it either way, since the hero is already asking.
+   * The control stays on the right while the drawer comes from the left, and
+   * that is deliberate: it is one control in one place, holding still while
+   * the sheet moves under it, and it folds into the cross that closes it. A
+   * second X inside the drawer would be the same button drawn twice.
    */}
-  <details class="column md:hidden" data-menu>
+  <details class="md:hidden" data-menu>
     <summary
-      class="text-ink hover:text-accent flex cursor-pointer list-none items-center justify-end px-2.5 py-3.5 transition-colors [&::-webkit-details-marker]:hidden"
+      class="column text-ink hover:text-accent relative z-50 flex cursor-pointer list-none items-center justify-end py-3.5 transition-colors [&::-webkit-details-marker]:hidden"
     >
       {/*
        * The bars are the whole control, and the name is there for anything
@@ -227,7 +219,14 @@ const info = [{ href: "/info", label: "Info" }];
        * transform, and six arbitrary-value variants would be a worse way of
        * writing three rules.
        */}
+      {/*
+       * `mr-2.5` rather than padding on the summary, which would be a second
+       * `padding-inline` fighting the `column` utility's own and resolved by
+       * whichever Tailwind happens to emit last. It puts the icon on the same
+       * inset as the wordmark above it.
+       */}
       <svg
+        class="mr-2.5"
         width="22"
         height="22"
         viewBox="0 0 24 24"
@@ -244,12 +243,56 @@ const info = [{ href: "/info", label: "Info" }];
     </summary>
 
     {/*
-     * Everything below the bars, in one box so there is a single height to
-     * animate. It carries no styling of its own: the gutter is still the
-     * `column` on the details, so wrapping the rows changed nothing about
-     * where they sit.
+     * The ground the drawer sits over. It dims the page rather than hiding it,
+     * which is the whole reason a sheet beats a panel here: what you were
+     * reading is still there, still in place, waiting.
+     *
+     * It is also the second way out, and the one a thumb finds first. Escape
+     * is the third, and the bars are the first.
      */}
-    <div data-panel>
+    <div data-scrim class="fixed inset-0 z-40 bg-black/60"></div>
+
+    {/*
+     * The drawer.
+     *
+     * Off the left edge, its own width rather than the full screen: the strip
+     * of dimmed page down the right is what says this is a layer over the page
+     * and not a new one. `min()` keeps it off the far edge on the narrowest
+     * phones, where a fixed 20rem would leave nothing to see through.
+     *
+     * `overflow-y-auto` because the drawer is as tall as the viewport and its
+     * contents are not guaranteed to fit — a short phone in landscape runs out
+     * of room around the search field.
+     *
+     * The two groups keep their distance. Across a row `justify-between` says
+     * "these are different kinds of thing" by pushing them to opposite ends;
+     * down a column the same sentence is a band of empty ground, so Info sits
+     * below a gap rather than as a fourth row in the list. Blank space is the
+     * whole argument, which is why there is no extra divider under it: a rule
+     * would draw the group boundary twice.
+     *
+     * Search opens the drawer rather than closing it, which is the one thing
+     * the stacked panel had backwards: at the foot of a full-height sheet the
+     * field sat a long way from everything else, and it is the likeliest thing
+     * to be reached for. It is `sm:hidden` because it exists to fill the hole
+     * the header leaves rather than to be a second copy of it. The header
+     * field is hidden below `sm` and the section row below `md`, so between
+     * the two there is a band where both would show at once; each is on screen
+     * exactly where the other is not. The home page suppresses it either way,
+     * since the hero is already asking.
+     */}
+    <div
+      data-drawer
+      class="border-hairline bg-bg fixed inset-y-0 left-0 z-50 w-[min(20rem,82vw)] overflow-y-auto border-r px-6 py-5"
+    >
+      {
+        search && (
+          <div class="mb-6 sm:hidden">
+            <SearchField size="header" />
+          </div>
+        )
+      }
+
       {
         browse.map(({ href, label }) => (
           <a
@@ -272,14 +315,6 @@ const info = [{ href: "/info", label: "Info" }];
             {label}
           </a>
         ))
-      }
-
-      {
-        search && (
-          <div class="mt-7 pb-5 sm:hidden">
-            <SearchField size="header" />
-          </div>
-        )
       }
     </div>
   </details>
@@ -322,17 +357,57 @@ const info = [{ href: "/info", label: "Info" }];
   }
 
   /*
-   * The cross unfolds with the panel, not after it.
+   * The slide, and the dimming that runs with it.
    *
-   * Closing keeps the element `open` for as long as the slide runs, because
-   * the rows have to stay in the document to be slid. So `[open]` is the wrong
-   * thing for the icon to read on the way out: it would hold the cross through
-   * the whole close and snap back to bars at the end. The script writes what
-   * was actually asked for, and these undo the three rules above.
+   * Both rest in the closed state, so the resting rule is the one that
+   * describes an untouched element and `[open]` is what moves it. A drawer
+   * that defaulted to open and was pushed off-screen by a second rule would
+   * flash across the page in the moment before the stylesheet applied.
+   *
+   * Material's standard easing, and one duration for both, so the sheet and
+   * the ground it darkens read as one movement rather than two.
+   */
+  [data-drawer] {
+    transform: translateX(-100%);
+    transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  [data-scrim] {
+    opacity: 0;
+    transition: opacity 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  details[open] [data-drawer] {
+    transform: none;
+  }
+
+  details[open] [data-scrim] {
+    opacity: 1;
+  }
+
+  /*
+   * The cross unfolds with the drawer, not after it, and the drawer slides
+   * back out before the element stops being open.
+   *
+   * Closing keeps `open` set for as long as the slide runs, because the drawer
+   * has to stay in the document to be slid. So `[open]` is the wrong thing to
+   * read on the way out: it would hold the cross and the sheet in place
+   * through the whole close and snap them back at the end. The script writes
+   * what was actually asked for, and these undo the four rules above.
    *
    * Same specificity, so it is source order that decides — keep them last. No
-   * script means no `data-shown`, and the plain `[open]` rules stand.
+   * script means no `data-shown`, and the plain `[open]` rules stand: the
+   * drawer opens and closes without animating, which is the right thing to
+   * degrade to.
    */
+  details[data-shown="false"] [data-drawer] {
+    transform: translateX(-100%);
+  }
+
+  details[data-shown="false"] [data-scrim] {
+    opacity: 0;
+  }
+
   details[data-shown="false"] .top,
   details[data-shown="false"] .bot {
     transform: none;
@@ -343,7 +418,9 @@ const info = [{ href: "/info", label: "Info" }];
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .bar {
+    .bar,
+    [data-drawer],
+    [data-scrim] {
       transition: none;
     }
   }
@@ -351,79 +428,91 @@ const info = [{ href: "/info", label: "Info" }];
 
 <script>
   /**
-   * Slide the menu panel open and shut.
+   * Slide the drawer in and out.
    *
-   * `<details>` has no opening of its own: the rows are display-none one frame
-   * and laid out the next, and no CSS reaches that. The pure-CSS answer now
-   * exists — `::details-content` with `interpolate-size` — but it is gated on
-   * Chrome 131, Safari 18.4 and Firefox 139, and an animation that silently
-   * does nothing on an older phone is the bug this was opened to fix. So this
-   * is the fourth item on the client budget, at a few hundred bytes, and it is
-   * the first one that buys decoration rather than a capability.
+   * All the movement is in CSS; what this buys is the two frames `<details>`
+   * does not give you. Opening, the drawer goes from display-none to laid out
+   * in one frame, and a transform set in that frame has no previous value to
+   * transition from. Closing, the element stops being open the moment the
+   * browser says so, and a sheet that is not in the document cannot slide
+   * anywhere. So the script holds both ends: it opens the element off-canvas
+   * and moves it one frame later, and it keeps the element open until the
+   * slide back has finished.
    *
-   * The shape is the same as the collapsing bio's: measure both ends, hand the
-   * pixels to the Web Animations API, and let `paint`-equivalent state settle
-   * at the end. Height is animated on the wrapper rather than on the details,
-   * so the summary stays put and only the rows move.
+   * This is the fourth item on the client budget, at a few hundred bytes, and
+   * the first one that buys decoration rather than a capability. It replaces
+   * the height animation that did the same job for the stacked panel, so the
+   * budget gains a behaviour rather than a line item.
    */
-  const DURATION = 260;
+  const DURATION = 280;
 
   function setUp(details: HTMLDetailsElement) {
     const summary = details.querySelector("summary");
-    const panel = details.querySelector<HTMLElement>("[data-panel]");
-    if (!summary || !panel) return;
+    const scrim = details.querySelector("[data-scrim]");
+    if (!summary) return;
 
-    let animation: Animation | null = null;
+    let timer = 0;
 
-    summary.addEventListener("click", (event) => {
-      // The browser would toggle `open` immediately, which is exactly the jump
-      // being replaced. Every state change below is made by hand instead.
-      event.preventDefault();
+    function set(opening: boolean) {
+      clearTimeout(timer);
 
-      // Read where the panel is before cancelling what is moving it, so a
-      // click mid-slide picks the animation up rather than restarting it.
-      const from = details.open ? panel.getBoundingClientRect().height : 0;
-      animation?.cancel();
-      animation = null;
+      // The page must not scroll behind the sheet: a drawer that moves with
+      // the thing it is covering reads as part of the page rather than over
+      // it, and on a phone the scroll would be the drawer's own by accident.
+      document.documentElement.style.overflow = opening ? "hidden" : "";
 
-      // Intent, not state: a details that is sliding shut is still `open`, so
-      // asking the element would read the direction backwards on a reversal.
-      const opening = details.dataset.shown !== "true";
-      details.dataset.shown = String(opening);
-
-      // Measuring a closed panel returns zero, so it has to exist first. On
-      // the way out this is a no-op that keeps the rows around to be slid.
-      details.open = true;
-      const to = opening ? panel.getBoundingClientRect().height : 0;
-
-      if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        details.open = opening;
+      if (opening) {
+        // Open it in the closed position, then let one frame land before
+        // asking for the other end. Without the reflow between the two the
+        // browser coalesces them and the drawer is simply there.
+        details.dataset.shown = "false";
+        details.open = true;
+        void details.offsetHeight;
+        details.dataset.shown = "true";
         return;
       }
 
-      // Only while it moves: a permanent clip would cut the focus ring off
-      // every row in the panel at the left and right.
-      panel.style.overflow = "hidden";
+      details.dataset.shown = "false";
 
-      animation = panel.animate(
-        { height: [`${from}px`, `${to}px`] },
-        { duration: DURATION, easing: "cubic-bezier(0.4, 0, 0.2, 1)" },
-      );
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        details.open = false;
+        return;
+      }
 
-      animation.finished.then(
-        () => {
-          panel.style.overflow = "";
-          animation = null;
-          details.open = opening;
-        },
-        // Cancelled by the next click, which is now the one holding the state.
-        () => {},
-      );
+      // Hold the element open for the length of the slide. A timer rather
+      // than `transitionend`, which never fires if the transition was never
+      // eligible to run — a drawer that could not be closed would be a worse
+      // bug than one that closes a frame late.
+      timer = window.setTimeout(() => {
+        details.open = false;
+      }, DURATION);
+    }
+
+    summary.addEventListener("click", (event) => {
+      // The browser would toggle `open` immediately, which is exactly the jump
+      // being replaced. Every state change above is made by hand instead.
+      event.preventDefault();
+
+      // Intent, not state: a details that is sliding shut is still `open`, so
+      // asking the element would read the direction backwards on a reversal.
+      set(details.dataset.shown !== "true");
+    });
+
+    scrim?.addEventListener("click", () => set(false));
+
+    // Bound to the details rather than the document, so it costs nothing when
+    // the menu is shut and there is no listener to tidy up after a swap. The
+    // drawer's own links and field are inside it, so focus is too.
+    details.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && details.dataset.shown === "true") set(false);
     });
   }
 
   // Fires on the first load and again after every ClientRouter navigation.
   document.addEventListener("astro:page-load", () => {
+    // A drawer link is a navigation, and the swap hands back a closed menu
+    // with the lock still on the html element it did not replace.
+    document.documentElement.style.overflow = "";
     document.querySelectorAll<HTMLDetailsElement>("details[data-menu]").forEach(setUp);
   });
 </script>

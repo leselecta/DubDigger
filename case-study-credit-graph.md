@@ -5,7 +5,7 @@
 
 ## The premise
 
-Every record is made by more people than the cover admits. A producer, a mixing engineer, a bassist who turns up on four other records you already love. That web of credits is how crate-diggers actually find music (follow the engineer, not the algorithm), but no consumer tool exposes it well. The data exists, exhaustively, in Discogs. It just isn't shaped for digging.
+Every record is made by more people than the cover admits. A producer, a mixing engineer, a bassist who turns up on four other records you already love. That web of credits is how crate-diggers actually find music, but no consumer tool exposes it well. The data exists, exhaustively, in Discogs. It just isn't shaped for digging.
 
 I set out to build the tool I wanted to use: **type an artist, see who they worked with and what labels they released on, then click any of those to keep going.** A map of scenes, drawn from credits.
 

@@ -216,7 +216,7 @@ Genuinely wanted for the product — visual reference matters for digging, and r
 
 When v1.1 is actually undertaken, decide consciously between the two paths above and update this section with the choice and its reasoning.
 
-**The rule is about Discogs imagery, and one image is not.** `public/og.jpg` is the card a shared link renders: 1200×630 of the site's own design, drawn from the tokens, holding no Discogs data and no photograph of anything. Simone admitted it on 2026-08-11 with the conflict on the table. It changes nothing architecturally, since it is a static file served like the stylesheet, and it is not a precedent for inline images: the thing "no images in v1" is protecting is the licence and the one-file server, and neither is touched here.
+**The rule is about Discogs imagery, and one image is not.** `public/og.jpg` is the card a shared link renders: 1200×630 of the site's own design, drawn from the tokens, holding no Discogs data and no photograph of anything. Its source is `web/scripts/og.html`, rendered by headless Chrome and converted with ImageMagick — the commands are in a comment at the top of that file, so the card is edited as markup rather than redrawn by hand. Simone admitted it on 2026-08-11 with the conflict on the table. It changes nothing architecturally, since it is a static file served like the stylesheet, and it is not a precedent for inline images: the thing "no images in v1" is protecting is the licence and the one-file server, and neither is touched here.
 
 ## Discoverability
 

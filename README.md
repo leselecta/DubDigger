@@ -1,6 +1,6 @@
 # Dub Digger
 
-**Dig the extended scene. Dub Techno first. Following the credits, not the algorithm.**
+**Dig the Extended Scene. Dub Techno First.**
 
 Every record is connected to another, through the people who made it. A
 producer, a mixing engineer, a bassist who turns up on four other records you

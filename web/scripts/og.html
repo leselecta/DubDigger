@@ -1,0 +1,85 @@
+<!doctype html>
+<!--
+  Source of public/og.jpg, the card a shared link renders. 1200x630, drawn from
+  the same tokens as the site. Regenerate after editing:
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless --disable-gpu --allow-file-access-from-files \
+      --screenshot=/tmp/og.png --window-size=1200,630 \
+      --default-background-color=00000000 web/scripts/og.html
+    magick /tmp/og.png -quality 88 web/public/og.jpg
+-->
+<meta charset="utf-8" />
+<title>dub.digger — social card</title>
+<style>
+  @font-face {
+    font-family: "IBM Plex Mono";
+    font-weight: 400;
+    font-style: normal;
+    src: url("../../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+  }
+
+  :root {
+    --color-bg: #060606;
+    --color-ink-strong: #ffffff;
+    --color-ink-muted: #9a9a9a;
+    --color-accent: #6fcabd;
+    --color-hairline: rgb(255 255 255 / 0.12);
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    width: 1200px;
+    height: 630px;
+    background: var(--color-bg);
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .card {
+    position: absolute;
+    inset: 40px;
+    border: 1px solid var(--color-hairline);
+    padding: 90px 56px 0;
+    box-sizing: border-box;
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 20px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .wordmark {
+    margin: 44px 0 0;
+    font-size: 118px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--color-ink-strong);
+  }
+
+  .wordmark .dot {
+    color: var(--color-accent);
+  }
+
+  .tagline {
+    margin: 46px 0 0;
+    font-size: 38px;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    color: var(--color-ink-muted);
+  }
+</style>
+<div class="card">
+  <p class="eyebrow">The Dub Techno Index</p>
+  <p class="wordmark">dub<span class="dot">.</span>digger</p>
+  <p class="tagline">Dig the Extended Scene.<br />Dub Techno First.</p>
+</div>

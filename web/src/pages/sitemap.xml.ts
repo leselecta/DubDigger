@@ -45,6 +45,7 @@ export const GET: APIRoute = ({ site }) => {
     "/core-artists",
     "/core-labels",
     "/info",
+    "/accessibility",
     ...getTopArtists().map((artist) => `/artist/${artist.id}`),
     ...getTopLabels().map((label) => `/label/${label.id}`),
   ];

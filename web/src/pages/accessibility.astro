@@ -1,0 +1,174 @@
+---
+import Base from "@/layouts/Base.astro";
+import Eyebrow from "@/components/Eyebrow.astro";
+import LabelledBand from "@/components/LabelledBand.astro";
+
+/**
+ * The claim the footer makes, written out.
+ *
+ * The footer has said "designed to meet WCAG 2.1 AA" since the site went up,
+ * which is a promise with nowhere to read it. This is the page it points at:
+ * what was built in, what was measured, what is still weak, and how to say so.
+ *
+ * It is deliberately specific. A statement that says "we care about
+ * accessibility" tells a reader nothing they can check, and this site's whole
+ * argument is that an honest absence beats a confident-looking blank. The same
+ * rule applies to its own workings, so the limitations are named rather than
+ * implied and the numbers are the ones actually measured.
+ */
+const body = "text-body text-ink-muted max-w-[760px] space-y-5";
+const list = "text-body text-ink-muted max-w-[760px] list-disc space-y-3 pl-5 marker:text-ink-faint";
+---
+
+<Base
+  title="Accessibility — Dub Digger"
+  description="How Dub Digger is built for assistive technology, what was measured against WCAG 2.1 AA, and what is still weak."
+  pageType="WebPage"
+  breadcrumbs={[{ name: "Accessibility", href: "/accessibility" }]}
+>
+  <div class="column pt-16 pb-16 md:pt-24">
+    <Eyebrow>Accessibility statement</Eyebrow>
+    <h1 class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]">
+      Accessibility<span class="text-accent">.</span>
+    </h1>
+
+    <p class="text-lead text-ink-muted mt-10 max-w-[760px]">
+      I want Dub Digger to be usable by as many people as possible, including anyone using a screen
+      reader, a keyboard on its own, or a browser turned up to a size that suits them. It is
+      designed and built to meet WCAG 2.1 Level AA.
+    </p>
+  </div>
+
+  <div class="column pb-24">
+    <LabelledBand label="Where things stand">
+      <div class={body}>
+        <p>
+          The site was audited against WCAG 2.1 Level AA in August 2026, and the problems that
+          audit found were fixed. Contrast was measured rather than eyeballed, and every page was
+          checked for landmarks, heading order and keyboard reach.
+        </p>
+        <p>
+          I did that testing myself. Nobody independent has evaluated this site, and it has not
+          been tested end to end with a real screen reader by someone who uses one daily. So treat
+          this as a careful self-assessment, not a certificate.
+        </p>
+        <p>
+          This is also a beta, and it changes often. If something worked last month and does not
+          now, that is worth telling me about.
+        </p>
+      </div>
+    </LabelledBand>
+
+    <LabelledBand label="What is built in">
+      <ul class={list}>
+        <li>
+          A skip link as the first thing on every page, so the header, the search field and the
+          navigation can be jumped in one keystroke.
+        </li>
+        <li>
+          One main region and one first-level heading per page, with the header, the navigation and
+          the footer marked as regions around it. Both navigation bars carry their own name, so they
+          are told apart rather than read as two of the same thing.
+        </li>
+        <li>
+          Everything is reachable and operable by keyboard, in the order it appears on screen.
+          Focus is always visible, marked by a two-pixel accent outline held clear of the element.
+        </li>
+        <li>
+          Body text sits at 4.7:1 against the background or better, and the boundary of anything you
+          can click clears 3:1. The quietest grey on the site is the one measured hardest, because
+          it carries the counts and the column headings.
+        </li>
+        <li>
+          The phone menu is a native disclosure. It announces its own state, closes on Escape, and
+          keeps the keyboard inside it while it is open without hiding the page underneath from a
+          screen reader.
+        </li>
+        <li>
+          Where a column heading folds underneath a name on a narrow screen, it stays available to a
+          screen reader on a wide one. A row should never be read out as four values with nothing
+          saying what they count.
+        </li>
+        <li>
+          Every icon is decoration and is hidden from assistive technology. There are no images in
+          the site's content at all, so there is no unlabelled picture carrying meaning.
+        </li>
+        <li>
+          A link that leaves the site says so in its accessible name before you follow it.
+        </li>
+        <li>
+          If your system asks for reduced motion, it is respected. Nothing slides, animates or
+          counts up, and you still get the real figures.
+        </li>
+      </ul>
+    </LabelledBand>
+
+    <LabelledBand label="It works without JavaScript">
+      <div class={body}>
+        <p>
+          Search is a plain form. The tabs, the sort control and "Load more" are ordinary links that
+          carry their state in the address. So every view is a real URL you can bookmark, share or go
+          back to, and the whole site works with scripting switched off or failing to load.
+        </p>
+        <p>
+          The few things that do use JavaScript improve a page rather than build it. The bio on an
+          artist page collapses only if the script runs; without it you get the whole thing, which is
+          the right way round.
+        </p>
+      </div>
+    </LabelledBand>
+
+    <LabelledBand label="No third-party content">
+      <div class={body}>
+        <p>
+          This site loads nothing from anyone else. No trackers, no cookies, no ads, no embeds, no
+          consent banner to dismiss before you can read anything. The typefaces are served from the
+          same machine as the pages.
+        </p>
+        <p>
+          That matters here beyond privacy: third-party widgets are a common source of accessibility
+          problems nobody on the site can fix. There are none to fix.
+        </p>
+      </div>
+    </LabelledBand>
+
+    <LabelledBand label="Where it is still weak">
+      <div class={body}>
+        <p>
+          The interface is dense on purpose. It is built for someone who reads Discogs pages for
+          fun and wants a lot of information per screen, and that is a choice which suits some
+          people and not others. Long lists are paged at forty rows to keep that manageable.
+        </p>
+        <p>
+          The corpus text comes from Discogs, written by thousands of volunteers. Artist names,
+          biographies and credit roles arrive as they were typed, so their wording, punctuation and
+          capitalisation are not mine to make consistent.
+        </p>
+        <p>
+          Some artist names are very long and set very large. They should reflow rather than
+          overflow at any width, but that is the part I would most expect to have missed a case in.
+        </p>
+      </div>
+    </LabelledBand>
+
+    <LabelledBand label="Tell me if something is off">
+      <div class={body}>
+        <p>
+          If you hit an obstacle using this site, or you want to report an accessibility problem,
+          please get in touch through <a
+            href="https://simoneferraro.co.uk"
+            rel="noreferrer"
+            class="link-rule">simoneferraro.co.uk</a
+          >. I will do my best to answer and to fix it.
+        </p>
+        <p>
+          It is useful, but not necessary, to know which page you were on, what you were using to
+          read it, and what you expected to happen.
+        </p>
+        <p class="text-ink-faint font-mono text-xs tracking-[0.14em] uppercase">
+          Last reviewed August 2026
+        </p>
+      </div>
+    </LabelledBand>
+  </div>
+</Base>

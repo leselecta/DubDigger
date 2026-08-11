@@ -1,6 +1,5 @@
 ---
 import Base from "@/layouts/Base.astro";
-import SiteHeader from "@/components/SiteHeader.astro";
 import SearchField from "@/components/SearchField.astro";
 import Eyebrow from "@/components/Eyebrow.astro";
 import { getCorpusStats, getDbPath } from "@/lib/db";
@@ -8,8 +7,15 @@ import { search, type SearchHit } from "@/lib/queries";
 
 const q = Astro.url.searchParams.get("q") ?? undefined;
 const stats = getCorpusStats();
-const searching = Boolean(q);
 const results = q ? search(q) : null;
+
+/*
+ * A query, and something to answer it with. The second half is what keeps the
+ * page from having no `<h1>` at all: with no database the results block is
+ * never rendered, so the heading that stands in for the headline is not there
+ * either, and dropping the headline as well left the page with none.
+ */
+const searching = Boolean(q) && stats !== null;
 
 const columns: [string, number][] = stats
   ? [
@@ -62,9 +68,7 @@ function gradeOf(hit: SearchHit): string {
 const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
 ---
 
-<Base>
-  <SiteHeader search={false} />
-
+<Base search={false}>
   {/*
    * Searching drops the tagline and keeps everything else. A headline
    * announcing what the site is has done its job by the time someone has
@@ -120,13 +124,20 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
       <>
         {searching && results && (
           <div class="column pb-24">
-            <p class="mono-label mb-6">
+            {/*
+             * The count is the heading, because on a results page it is what
+             * the page is: the headline above it has done its job by the time
+             * someone has typed, and dropping it left the document with no
+             * `<h1>` on it at all. Same classes, so nothing moves — it was
+             * already the one line saying what you are looking at.
+             */}
+            <h1 class="mono-label mb-6">
               {results.hits.length === 0
                 ? `Nothing found for “${q}”`
                 : results.truncated
                   ? `Closest ${results.hits.length} for “${q}”`
                   : `${results.hits.length} found for “${q}”`}
-            </p>
+            </h1>
 
             {results.hits.length === 0 ? (
               <p class="text-body text-ink-muted max-w-[720px] py-10">
@@ -174,14 +185,24 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
                        * label stays `text-ink-faint` in each, under the value's
                        * own colour, so the grade's shade is still the thing the
                        * eye lands on.
+                       *
+                       * `md:sr-only` rather than `md:hidden`, which is the
+                       * whole difference between a label that stops being drawn
+                       * and one that stops existing. Above `md` the heading is
+                       * back in its column, so nothing should show it twice —
+                       * but `display: none` also takes it out of the accessible
+                       * tree, and the header row is a sibling `<div>` with no
+                       * way to say which column it names. A row read aloud came
+                       * out "Basic Channel, 47, high, artist". Out of flow and
+                       * still spoken, every value keeps the word for what it is.
                        */}
                       <span class="col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:col-start-3">
-                        <span class="text-ink-faint md:hidden">Relevance:</span>
+                        <span class="text-ink-faint md:sr-only">Relevance:</span>
                         <span class={RELEVANCE_SHADE[grade]}>{grade}</span>
                       </span>
 
                       <span class="text-ink col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:col-start-4">
-                        <span class="text-ink-faint md:hidden">Type:</span>
+                        <span class="text-ink-faint md:sr-only">Type:</span>
                         {hit.kind}
                       </span>
                     </li>
@@ -193,7 +214,7 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
         )}
 
         <div class="column pt-6 pb-32">
-          <dl class="border-hairline grid border-t sm:grid-cols-3">
+          <dl class="border-hairline grid border-t sm:grid-cols-3" data-figures>
             {columns.map(([label, value], i) => (
               <div
                 class:list={[
@@ -202,7 +223,10 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
                 ]}
               >
                 <dt class="mono-label">{label}</dt>
-                <dd class="text-stat text-ink-strong mt-3 font-bold tracking-[-0.03em] tabular-nums">
+                <dd
+                  class="text-stat text-ink-strong mt-3 font-bold tracking-[-0.03em] tabular-nums"
+                  data-count={value}
+                >
                   {value.toLocaleString("en-GB")}
                 </dd>
               </div>
@@ -212,4 +236,66 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
       </>
     )
   }
+
+  <script>
+    /**
+     * The three figures count up the first time they come into view.
+     *
+     * The size of this corpus is the claim the bottom of the page makes, and a
+     * number that arrives rather than sits there is what makes half a million
+     * releases read as half a million. It is the one thing on the page whose
+     * trigger the server cannot know: whether the band has been scrolled to.
+     *
+     * The real figures are rendered by the server and only handed to the script
+     * once it is going to animate them. So no JavaScript, and a reader who has
+     * asked for less motion, both get the true number with nothing to notice.
+     */
+    const DURATION = 1400;
+
+    function countUp(figures: HTMLElement[]) {
+      const start = performance.now();
+
+      const step = (now: number) => {
+        const t = Math.min((now - start) / DURATION, 1);
+        const eased = 1 - (1 - t) ** 3;
+
+        for (const figure of figures) {
+          const target = Number(figure.dataset.count);
+          figure.textContent = Math.round(target * eased).toLocaleString("en-GB");
+        }
+
+        if (t < 1) requestAnimationFrame(step);
+      };
+
+      requestAnimationFrame(step);
+    }
+
+    // Fires on the first load and again after every ClientRouter navigation.
+    document.addEventListener("astro:page-load", () => {
+      const band = document.querySelector<HTMLElement>("[data-figures]");
+      if (!band || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+      const figures = [...band.querySelectorAll<HTMLElement>("[data-count]")];
+      if (figures.length === 0) return;
+
+      for (const figure of figures) figure.textContent = "0";
+
+      /*
+       * All three run together, off the band rather than off each figure: they
+       * are one statement in three parts, and staggering them would read as
+       * three separate arrivals. The negative bottom margin holds the start
+       * until the band is properly on screen instead of peeking at the edge.
+       */
+      const seen = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((entry) => entry.isIntersecting)) return;
+          seen.disconnect();
+          countUp(figures);
+        },
+        { rootMargin: "0px 0px -12% 0px" },
+      );
+
+      seen.observe(band);
+    });
+  </script>
 </Base>

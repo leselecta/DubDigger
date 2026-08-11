@@ -1,6 +1,5 @@
 ---
 import Base from "@/layouts/Base.astro";
-import SiteHeader from "@/components/SiteHeader.astro";
 import Eyebrow from "@/components/Eyebrow.astro";
 import LabelledBand from "@/components/LabelledBand.astro";
 import { getCorpusStats } from "@/lib/db";
@@ -30,8 +29,6 @@ const body = "text-body text-ink-muted max-w-[760px] space-y-5";
   pageType="AboutPage"
   breadcrumbs={[{ name: "Info", href: "/info" }]}
 >
-  <SiteHeader />
-
   <div class="column pt-16 pb-16 md:pt-24">
     <Eyebrow>What is this?</Eyebrow>
     <h1 class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]">

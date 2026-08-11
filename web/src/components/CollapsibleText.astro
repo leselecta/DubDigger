@@ -37,9 +37,15 @@
     </div>
   </div>
 
+  {/*
+   * `aria-expanded` because the changing label says the state to anyone reading
+   * the words and nothing to anything reading the role. It starts false and is
+   * written by `paint()` alongside the label, so the two cannot disagree.
+   */}
   <button
     type="button"
     hidden
+    aria-expanded="false"
     class="text-ink-muted hover:text-ink mt-8 inline-flex cursor-pointer items-center gap-[9px] font-mono text-xs tracking-[0.16em] uppercase"
     data-toggle
   >
@@ -89,6 +95,7 @@
       clamp.style.maxHeight = clamped ? `${CLAMP_PX}px` : "";
       fade.hidden = !clamped;
       toggle.hidden = !overflows;
+      toggle.setAttribute("aria-expanded", String(open));
       label.textContent = open ? "Collapse" : "Read more";
       chevron.style.transform = open ? "rotate(180deg)" : "";
     };

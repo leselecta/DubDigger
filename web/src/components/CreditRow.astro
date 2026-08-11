@@ -96,10 +96,17 @@ const metaHeading = metaLabel?.replace(/\.$/, "");
      * with nothing saying what it counted. It reads "Active: 2002 – 2026" on a
      * phone and goes back to being a column, unlabelled, from `md` up.
      *
+     * Unlabelled to the eye, that is. `md:sr-only` takes it out of the flow
+     * without taking it out of the accessible tree, which `md:hidden` did:
+     * `ListHeader` is a sibling `<div>` and cannot tell a screen reader which
+     * column it heads, so above `md` the value was read on its own with nothing
+     * saying what it counted — the same fault the phone layout was fixing.
+     *
      * The space between the two is the newline below, which HTML renders as
-     * one. Nothing sets it, so nothing can set it twice.
+     * one. Nothing sets it, so nothing can set it twice; out of flow, the
+     * browser drops it at the start of the line and the column does not shift.
      */}
-    {metaHeading && <span class="md:hidden">{metaHeading}:</span>}
+    {metaHeading && <span class="md:sr-only">{metaHeading}:</span>}
     {/* A slot so a row can put a link here, with the plain string as the usual case. */}
     <slot name="meta">{meta}</slot>
   </span>

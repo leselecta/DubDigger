@@ -24,9 +24,25 @@
   --color-bg: #060606;
   --color-ink: #f2f2f2;
   --color-ink-strong: #ffffff;
+  /*
+   * The quiet end of the ramp, set by contrast rather than by eye.
+   *
+   * Four greys is still the design, and the spacing is still what lets a row
+   * carry a name, a count, a role string and a year without any of it shouting.
+   * What changed is where the bottom two sit: `#6a6a6a` came to 3.75:1 on this
+   * ground, under the 4.5:1 that normal text has to clear, and it was carrying
+   * real data — every column heading, every count, every year, the identity
+   * block's labels, the whole footer. Quiet is the intent; unreadable was not.
+   *
+   * So the floor moved to `#7a7a7a` (4.72:1) and `ink-dim` moved up with it to
+   * keep the step visible. The three are 16 apart in hex, which is what makes
+   * them read as a deliberate ramp rather than three shades that drifted.
+   *
+   *   ink 18.10:1 · muted 7.20:1 · dim 5.87:1 · faint 4.72:1
+   */
   --color-ink-muted: #9a9a9a;
-  --color-ink-dim: #787878;
-  --color-ink-faint: #6a6a6a;
+  --color-ink-dim: #8a8a8a;
+  --color-ink-faint: #7a7a7a;
   --color-accent: #6fcabd;
 
   /* Hairlines rather than borders: they separate without drawing attention. */
@@ -102,9 +118,16 @@
     color: var(--color-accent);
   }
 
+  /*
+   * `summary` is in the list because the phone menu is one, and it is the only
+   * control on the site that is neither an anchor nor a button. Left out, it
+   * fell back to whatever ring the browser draws, which is the one focus state
+   * on the site the design did not choose.
+   */
   a:focus-visible,
   input:focus-visible,
-  button:focus-visible {
+  button:focus-visible,
+  summary:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 3px;
   }

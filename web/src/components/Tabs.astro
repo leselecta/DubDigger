@@ -46,7 +46,12 @@ const { tabs, active, basePath } = Astro.props;
  * table.
  */}
 <div class="border-hairline mb-10 border-b">
-  <nav class="flex gap-6 overflow-x-auto sm:gap-[34px]">
+  {/*
+   * Named, because it is the second `<nav>` on the page: the header's is
+   * "Sections", and a reader listing the landmarks needs the two told apart.
+   * "Lists" is what this one switches, in the words the page already uses.
+   */}
+  <nav class="flex gap-6 overflow-x-auto sm:gap-[34px]" aria-label="Lists">
     {
       tabs.map((tab) => {
         const isActive = tab.key === active;

@@ -1,6 +1,5 @@
 ---
 import Base from "@/layouts/Base.astro";
-import SiteHeader from "@/components/SiteHeader.astro";
 import Eyebrow from "@/components/Eyebrow.astro";
 import FieldRow from "@/components/FieldRow.astro";
 import LabelledBand from "@/components/LabelledBand.astro";
@@ -150,8 +149,6 @@ const route =
   mainEntity={mainEntity}
   breadcrumbs={[{ name: artist.name, href: base }]}
 >
-  <SiteHeader />
-
   <div class="column pt-16 pb-16 md:pt-24">
     <Eyebrow>Artist</Eyebrow>
     <h1 class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]">
@@ -208,11 +205,9 @@ const route =
           )
         }
       </FieldRow>
-      <div class="border-hairline border-b">
-        <FieldRow label="View on">
-          <OutboundLinks kind="artist" id={artist.id} urls={artist.urls} />
-        </FieldRow>
-      </div>
+      <FieldRow label="View on" last>
+        <OutboundLinks kind="artist" id={artist.id} urls={artist.urls} />
+      </FieldRow>
     </dl>
   </div>
 

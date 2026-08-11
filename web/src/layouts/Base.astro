@@ -1,5 +1,6 @@
 ---
 import { ClientRouter } from "astro:transitions";
+import SiteHeader from "@/components/SiteHeader.astro";
 import SiteFooter from "@/components/SiteFooter.astro";
 import { canonicalPath } from "@/lib/seo";
 import "@/styles/globals.css";
@@ -24,6 +25,12 @@ interface Props {
   breadcrumbs?: { name: string; href: string }[];
   /** Keep it out of the index. For pages that are an answer to a bad address, not a page. */
   noindex?: boolean;
+  /**
+   * Show the header's search field. The home page carries its own in the hero,
+   * so it is the one page that asks for this off rather than asking twice for
+   * the same thing.
+   */
+  search?: boolean;
 }
 
 const {
@@ -33,6 +40,7 @@ const {
   mainEntity,
   breadcrumbs = [],
   noindex = false,
+  search = true,
 } = Astro.props;
 
 /*
@@ -143,7 +151,41 @@ const jsonLd = JSON.stringify({ "@context": "https://schema.org", "@graph": grap
     <ClientRouter />
   </head>
   <body class="flex min-h-screen flex-col">
-    <div class="flex-1"><slot /></div>
+    {/*
+     * The first thing in the document, and invisible until it is reached.
+     *
+     * Every page opens with a wordmark, a search field and four nav cells
+     * before the headline, and a keyboard reader had no way past them. It
+     * targets `#content`, which is the `<main>` each page opens after its
+     * header — the header itself is rendered by the page rather than by this
+     * layout, so the landmark cannot be drawn here.
+     *
+     * `focus:` rather than `focus-visible:`: it is `sr-only` at rest, so the
+     * only way to reach it is the keyboard, and there is nothing to guard
+     * against. The accent ground is the site's one loud colour and `text-bg`
+     * puts near-black on it at 10.5:1, the same pairing as the current nav
+     * cell. Above the drawer's `z-50`, since it outranks anything on the page.
+     */}
+    <a
+      href="#content"
+      class="bg-accent text-bg sr-only font-mono text-xs tracking-[0.2em] uppercase focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-[60] focus:px-6 focus:py-3"
+    >
+      Skip to content
+    </a>
+
+    {/*
+     * Header, content, footer, all three named here rather than the footer
+     * alone. Every page rendered its own `<SiteHeader />` and then opened
+     * straight into `<div class="column">`, which left the document with no
+     * `<main>` on it anywhere: nothing said where the chrome stopped and the
+     * page began, so there was no landmark to jump to and nothing for the skip
+     * link above to target. Drawing the shell in one place is what makes the
+     * answer the same on every page, including the next one written.
+     */}
+    <div class="flex-1">
+      <SiteHeader search={search} />
+      <main id="content"><slot /></main>
+    </div>
     <SiteFooter />
 
     <script>

@@ -19,11 +19,20 @@
  * has to carry the whole signal here, the colour no longer changing and
  * `outline-none` having taken the ring away. The header one is a thing you
  * reach for while reading something else, so it rests quiet on the hairline and
- * only takes the accent when you do reach for it.
+ * only takes the accent when you do reach for it. Quiet on `edge-strong` rather
+ * than `edge`, though: at 0.22 alpha that border came to 1.86:1 against the
+ * ground, under the 3:1 a control boundary has to clear, and on a field the
+ * boundary is the whole of what says where to click. 0.35 is 3.08:1, and it is
+ * the same edge "Load more" and the 404 button already wear.
  *
  * The magnifier is the submit button, not decoration. It fills the full height
  * of the field so the target is the whole right end rather than an 18px glyph,
  * while its right padding keeps the icon exactly where the design puts it.
+ *
+ * `autofocus` is the hero's, and only while it is empty. The field is why the
+ * home page exists, so taking the cursor there on arrival is right — but once
+ * it carries a query the page is an answer, and grabbing focus jumped a reader
+ * straight past the results they came back for, to a box they had already used.
  */
 interface Props {
   size: "hero" | "header";
@@ -44,7 +53,7 @@ const from = c + r * 0.75;
     type="search"
     name="q"
     value={value}
-    autofocus={hero}
+    autofocus={hero && !value}
     placeholder={hero
       ? "Basic Channel, Chain Reaction, Maurizio…"
       : "Basic Channel, Chain Reaction…"}
@@ -53,7 +62,7 @@ const from = c + r * 0.75;
       "text-ink placeholder:text-ink-faint w-full border bg-transparent font-mono outline-none",
       hero
         ? "border-accent transition-shadow focus:shadow-[inset_0_0_0_1px_var(--color-accent)]"
-        : "border-edge transition-colors focus:border-accent",
+        : "border-edge-strong transition-colors focus:border-accent",
       hero ? "h-16 pr-14 pl-6 text-[0.9375rem]" : "h-11 pr-11 pl-4 text-[0.8125rem]",
     ]}
   />

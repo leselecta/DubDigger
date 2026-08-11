@@ -5,7 +5,9 @@ import SearchField from "./SearchField.astro";
  * Wordmark and search, over the top level navigation.
  *
  * The home page carries its search in the hero, so the header one is suppressed
- * there rather than asking twice for the same thing.
+ * there rather than asking twice for the same thing. The prop says that and
+ * only that: the drawer's own field is unconditional, for the reason given at
+ * it.
  *
  * The three bars are back, at the foot of this file rather than here, and this
  * time there is a panel behind them. They were removed for standing in for
@@ -227,18 +229,18 @@ const info = [{ href: "/info", label: "Info" }];
        */}
       <svg
         class="mr-2.5"
-        width="22"
-        height="22"
+        width="27"
+        height="27"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        stroke-width="1.6"
+        stroke-width="2.1"
         stroke-linecap="round"
         aria-hidden="true"
       >
-        <path class="bar top" d="M2 7h20"></path>
+        <path class="bar top" d="M2 5h20"></path>
         <path class="bar mid" d="M2 12h20"></path>
-        <path class="bar bot" d="M2 17h20"></path>
+        <path class="bar bot" d="M2 19h20"></path>
       </svg>
     </summary>
 
@@ -278,20 +280,21 @@ const info = [{ href: "/info", label: "Info" }];
      * the header leaves rather than to be a second copy of it. The header
      * field is hidden below `sm` and the section row below `md`, so between
      * the two there is a band where both would show at once; each is on screen
-     * exactly where the other is not. The home page suppresses it either way,
-     * since the hero is already asking.
+     * exactly where the other is not.
+     *
+     * The home page keeps it, unlike the header's. The hero field is not a
+     * second copy of this one in any sense that matters while the drawer is
+     * open: the sheet covers the page and the scrim locks it, so the field
+     * underneath cannot be reached without closing the menu first. A drawer
+     * that is the only thing on screen has to carry its own way to search.
      */}
     <div
       data-drawer
       class="border-hairline bg-bg fixed inset-y-0 left-0 z-50 w-[min(20rem,82vw)] overflow-y-auto border-r px-6 py-5"
     >
-      {
-        search && (
-          <div class="mb-6 sm:hidden">
-            <SearchField size="header" />
-          </div>
-        )
-      }
+      <div class="mb-6 sm:hidden">
+        <SearchField size="header" />
+      </div>
 
       {
         browse.map(({ href, label }) => (
@@ -330,9 +333,15 @@ const info = [{ href: "/info", label: "Info" }];
    * pivot about itself and the two diagonals would never meet.
    *
    * Read the transform right to left, the way the browser applies it: the bar
-   * slides the five units onto the centre line first, then rotates about the
+   * slides the seven units onto the centre line first, then rotates about the
    * icon's middle. Doing it the other way round rotates a bar that is still
    * offset, and the cross comes out lopsided.
+   *
+   * The seven is the gap in the `d` attributes above, so the two move
+   * together: change where a bar sits and this has to follow it, or the
+   * diagonals cross somewhere other than the middle. There is not much room
+   * left above it: at eight the round caps come within 3 units of the
+   * viewBox, so spreading further means a taller box, not a bigger number.
    */
   .bar {
     transform-box: view-box;
@@ -343,11 +352,11 @@ const info = [{ href: "/info", label: "Info" }];
   }
 
   details[open] .top {
-    transform: rotate(45deg) translateY(5px);
+    transform: rotate(45deg) translateY(7px);
   }
 
   details[open] .bot {
-    transform: rotate(-45deg) translateY(-5px);
+    transform: rotate(-45deg) translateY(-7px);
   }
 
   /* The middle bar has nowhere to go, so it leaves. Faster than the fold, so
@@ -498,13 +507,60 @@ const info = [{ href: "/info", label: "Info" }];
       set(details.dataset.shown !== "true");
     });
 
-    scrim?.addEventListener("click", () => set(false));
+    // Focus goes back to the control that opened the sheet. Without it, the
+    // element stops being open 280ms later with focus still inside, and
+    // whatever the reader had reached drops to the top of the document.
+    scrim?.addEventListener("click", () => {
+      set(false);
+      summary.focus();
+    });
+
+    /**
+     * Keep the keyboard inside the sheet, without taking the page away.
+     *
+     * The drawer covers the page and the scrim locks it, so a pointer cannot
+     * reach what is underneath — but Tab could, and it walked off the last link
+     * into a header the reader could no longer see. The usual answer is `inert`
+     * on everything behind, and that is the wrong one here: the page showing
+     * through the scrim is the whole point of a sheet over a panel, and marking
+     * it inert would hide from a screen reader the very thing the design is
+     * making a point of keeping in view.
+     *
+     * So the focus wraps instead. Nothing is hidden, nothing is removed from
+     * the accessible tree, and the page behind stays exactly as readable as it
+     * looks. Both ends of the ring are inside the `<details>` — the summary is
+     * the first stop and the last drawer link the last — which is why one
+     * listener on the element catches both edges.
+     *
+     * `getClientRects()` rather than a class check, because what is focusable
+     * changes with the viewport: the drawer's own search field is `sm:hidden`,
+     * so between 640 and 768 the drawer is on screen with its first stop
+     * displaying none. Sending focus to it would land nowhere and, with the
+     * default already prevented, strand the reader on a key that did nothing.
+     */
+    const STOPS = "summary, a[href], input, button";
 
     // Bound to the details rather than the document, so it costs nothing when
-    // the menu is shut and there is no listener to tidy up after a swap. The
-    // drawer's own links and field are inside it, so focus is too.
+    // the menu is shut and there is no listener to tidy up after a swap.
     details.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && details.dataset.shown === "true") set(false);
+      if (details.dataset.shown !== "true") return;
+
+      if (event.key === "Escape") {
+        set(false);
+        summary.focus();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const stops = [...details.querySelectorAll<HTMLElement>(STOPS)].filter(
+        (el) => el.getClientRects().length > 0,
+      );
+      const edge = event.shiftKey ? stops[0] : stops[stops.length - 1];
+      if (!edge || document.activeElement !== edge) return;
+
+      event.preventDefault();
+      (event.shiftKey ? stops[stops.length - 1] : stops[0])?.focus();
     });
   }
 

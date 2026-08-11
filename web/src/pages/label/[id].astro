@@ -1,6 +1,5 @@
 ---
 import Base from "@/layouts/Base.astro";
-import SiteHeader from "@/components/SiteHeader.astro";
 import Eyebrow from "@/components/Eyebrow.astro";
 import FieldRow from "@/components/FieldRow.astro";
 import LabelledBand from "@/components/LabelledBand.astro";
@@ -83,8 +82,6 @@ const reason = label.isImprint
   mainEntity={mainEntity}
   breadcrumbs={[{ name: label.name, href: base }]}
 >
-  <SiteHeader />
-
   <div class="column pt-16 pb-16 md:pt-24">
     <Eyebrow>Label</Eyebrow>
     <h1 class="text-name-label text-ink-strong mt-6 leading-[0.9] font-bold tracking-[-0.045em]">
@@ -112,11 +109,9 @@ const reason = label.isImprint
         {label.isSeed ? "High" : "Low"}
         <span class="text-ink-faint">, {reason}</span>
       </FieldRow>
-      <div class="border-hairline border-b">
-        <FieldRow label="View on">
-          <OutboundLinks kind="label" id={label.id} urls={label.urls} />
-        </FieldRow>
-      </div>
+      <FieldRow label="View on" last>
+        <OutboundLinks kind="label" id={label.id} urls={label.urls} />
+      </FieldRow>
     </dl>
   </div>
 

@@ -1,6 +1,5 @@
 ---
 import Base from "@/layouts/Base.astro";
-import SiteHeader from "@/components/SiteHeader.astro";
 import Eyebrow from "@/components/Eyebrow.astro";
 import ListHeader from "@/components/ListHeader.astro";
 import CreditRow from "@/components/CreditRow.astro";
@@ -31,8 +30,6 @@ const shown = ordered.slice(0, limit);
   pageType="CollectionPage"
   breadcrumbs={[{ name: "Core Labels", href: "/core-labels" }]}
 >
-  <SiteHeader />
-
   <div class="column pt-16 pb-16 md:pt-24">
     <Eyebrow>The labels the scene records for</Eyebrow>
     <h1 class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]">

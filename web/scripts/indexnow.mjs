@@ -38,7 +38,11 @@ const response = await fetch("https://api.indexnow.org/indexnow", {
   }),
 });
 
-// 200 and 202 both mean accepted; 422 is the one worth reading, since it means
-// the key file did not check out.
+// 200 and 202 both mean accepted. 403 is the key file failing to check out and
+// 422 is a URL that does not belong to the host, but a 403 on the first ping
+// after a new key goes up is worth simply retrying: the run on 2026-08-12 gave
+// one, and the identical request succeeded a minute later with nothing changed
+// on the site, which reads as validation happening on the back of that first
+// request rather than anything being wrong.
 console.log(`${response.status} ${response.statusText} — ${urlList.length} URLs submitted`);
 process.exit(response.ok ? 0 : 1);

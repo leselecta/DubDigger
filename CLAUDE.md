@@ -261,6 +261,7 @@ Audited and fixed on 2026-08-11. The footer carries the claim in public, which m
 - **Text clears 4.5:1, control boundaries clear 3:1.** See the ramp above. This is the rule most likely to be broken by accident.
 - **A column heading that folds under the name stays in the accessible tree.** `md:sr-only`, never `md:hidden`: `ListHeader` is a sibling element and cannot tell a screen reader which column it names, so a row read aloud at desktop width came out "Basic Channel, 47, high, artist".
 - **The drawer wraps focus rather than hiding the page.** No `inert`, no `aria-hidden` on the background. The page showing through the scrim is the point of a sheet over a panel, and marking it inert would hide from a screen reader the thing the design is making a point of keeping in view. Focus cycles inside the `<details>` and returns to the summary on close.
+- **The contact dialog does hide the page, and that is not a contradiction.** A sheet is a layer over something you can still see; a modal is the only thing on screen until it is dismissed. It is a native `<dialog>`, so the inertness, the focus trap, the Escape key and the focus return are the browser's rather than ours. Two overlays, two different claims, two different mechanisms.
 - **Anything that discloses says so.** `aria-expanded` on the bio toggle, `aria-current` on nav cells, tabs and the sort control, `aria-label` on both `<nav>` elements ("Sections" and "Lists").
 - **Every SVG is `aria-hidden`**, and anything that leaves the site says so in its accessible name.
 - **Motion is guarded.** All three scripted animations check `prefers-reduced-motion` (drawer, collapsing bio, figures count-up), and so does the drawer's stylesheet.
@@ -283,11 +284,14 @@ Audited and fixed on 2026-08-11. The footer carries the claim in public, which m
 |---|---|---|
 | `ClientRouter` | 16,075 | every page |
 | drawer | 1,064 | every page |
+| contact dialog | 860 | every page |
 | scroll hold | 300 | every page |
 | collapsing bio | 1,279 | artist and label |
 | figures count-up | 644 | home |
 
-Heaviest page is an artist or label at **18,718 bytes**. The router is 86% of it and is deliberate: the premise is that a pivot costs one click, so the document is swapped rather than reloaded. The four inline scripts are the whole of the rest, and a fifth needs the same argument those four made.
+Heaviest page is an artist or label at **19,578 bytes**. The router is 82% of it and is deliberate: the premise is that a pivot costs one click, so the document is swapped rather than reloaded. The five inline scripts are the whole of the rest, and a sixth needs the same argument those five made.
+
+**The contact dialog is what that argument looks like.** A dialog cannot come from the server, so the only question was how much code it costs, and the answer was to let the browser do it: a native `<dialog>` opened with `showModal()` already traps focus, closes on Escape, makes the rest of the document inert, returns focus to whatever opened it, and paints a `::backdrop`. What is left to write is opening it, closing on a backdrop click, and the clipboard, which is why it is smaller than the drawer despite doing more. Every opener is a real `mailto:` link that the script intercepts, so with no JavaScript a click still reaches the address.
 
 **Prefer the server, then a link, then a script.** Tabs, pagination and search are links and a plain GET form carrying state in the URL. That is what keeps a 556-row roster from being serialised into the page as JSON, and what makes every view a real address. Only reach for a script when the answer genuinely is not knowable on the server: the collapsing bio qualifies, because whether the text overflows depends on the rendered line count at this viewport; the scroll hold qualifies, because where the reader was is not something a server response can carry; the count-up qualifies, because whether the band has been scrolled to is not either. A fragment was tried for the scroll hold first and could only say "put the tab bar at the top", which still moves the page. It is one script in the layout, keyed on `data-hold-scroll`, serving the tab bar, the sort control and "Load more": the same script three times would cost the budget three times.
 

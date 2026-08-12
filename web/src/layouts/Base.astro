@@ -2,6 +2,7 @@
 import { ClientRouter } from "astro:transitions";
 import SiteHeader from "@/components/SiteHeader.astro";
 import SiteFooter from "@/components/SiteFooter.astro";
+import ContactDialog from "@/components/ContactDialog.astro";
 import { canonicalPath } from "@/lib/seo";
 import "@/styles/globals.css";
 
@@ -200,6 +201,12 @@ const jsonLd = JSON.stringify({ "@context": "https://schema.org", "@graph": grap
       <main id="content"><slot /></main>
     </div>
     <SiteFooter />
+
+    {/*
+     * Drawn once, like the footer, so any `data-contact-open` link on any page
+     * has a dialog to open. There is only ever one card in the document.
+     */}
+    <ContactDialog />
 
     <script>
       /**

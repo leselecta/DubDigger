@@ -18,9 +18,7 @@ from credits. No unwanted noise.
 > artists**, **113,952 labels**, in a **0.89 GB** file. See
 > [Roadmap](#roadmap) for what is still open.
 
-The full design rationale is in
-[case-study-credit-graph.md](case-study-credit-graph.md). The working rules for
-the codebase are in [CLAUDE.md](CLAUDE.md).
+The working rules for the codebase are in [CLAUDE.md](CLAUDE.md).
 
 ## The bet: ranked lists, not a graph
 

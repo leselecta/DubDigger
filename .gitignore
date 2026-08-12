@@ -28,5 +28,10 @@ web/.astro/
 # Local machine settings. The shared .claude/settings.json is committed.
 .claude/settings.local.json
 
+# The case study is kept on the machine rather than published here. It is
+# still the reasoning behind the rules in CLAUDE.md, and CLAUDE.md still
+# points at it; it is just not part of what this repo distributes.
+case-study-credit-graph.md
+
 .env
 .env.local

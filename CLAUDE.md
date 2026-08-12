@@ -10,7 +10,7 @@ A crate-digging tool built on Discogs credit data. The core loop: **type an arti
 
 The user is a music nerd who reads Discogs pages for fun, not a casual listener. Design for information density and fast pivoting, not for a gentle onboarding.
 
-**For the full design rationale, why ranked lists beat a graph, the competitive research that led there, and the Gall's Law scoping reasoning, see `case-study-credit-graph.md` in this repo.** This file states the resulting rules; the case study explains why they're the right rules. When a decision isn't covered by a rule below, reason from the case study's logic rather than defaulting to a generic pattern.
+**For the full design rationale, why ranked lists beat a graph, the competitive research that led there, and the Gall's Law scoping reasoning, see `case-study-credit-graph.md`.** It sits in the working copy but is not committed, so it is on Simone's machine and not in a clone: every later mention of "the case study" means that file. This file states the resulting rules; the case study explains why they're the right rules. When a decision isn't covered by a rule below, reason from the case study's logic rather than defaulting to a generic pattern, and say so if the file is not to hand.
 
 ## Where it stands
 

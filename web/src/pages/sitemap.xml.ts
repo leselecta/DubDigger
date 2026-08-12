@@ -7,7 +7,7 @@ import { getTopArtists, getTopLabels } from "@/lib/queries";
  * The sitemap, generated per request rather than at build time.
  *
  * @astrojs/sitemap would list the four static routes and stop, because
- * `/artist/[id]` has no `getStaticPaths` to enumerate: in a server-rendered app
+ * `/artist/[id]` has no static path list to enumerate: in a server-rendered app
  * the routes exist only as far as the database says they do. So it is written
  * here, where the same queries the Core pages run are already to hand and
  * already memoised for the life of the process.
@@ -17,6 +17,11 @@ import { getTopArtists, getTopLabels } from "@/lib/queries";
  * reachable — every one is linked from a page in here, and a crawler that
  * follows links will find them — but nothing in this file invites a bot to walk
  * 534,527 SQLite queries on a one-core VPS. Discovery, not exhaustiveness.
+ *
+ * The build-time path API above is described rather than named on purpose.
+ * Astro decides whether to warn that the export is being ignored by testing
+ * whether the source text contains the name at all, so writing it in a comment
+ * prints a warning about an export this file does not have, on every build.
  */
 
 /**

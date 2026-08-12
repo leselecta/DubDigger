@@ -1,6 +1,18 @@
 /** How many list rows a page shows before "Load more". */
 export const PAGE_SIZE = 40;
 
+/**
+ * Whether the ranked lists show their sort control. Off for now.
+ *
+ * Hidden rather than removed, and hidden in one place rather than commented out
+ * in two: `SortBy` is untouched, both Core pages still read `?sort=name` and
+ * still answer it, so the ordering is one flag away from being back and a
+ * hand-typed URL keeps working in the meantime. Typed as `boolean` rather than
+ * left to infer `false`, or the pages that read it become unreachable branches
+ * and the component reads as dead code.
+ */
+export const SHOW_SORT: boolean = false;
+
 /** Reads the `show` search param, clamped so a hand-typed URL cannot ask for everything. */
 export function pageSize(show: string | undefined): number {
   const asked = Number(show);

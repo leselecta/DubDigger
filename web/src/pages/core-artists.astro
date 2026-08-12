@@ -7,7 +7,7 @@ import Absence from "@/components/Absence.astro";
 import LoadMore from "@/components/LoadMore.astro";
 import SortBy from "@/components/SortBy.astro";
 import { getTopArtists, TOP_LIST_SIZE } from "@/lib/queries";
-import { PAGE_SIZE, pageSize, years } from "@/lib/view";
+import { PAGE_SIZE, SHOW_SORT, pageSize, years } from "@/lib/view";
 
 const params = Astro.url.searchParams;
 const limit = pageSize(params.get("show") ?? undefined);
@@ -48,7 +48,7 @@ const shown = ordered.slice(0, limit);
         <Absence>No artists graded. Nothing has been ingested yet.</Absence>
       ) : (
         <>
-          <SortBy basePath="/core-artists" active={sort} />
+          {SHOW_SORT && <SortBy basePath="/core-artists" active={sort} />}
           <ListHeader name="Artist" count="In scene" meta="Active" />
           <ul>
             {shown.map((artist) => (

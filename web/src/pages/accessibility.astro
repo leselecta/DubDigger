@@ -6,15 +6,14 @@ import LabelledBand from "@/components/LabelledBand.astro";
 /**
  * The claim the footer makes, written out.
  *
- * The footer has said "designed to meet WCAG 2.1 AA" since the site went up,
- * which is a promise with nowhere to read it. This is the page it points at:
- * what was built in, what was measured, what is still weak, and how to say so.
+ * Short on purpose. A statement is read by someone who has already hit a
+ * problem, so it says what was built, what is weak and how to report it, and
+ * stops. The reasoning behind each measure lives in CLAUDE.md, which is where
+ * anyone changing the code will look; a visitor wants the list.
  *
- * It is deliberately specific. A statement that says "we care about
- * accessibility" tells a reader nothing they can check, and this site's whole
- * argument is that an honest absence beats a confident-looking blank. The same
- * rule applies to its own workings, so the limitations are named rather than
- * implied and the numbers are the ones actually measured.
+ * The limitations are named rather than implied. This site's rule is that an
+ * honest absence beats a confident-looking blank, and that has to apply to its
+ * own workings first.
  */
 const body = "text-body text-ink-muted max-w-[760px] space-y-5";
 const list = "text-body text-ink-muted max-w-[760px] list-disc space-y-3 pl-5 marker:text-ink-faint";
@@ -34,8 +33,7 @@ const list = "text-body text-ink-muted max-w-[760px] list-disc space-y-3 pl-5 ma
 
     <p class="text-lead text-ink-muted mt-10 max-w-[760px]">
       I want Dub Digger to be usable by as many people as possible, including anyone using a screen
-      reader, a keyboard on its own, or a browser turned up to a size that suits them. It is
-      designed and built to meet WCAG 2.1 Level AA.
+      reader or a keyboard on its own. It is designed and built to meet WCAG 2.1 Level AA.
     </p>
   </div>
 
@@ -43,91 +41,45 @@ const list = "text-body text-ink-muted max-w-[760px] list-disc space-y-3 pl-5 ma
     <LabelledBand label="Where things stand">
       <div class={body}>
         <p>
-          The site was audited against WCAG 2.1 Level AA in August 2026, and the problems that
-          audit found were fixed. Contrast was measured rather than eyeballed, and every page was
-          checked for landmarks, heading order and keyboard reach.
+          The site was audited against WCAG 2.1 Level AA in August 2026 and the problems it found
+          were fixed. I did that testing myself, so treat it as a careful self-assessment rather
+          than a certificate: nobody independent has looked at it, and no screen reader user has
+          been through it end to end.
         </p>
-        <p>
-          I did that testing myself. Nobody independent has evaluated this site, and it has not
-          been tested end to end with a real screen reader by someone who uses one daily. So treat
-          this as a careful self-assessment, not a certificate.
-        </p>
-        <p>
-          This is also a beta, and it changes often. If something worked last month and does not
-          now, that is worth telling me about.
-        </p>
+        <p>It is also a beta and changes often. If something used to work and now does not, tell me.</p>
       </div>
     </LabelledBand>
 
     <LabelledBand label="What is built in">
       <ul class={list}>
+        <li>A skip link, so the header, the search field and the navigation can be jumped at once.</li>
         <li>
-          A skip link as the first thing on every page, so the header, the search field and the
-          navigation can be jumped in one keystroke.
+          Ordered headings and named regions on every page, including a name on each of the two
+          navigation bars.
         </li>
         <li>
-          One main region and one first-level heading per page, with the header, the navigation and
-          the footer marked as regions around it. Both navigation bars carry their own name, so they
-          are told apart rather than read as two of the same thing.
+          Everything works by keyboard, in the order it appears, with focus always visible. The
+          phone menu closes on Escape and keeps the keyboard inside it while it is open.
+        </li>
+        <li>Text clears 4.7:1 against the background, and anything you can click clears 3:1.</li>
+        <li>
+          The whole site works with JavaScript off: search is a plain form, and the tabs, the sort
+          control and "Load more" are links carrying their state in the address.
         </li>
         <li>
-          Everything is reachable and operable by keyboard, in the order it appears on screen.
-          Focus is always visible, marked by a two-pixel accent outline held clear of the element.
+          No images in the content, every icon hidden from assistive technology, and a link that
+          leaves the site says so before you follow it.
         </li>
-        <li>
-          Body text sits at 4.7:1 against the background or better, and the boundary of anything you
-          can click clears 3:1. The quietest grey on the site is the one measured hardest, because
-          it carries the counts and the column headings.
-        </li>
-        <li>
-          The phone menu is a native disclosure. It announces its own state, closes on Escape, and
-          keeps the keyboard inside it while it is open without hiding the page underneath from a
-          screen reader.
-        </li>
-        <li>
-          Where a column heading folds underneath a name on a narrow screen, it stays available to a
-          screen reader on a wide one. A row should never be read out as four values with nothing
-          saying what they count.
-        </li>
-        <li>
-          Every icon is decoration and is hidden from assistive technology. There are no images in
-          the site's content at all, so there is no unlabelled picture carrying meaning.
-        </li>
-        <li>
-          A link that leaves the site says so in its accessible name before you follow it.
-        </li>
-        <li>
-          If your system asks for reduced motion, it is respected. Nothing slides, animates or
-          counts up, and you still get the real figures.
-        </li>
+        <li>Reduced motion is respected, and you still get the real figures.</li>
       </ul>
-    </LabelledBand>
-
-    <LabelledBand label="It works without JavaScript">
-      <div class={body}>
-        <p>
-          Search is a plain form. The tabs, the sort control and "Load more" are ordinary links that
-          carry their state in the address. So every view is a real URL you can bookmark, share or go
-          back to, and the whole site works with scripting switched off or failing to load.
-        </p>
-        <p>
-          The few things that do use JavaScript improve a page rather than build it. The bio on an
-          artist page collapses only if the script runs; without it you get the whole thing, which is
-          the right way round.
-        </p>
-      </div>
     </LabelledBand>
 
     <LabelledBand label="No third-party content">
       <div class={body}>
         <p>
-          This site loads nothing from anyone else. No trackers, no cookies, no ads, no embeds, no
-          consent banner to dismiss before you can read anything. The typefaces are served from the
-          same machine as the pages.
-        </p>
-        <p>
-          That matters here beyond privacy: third-party widgets are a common source of accessibility
-          problems nobody on the site can fix. There are none to fix.
+          This site loads no third-party content, embeds, fonts or trackers, and sets no cookies. So
+          there is no consent banner in your way, and no outside widget carrying accessibility
+          problems nobody here can fix.
         </p>
       </div>
     </LabelledBand>

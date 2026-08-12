@@ -57,9 +57,17 @@ const card = new URL("/og.jpg", Astro.site).href;
  *
  * There is a WebSite node and a node for this page, cross-referenced by @id so
  * an engine reads them as one thing rather than as two documents that happen to
- * share a domain. There is deliberately no Person or Organization: nobody is
- * named as the author anywhere on the site, and inventing a publisher to fill a
- * recommended field would be asserting something the pages do not.
+ * share a domain.
+ *
+ * `creator` sits on the WebSite and nowhere else, and the split is the point:
+ * the tool is mine, the data is not. A page about an artist is generated from
+ * credits typed in by Discogs contributors, so an `author` on the page node
+ * would take thousands of people's work and put one name on it. The footer says
+ * the same thing in words, and this is only that sentence in markup.
+ *
+ * Still no Organization and no publisher, for the original reason: there is no
+ * company here, and filling a recommended field with an invented one would
+ * assert something the pages do not.
  *
  * The SearchAction is the one behaviour worth declaring, because it is real: the
  * home page takes a `q` and answers with results.
@@ -75,6 +83,11 @@ const graph: Record<string, unknown>[] = [
     description:
       "A map of scenes drawn from Discogs credit data, centred on dub techno: who worked with whom, and the labels they released on.",
     inLanguage: "en",
+    creator: {
+      "@type": "Person",
+      name: "Simone Ferraro",
+      url: "https://simoneferraro.co.uk",
+    },
     potentialAction: {
       "@type": "SearchAction",
       target: { "@type": "EntryPoint", urlTemplate: `${site}?q={search_term_string}` },

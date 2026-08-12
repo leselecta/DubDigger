@@ -3,25 +3,69 @@
 
 <footer class="border-hairline border-t">
   {/*
-   * One left-aligned stack, one gap between every line. London sits in the
-   * sentence that says it rather than beside the year, so nothing is stated
-   * twice.
+   * Two columns, split by direction rather than by subject.
+   *
+   * Everything the site says about itself stays in one stack on the left: what
+   * it is, who made it, whose the data is, where it was built and what it
+   * promises. The right holds the one line that asks for something back, which
+   * is also the only thing in the footer a visitor can act on. Alone in the
+   * empty half it reads as an invitation; fourth in a list of statements it
+   * read as another statement.
+   *
+   * One column below `md`, where two would be two narrow measures rather than
+   * two groups. The left block still comes first, so the reading order is the
+   * same either way.
+   *
+   * London sits in the sentence that says it rather than beside the year, so
+   * nothing is stated twice.
    */}
-  <div class="column font-mono text-ink-faint space-y-1 py-11 text-xs leading-[1.5] tracking-wider">
-    <p>dub.digger — the dub techno index</p>
-    <p>
-      MMXXVI <a href="https://simoneferraro.co.uk" rel="noreferrer" class="link-rule"
-        >Simone Ferraro</a
-      >
-    </p>
-    <p>I made the tool, not the data. That comes from Discogs.</p>
-    <p>Website handcrafted in London. No tracking, no cookies, no ads, no third parties.</p>
+  <div
+    class="column text-ink-faint grid gap-x-10 gap-y-6 py-11 font-mono text-xs leading-[1.5] tracking-wider md:grid-cols-2"
+  >
+    <div class="space-y-1">
+      {/*
+       * The one line that names the thing, so it is set apart from the five
+       * that describe it. `font-semibold` is 600, which is a weight actually
+       * downloaded rather than one the browser would have to fake, and it is
+       * the same weight the wordmark carries in the header.
+       */}
+      <p class="font-semibold uppercase">dub.digger — the dub techno index</p>
+      <p>
+        MMXXVI <a href="https://simoneferraro.co.uk" rel="noreferrer" class="link-rule"
+          >Simone Ferraro</a
+        >
+      </p>
+      <p>I made the tool, not the data. That comes from Discogs.</p>
+      <p>Website handcrafted in London. No tracking, no cookies, no ads, no third parties.</p>
+      {/*
+       * The claim is the link to the page that backs it. It was a flat sentence
+       * for a while, which is a promise with nowhere to check it.
+       */}
+      <p>
+        This website is designed to meet <a href="/accessibility" class="link-rule">WCAG 2.1 AA</a>.
+      </p>
+    </div>
+
     {/*
-     * The claim is now the link to the page that backs it. It was a flat
-     * sentence for a while, which is a promise with nowhere to check it.
+     * Pushed to the far edge rather than left sitting at the halfway mark,
+     * which lined up with nothing. Flush right it has the column's own boundary
+     * to sit against, and the gap between the two blocks becomes the width of
+     * the footer instead of an arbitrary indent.
+     *
+     * `text-right` as well as `justify-self-end`, so the second line stays
+     * flush when the sentence wraps at the narrow end of `md`. Both are `md:`
+     * only: below that the grid is one column and the whole footer reads left.
      */}
-    <p>
-      This website is designed to meet <a href="/accessibility" class="link-rule">WCAG 2.1 AA</a>.
-    </p>
+    <div class="md:justify-self-end md:text-right">
+      <p>
+        Questions, corrections, arguments:{" "}
+        {/* Kept on one line: a control broken across two reads as two. */}
+        <a
+          href="mailto:simone.ferraro@nutek.it"
+          data-contact-open
+          class="link-rule whitespace-nowrap">Let's talk</a
+        >.
+      </p>
+    </div>
   </div>
 </footer>

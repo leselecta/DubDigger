@@ -30,14 +30,15 @@ const body = "text-body text-ink-muted max-w-[760px] space-y-5";
   breadcrumbs={[{ name: "Info", href: "/info" }]}
 >
   <div class="column pt-16 pb-16 md:pt-24">
-    <Eyebrow>What is this?</Eyebrow>
+    <Eyebrow>Info</Eyebrow>
     <h1 class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]">
-      Info<span class="text-accent">.</span>
+      About this project<span class="text-accent">.</span>
     </h1>
 
     <p class="text-lead text-ink-muted mt-10 max-w-[760px]">
-      Dub Digger is a tool for digging. Type an artist, and you see who they worked with and which
-      labels they released on. Every name is a link, so you can pick one and keep going.
+      Dub Digger is a tool for digging. Dub techno first. Type an artist, and you see who they
+      worked with and which labels they released on. Every name is a link, so you can pick one and
+      keep going.
     </p>
   </div>
 
@@ -45,23 +46,16 @@ const body = "text-body text-ink-muted max-w-[760px] space-y-5";
     <LabelledBand label="The idea">
       <div class={body}>
         <p>
-          Every record is made by more people than the cover admits. A producer, a mixing engineer,
-          a bass player who also turns up on four other records you already love. That web of
-          credits is how diggers actually find music.
+          Every record is connected to another. A producer, a mixing engineer, a bassist who turns
+          up on four other records you already enjoy. An iconic, minor label you discover by picking
+          up an obscure release you love gives you access to a goldmine of amazing titles. That web
+          of credits is how crate diggers actually find music, and it all sits in Discogs. It just
+          isn't optimised for digging this way.
         </p>
         <p>
-          All of it is already written down on Discogs, but it is not shaped for digging. You read
-          one release at a time, and you never see the shape of a career, or the people someone
-          keeps coming back to.
-        </p>
-        <p>
-          So this site takes the credits and ranks them. Collaborators are sorted by how many
-          records they share, labels by how many releases, with the years they cover. The name at
-          the top is the name that comes up most often, because frequency is the signal.
-        </p>
-        <p>
-          There is no graph here, and that is on purpose. A cloud of dots tells you that everything
-          is connected, which is true and not useful. A ranked list tells you who matters, on sight.
+          Dub Digger reshapes it. Type an artist or a label, see who they worked with and what
+          labels they released on, then click any of those and keep going. A map of scenes, drawn
+          from credits. No unwanted noise.
         </p>
       </div>
     </LabelledBand>
@@ -69,9 +63,14 @@ const body = "text-body text-ink-muted max-w-[760px] space-y-5";
     <LabelledBand label="Who it is for">
       <div class={body}>
         <p>
-          People who read Discogs pages for fun. There are no recommendations here, no playlists,
-          nothing trying to guess your taste. The site assumes you either know what you are looking
-          for, or you will know it when you see it.
+          As a dub techno enthusiast and record collector, this is the tool I would have liked to
+          have to discover new acts starting from a core set of artists and labels.
+        </p>
+        <p>
+          So the intended audience is people who read Discogs pages for fun. There are no
+          recommendations here, no playlists, nothing trying to guess your taste apart from the fact
+          that you love dub techno. The site assumes you either know what you are looking for, or
+          you will know it when you see it.
         </p>
         <p>
           That is why the pages are dense, and why almost everything on them is a link. Digging is a
@@ -98,12 +97,12 @@ const body = "text-body text-ink-muted max-w-[760px] space-y-5";
           The slice starts with records tagged dub techno, deep techno, dub, ambient or minimal.
           Everyone credited on those records becomes the core. Then the tool takes one step out, in
           two directions: people who worked with someone in the core, and people who released on the
-          same labels without ever meeting them. Both are neighbours, in different ways.
+          same labels without ever meeting them.
         </p>
         <p>
-          It stops there. Two steps out and you end up with most of techno, which would be a copy of
-          Discogs and not a map of anything. So an artist you expected to find may simply be outside
-          the boundary. That is the boundary working, not a gap.
+          It stops there. More steps out and you end up with most of techno, which would be a copy
+          of Discogs and not a map of anything. So an artist you expected to find may simply be
+          outside the boundary. That is how it is supposed to work, not a gap.
         </p>
       </div>
     </LabelledBand>
@@ -112,46 +111,47 @@ const body = "text-body text-ink-muted max-w-[760px] space-y-5";
       <div class={body}>
         <p>
           Discogs publishes its whole catalogue every month as XML files, free to use. The releases
-          file is over 100 GB once unpacked, and it is where the credits live.
+          file is over 100 GB once unpacked, and it is where all the information I needed lives.
         </p>
         <p>
-          All the heavy work happens once, on my own machine. A script reads the dump piece by
+          All the heavy lifting happens once on my own machine. A script reads the dump piece by
           piece, keeps only the few fields the tool needs, picks the slice described above, and
-          counts everything in advance. Two passes over 19 million releases take about an hour.
+          counts everything in advance. Two passes over 19 million releases.
         </p>
         <p>
-          What comes out is one small database file. The website only reads it. No live API, no
-          database server, nothing fetched while you browse. It is also why there are no images: the
-          dumps are free to use, the pictures are not.
+          The result is one small database file. The website only reads it. No live API, no database
+          server, nothing fetched while you browse. It is also why there are no images: the dumps
+          are free to use, the pictures are not. They are in the pipeline for a later version.
         </p>
       </div>
     </LabelledBand>
 
-    <LabelledBand label="Where the counting stops">
+    <LabelledBand label="The editorial twist">
       <div class={body}>
         <p>
+          So far everything has been 100% data-driven. This is where I add a bit of curation on top.
           Every artist carries a relevance grade, measured from how much of their work sits in the
           dub techno core. That measure works well, until it does not.
         </p>
         <p>
-          King Tubby invented dub, and the tool graded him the same as the Spice Girls. His records
-          are tagged as reggae, and the core rule only counts dub when the genre is electronic. I
-          looked for a better number and found that none exists: Madonna has more records inside the
-          core than King Tubby has, on every measure the data can produce.
+          Quick example: King Tubby invented dub, and the tool graded him the same as the Spice
+          Girls. His records are tagged as reggae, and the core rule only counts dub when the genre
+          is electronic. I looked for a better number and found that none exists: Madonna has more
+          records inside the core than King Tubby has, on every measure the data can produce. As you
+          may imagine, I wasn't happy to see that.
         </p>
         <p>
-          "Came before" is a fact of history, and style tags cannot express it. So it is written
-          down by hand instead. Six traditions are named in the config: roots dub, reggae, Detroit
-          techno, afrobeat, UK jazz, and acid jazz and drum and bass. Belonging to one of them
-          raises an artist to a fixed grade and no higher, and the page always says the grade was
-          raised and which tradition did it. The measured number stays underneath, so the site never
-          claims scene work that is not in the data.
+          Inspirations and cultural factors are a matter of history, and style tags cannot express
+          them. So it is written down by hand instead. As a starting point I added six "traditions"
+          in the config: roots dub, reggae, Detroit techno, afrobeat, UK jazz, acid jazz and drum
+          and bass.
         </p>
         <p>
-          Two of those six are my own call rather than a documented line of descent. Nobody traces
-          dub techno back to Fela Kuti. I kept them because a map of a scene should hold the music
-          it keeps company with, and it seemed better to say that out loud than to hide it in a
-          setting nobody reads.
+          Belonging to one of them raises an artist to a fixed grade and no higher, and the page
+          always says the grade was raised and which "tradition" did it. The measured number stays
+          underneath, so the site never claims scene work that is not in the data. This curation is
+          my own editorial choice rather than a data-driven line of descent and it has to be seen as
+          the fluid, human-based aspect of the tool.
         </p>
       </div>
     </LabelledBand>
@@ -159,14 +159,17 @@ const body = "text-body text-ink-muted max-w-[760px] space-y-5";
     <LabelledBand label="What to expect">
       <div class={body}>
         <p>
-          Credits on Discogs are entered by volunteers, so they are uneven, and unevenly so. When
+          Credits on Discogs are entered by volunteers, so they are uneven and patchy. When
           something is missing the page says "no credits recorded" rather than showing an empty list
           that looks like an answer. A weak connection is shown as weak. A distant artist is meant
           to look distant.
         </p>
         <p>
           This is a beta, and the ranked lists are the most experimental part of it. If a page looks
-          wrong, it is either the data or one of my judgements. Both can be argued with.
+          wrong, it is either the data or one of my judgements. Both can be argued with. So feel
+          free to <a href="mailto:simone.ferraro@nutek.it" data-contact-open class="link-rule"
+            >get in touch</a
+          > to discuss.
         </p>
       </div>
     </LabelledBand>

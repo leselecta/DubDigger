@@ -28,6 +28,24 @@ export default defineConfig({
   adapter: node({ mode: "standalone" }),
 
   /**
+   * No sessions, and therefore no session cookie, ever.
+   *
+   * The node adapter wires a filesystem session store by default and says so
+   * on every build. Nothing here uses `Astro.session`, so nothing was ever
+   * stored and no cookie was ever sent — but the footer and the accessibility
+   * statement both promise a visitor that this site sets no cookies, and a
+   * default that would start issuing one the moment somebody reached for a
+   * session is a promise resting on nobody touching it.
+   *
+   * `false` is the supported opt-out as of Astro 7.2.0: the adapter skips
+   * wiring its driver and the session runtime is left out of the SSR bundle
+   * altogether. It also turns a future `Astro.session` from a silent cookie
+   * into a loud failure, which is the right way round for a claim made in
+   * public.
+   */
+  session: false,
+
+  /**
    * Ship the HTML indented, the way the templates are written.
    *
    * Astro collapses whitespace by default. Turning that off costs almost

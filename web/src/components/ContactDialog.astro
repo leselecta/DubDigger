@@ -29,8 +29,25 @@
  */
 ---
 
+{/*
+ * `autofocus` on the dialog rather than on anything inside it.
+ *
+ * Without it, `showModal()` focuses the first focusable descendant, which is
+ * the close button — and a touch browser matches `:focus-visible` on that
+ * programmatic focus where a desktop mouse click does not. So the card opened
+ * on a phone with the accent ring already drawn around the ×, which reads as
+ * the close button being the thing being offered.
+ *
+ * Pointing it at the dialog fixes the reading as well as the look: the card
+ * announces its own name to a screen reader instead of opening on "Close,
+ * button", and the copy button stays the only offer on screen. `tabindex` is
+ * what makes a non-interactive container focusable at all, and -1 keeps it out
+ * of the tab sequence, so nothing can land here by pressing Tab.
+ */}
 <dialog
   data-contact
+  autofocus
+  tabindex="-1"
   aria-labelledby="contact-heading"
   class="bg-bg border-edge-strong m-auto w-[min(26rem,calc(100vw-3rem))] border p-8 text-ink backdrop:bg-black/70"
 >
@@ -104,6 +121,19 @@
    */
   dialog[data-contact]::backdrop {
     backdrop-filter: blur(2px);
+  }
+
+  /*
+   * The focused card draws no ring, and that takes nothing away.
+   *
+   * A focus ring tells a keyboard user where they are, and `tabindex="-1"`
+   * means they can never be here: focus arrives on open and leaves on the
+   * first Tab, which lands on the close button and rings it properly. The
+   * global rule covers a, input, button and summary, so this is only guarding
+   * against a UA outline on the container.
+   */
+  dialog[data-contact]:focus {
+    outline: none;
   }
 
   /* One attribute decides which of the two icons is drawn. */

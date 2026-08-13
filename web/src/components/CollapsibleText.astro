@@ -11,8 +11,10 @@
  * with no JavaScript the whole bio is readable, where clamping first would
  * leave a reader stuck at four lines with no way to open them.
  *
- * The opening and closing are animated, and closing scrolls the page so the
- * control stays where the reader left it. Both live in the script below.
+ * The opening and closing are animated and nothing else moves: the box changes
+ * height, the page below follows it, and the scroll position is left alone. See
+ * the click handler for why that last part is a decision rather than an
+ * omission.
  */
 ---
 
@@ -108,48 +110,6 @@
     };
 
     /**
-     * Collapsing takes the reader with it.
-     *
-     * The box shrinks by everything it was holding, so the page below jumps up
-     * by the same amount and a reader who was looking at the bio ends up in the
-     * middle of the collaborator list. Holding the control at a fixed point on
-     * the screen, and letting the page move under it, is what keeps their
-     * place. Expanding needs none of this: the box grows downwards and the top
-     * of the bio never moves.
-     *
-     * `top` is where the control sat before any of this ran, and it has to be
-     * read in the click handler rather than here: by the time this is called
-     * `paint()` has already collapsed the layout, so the control has moved and
-     * measuring it now would anchor it to the place the reader is complaining
-     * about.
-     *
-     * The correction runs per frame against a measured position rather than
-     * scrolling by a computed delta, so it tracks the animation exactly and
-     * lands right even where the page cannot scroll far enough to comply.
-     */
-    const hold = (top: number, animation: Animation | undefined) => {
-      const settle = () => {
-        const drift = toggle.getBoundingClientRect().top - top;
-        if (drift) window.scrollBy(0, drift);
-      };
-
-      if (!animation) return settle();
-
-      let running = true;
-      const stop = () => {
-        running = false;
-        settle();
-      };
-      animation.finished.then(stop, stop);
-
-      const step = () => {
-        settle();
-        if (running) requestAnimationFrame(step);
-      };
-      step();
-    };
-
-    /**
      * The script owns `max-height` in pixels for as long as the box is moving,
      * and `paint()` owns it again at rest.
      *
@@ -169,9 +129,17 @@
     const slide = (from: number, to: number) => {
       clamp.style.maxHeight = `${from}px`;
 
+      /*
+       * `ease-in-out` because the box is a panel opening, not an object
+       * arriving. `ease-out` was leaving at full speed from a standing start,
+       * which on a 779px bio threw most of the text past the reader in the
+       * first 50ms and then crept the last few pixels — read side by side with
+       * a jQuery `slideToggle`, whose `swing` is eased at both ends, it is the
+       * difference between a panel and a flinch.
+       */
       const animation = clamp.animate(
         { maxHeight: [`${from}px`, `${to}px`] },
-        { duration: 300, easing: "ease-out", fill: "forwards" },
+        { duration: 300, easing: "ease-in-out", fill: "forwards" },
       );
 
       const settle = () => {
@@ -183,18 +151,34 @@
       return animation;
     };
 
+    /**
+     * Collapsing moves the box and nothing else. The page is not scrolled.
+     *
+     * It used to be. The control was pinned to its place on screen and the page
+     * scrolled under it, on the reasoning that a box shrinking by everything it
+     * held would otherwise leave a reader somewhere down the collaborator list.
+     * Measured on Eno's page, at a 779px collapse from a scroll position of
+     * 600, that is not what it did: the pin ran the page up to scrollY 0 in
+     * 180ms, hit the top of the document, ran out of room, and spent the
+     * remaining 120ms letting the control slide after all. So the reader got a
+     * lurch to the top of the page, and a collapse where the thing that was
+     * moving changed halfway through.
+     *
+     * The fault is structural rather than a tuning problem: the bio sits near
+     * the top of the document, so the scroll room above it is usually smaller
+     * than the height it collapses by, and a hold that cannot be honoured is
+     * worse than no hold. Every other disclosure on the web moves the content
+     * below it, which is what a reader is expecting, and it is what the
+     * accordion this was modelled on does. It never touches scrollY either.
+     */
     toggle.addEventListener("click", () => {
       const from = clamp.getBoundingClientRect().height;
-      const anchor = toggle.getBoundingClientRect().top;
 
       open = !open;
       paint();
       const to = clamp.getBoundingClientRect().height;
 
-      const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const animation = still ? undefined : slide(from, to);
-
-      if (!open) hold(anchor, animation);
+      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) slide(from, to);
     });
 
     new ResizeObserver(measure).observe(inner);

@@ -244,7 +244,7 @@ Everything below is set in `web/src/styles/globals.css` as tokens and three util
 - **Display type is fluid, reading type is fixed.** `--text-hero`, `--text-name`, `--text-name-label` and `--text-stat` are clamps, because the handoff's pixel sizes are wider than a phone (a 104px "Moritz von Oswald" needs 900px of viewport). `--text-row`, `--text-lead` and `--text-body` are fixed. Add a new size only if the design has one.
 
   Prose reads at two of those, split by job rather than by page. `--text-lead` (1.1875rem) is the paragraph directly under a headline, a subheading doing a headline's work. `--text-body` (1.0625rem) is prose you settle into: a bio, the bands on the Info page. Both carry their line height on the token itself, so a paragraph asks for a size and gets the leading that belongs to it. Do not respell it with a `leading-*` class.
-- **Hairlines, not borders.** `--color-hairline`, `--color-hairline-soft`, `--color-edge`, `--color-edge-strong`: separation without drawing a box. One accent, `#6fcabd`, spent on the eyebrow, the two headline stops, link hover, and a high grade. Spending it more widely is exactly what stops it working. `edge` is 1.86:1 and is decoration only; anything that is the boundary of a control wears `edge-strong` at 3.08:1.
+- **Hairlines, not borders.** `--color-hairline`, `--color-hairline-soft`, `--color-edge`, `--color-edge-strong`: separation without drawing a box. One accent, `#6fcabd`, spent on the eyebrow, the two headline stops, link hover, a high grade, and the "nothing found" heading. Spending it more widely is exactly what stops it working. The fifth is the one that had to argue for itself: a search that found nothing is the only heading on the site that has to be read rather than counted past, and a results page has already dropped the headline, so it spends colour that just came free rather than adding a place. `edge` is 1.86:1 and is decoration only; anything that is the boundary of a control wears `edge-strong` at 3.08:1.
 - **`link-rule` marks anything that pivots**, at whatever size the type is. With one accent and no room to spend it, that hairline is how a link is told apart from the text beside it.
 - **The content column is the `column` utility**: 1200px, 1.5rem of gutter, 3rem from 768px up. Bands span the full width, their contents stay in the column.
 - **The shell is drawn once, in `Base.astro`.** Skip link, header, `<main id="content">`, footer. A page renders its own bands and nothing else. It used to render its own `<SiteHeader />` too, which is how the site ended up with no `<main>` on it anywhere.
@@ -265,7 +265,7 @@ Audited and fixed on 2026-08-11. The footer carries the claim in public, which m
 - **Anything that discloses says so.** `aria-expanded` on the bio toggle, `aria-current` on nav cells, tabs and the sort control, `aria-label` on both `<nav>` elements ("Sections" and "Lists").
 - **Every SVG is `aria-hidden`**, and anything that leaves the site says so in its accessible name.
 - **Motion is guarded.** All three scripted animations check `prefers-reduced-motion` (drawer, collapsing bio, figures count-up), and so does the drawer's stylesheet.
-- **`autofocus` is the hero field's, and only while it is empty.** On a results page it jumped a reader past the answer.
+- **`autofocus` appears twice, and they are different jobs.** On the page it is the hero field's, and only while it is empty: on a results page it jumped a reader past the answer. Inside the contact `<dialog>` it is on the dialog element itself, which is how a modal chooses where focus starts — it fires on open rather than on load, so it takes nothing from the page. It has to be set, because the default is the first focusable descendant: that put focus on the close button, which a touch browser then rings with the accent as though closing were the offer.
 
 ## Stack
 
@@ -284,12 +284,12 @@ Audited and fixed on 2026-08-11. The footer carries the claim in public, which m
 |---|---|---|
 | `ClientRouter` | 16,075 | every page |
 | drawer | 1,064 | every page |
-| contact dialog | 860 | every page |
+| contact dialog | 961 | every page |
 | scroll hold | 300 | every page |
-| collapsing bio | 1,279 | artist and label |
+| collapsing bio | 1,035 | artist and label |
 | figures count-up | 644 | home |
 
-Heaviest page is an artist or label at **19,578 bytes**. The router is 82% of it and is deliberate: the premise is that a pivot costs one click, so the document is swapped rather than reloaded. The five inline scripts are the whole of the rest, and a sixth needs the same argument those five made.
+Heaviest page is an artist or label at **19,435 bytes**. The router is 82% of it and is deliberate: the premise is that a pivot costs one click, so the document is swapped rather than reloaded. The five inline scripts are the whole of the rest, and a sixth needs the same argument those five made.
 
 **The contact dialog is what that argument looks like.** A dialog cannot come from the server, so the only question was how much code it costs, and the answer was to let the browser do it: a native `<dialog>` opened with `showModal()` already traps focus, closes on Escape, makes the rest of the document inert, returns focus to whatever opened it, and paints a `::backdrop`. What is left to write is opening it, closing on a backdrop click, and the clipboard, which is why it is smaller than the drawer despite doing more. Every opener is a real `mailto:` link that the script intercepts, so with no JavaScript a click still reaches the address.
 

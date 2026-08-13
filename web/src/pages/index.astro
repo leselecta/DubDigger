@@ -130,8 +130,15 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
              * someone has typed, and dropping it left the document with no
              * `<h1>` on it at all. Same classes, so nothing moves — it was
              * already the one line saying what you are looking at.
+             *
+             * A miss takes the accent, a hit does not. It is the one heading
+             * here that has to be read rather than counted past: the answer is
+             * that there is no answer, and the paragraph under it is the part
+             * that matters. The headline's two accent stops are not on the page
+             * once someone has typed, so this spends the colour that just came
+             * free rather than adding to it.
              */}
-            <h1 class="mono-label mb-6">
+            <h1 class:list={["mono-label mb-6", results.hits.length === 0 && "text-accent"]}>
               {results.hits.length === 0
                 ? `Nothing found for “${q}”`
                 : results.truncated
@@ -139,10 +146,18 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
                   : `${results.hits.length} found for “${q}”`}
             </h1>
 
+            {/*
+             * The paragraph takes no top padding: the heading's own `mb-6` is
+             * the gap, which is the same 1.5rem a LabelledBand puts between a
+             * mono label and the prose beside it. A `py-10` here stacked a
+             * second gap on top of that and floated the sentence away from the
+             * label it belongs to.
+             */}
             {results.hits.length === 0 ? (
-              <p class="text-body text-ink-muted max-w-[720px] py-10">
+              <p class="text-body text-ink-muted max-w-[720px] pb-10">
                 This corpus is a slice centred on dub techno, not all of Discogs, so plenty of real
-                artists are legitimately absent. That is the boundary working, not a gap.
+                artists and labels are legitimately absent. That is the boundary working, not a gap.
+                Or this may mean that the entry doesn't actually exist on Discogs.
               </p>
             ) : (
               <>

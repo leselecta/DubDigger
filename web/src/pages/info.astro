@@ -176,8 +176,14 @@ const body = "text-body text-ink-muted max-w-[760px] space-y-5";
          * speaks as "I" throughout this page, so it should end the way a letter
          * does, and the name sits a step up the ink ramp because a signature is
          * the human hand at the end of a page of machinery.
+         *
+         * `mt-10` rather than the `space-y-5` the other paragraphs sit on: a
+         * sign-off is not the next paragraph, it is what comes after them. It
+         * works because Tailwind v4 hangs `space-y` off `:not(:last-child)` as
+         * a bottom margin, so nothing here is being overridden — the two
+         * margins simply collapse to the larger.
          */}
-        <p>
+        <p class="mt-10 italic">
           Happy digging,<br />
           <span class="text-ink">Simone</span>
         </p>

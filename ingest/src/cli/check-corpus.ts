@@ -272,6 +272,21 @@ for (const name of LABELS_IN) check("label", name, true, isSeedLabel.pluck().get
 console.log();
 for (const name of LABELS_OUT) check("label", name, false, isSeedLabel.pluck().get(name) as number);
 
+// The top step of the label scale IS the seed-label rule, which is what lets a
+// page say "high" and the corpus say "scene label" and mean one thing. If these
+// two counts ever part, the display has quietly forked from the definition.
+const seedLabelCount = db.prepare("SELECT count(*) FROM seed_labels").pluck().get() as number;
+const highLabelCount = db
+  .prepare("SELECT count(*) FROM label_coverage WHERE relevance = 'high'")
+  .pluck()
+  .get() as number;
+const agree = seedLabelCount === highLabelCount;
+if (!agree) failures++;
+console.log(
+  `\n  ${agree ? "ok  " : "FAIL"}  label  ${"high = seed labels".padEnd(26)}` +
+    `${highLabelCount.toLocaleString("en-GB")} of ${seedLabelCount.toLocaleString("en-GB")}`,
+);
+
 console.log("\nCorpus artists\n");
 for (const name of ARTISTS_IN) check("artist", name, true, inCorpus.pluck().get(name) as number);
 console.log();

@@ -75,7 +75,20 @@ export interface Label {
   urls: string[];
   artistCount: number;
   releaseCount: number;
-  isSeed: boolean;
+  /**
+   * The same four steps an artist is graded on, so one word means one thing
+   * site-wide. Measured on how much of what the label released is in the
+   * cluster; `high` is the seed-label rule itself.
+   */
+  relevance: Relevance;
+  /**
+   * The share behind the grade, or null when the dump records no artist line
+   * for the label at all.
+   *
+   * NOT a share of `artistCount`, and the page must not word it as though it
+   * were. That roster is corpus artists including engineers; this is every act
+   * the label released, across the whole dump.
+   */
   seedRatio: number | null;
   firstYear: number | null;
   lastYear: number | null;
@@ -95,21 +108,18 @@ export interface SearchHit {
   kind: "artist" | "label";
   releaseCount: number;
   /**
-   * How close to the scene. Shown in results because breadth is only an asset
-   * when a distant act looks distant: Mozart is genuinely in the corpus, on 85
-   * releases that really do credit someone here, and saying so is honest where
-   * hiding him would not be.
+   * How close to the scene, on one scale for both kinds. Shown in results
+   * because breadth is only an asset when a distant act looks distant: Mozart
+   * is genuinely in the corpus, on 85 releases that really do credit someone
+   * here, and saying so is honest where hiding him would not be.
    *
-   * Null on labels, which are not graded.
+   * An artist is graded on their own work and a label on how much of what it
+   * released is in the cluster. Two measures, four steps, one vocabulary, which
+   * is the only way the column can be scanned as a single column.
    */
-  relevance: Relevance | null;
+  relevance: Relevance;
   /** How a "none" artist reached the corpus. A label mate is not a collaborator. */
   connection: "collaborator" | "label mate" | "collaborator + label mate" | null;
-  /**
-   * Labels are not on the artist relevance scale, but they have one of their
-   * own: a seed label is a scene label by roster concentration. Null on artists.
-   */
-  coreLabel: boolean | null;
 }
 
 /** Row shapes as SQLite returns them, snake_case and with 0/1 for booleans. */
@@ -158,6 +168,7 @@ interface LabelRow {
   artist_count: number;
   release_count: number;
   seed_ratio: number | null;
+  relevance: Relevance | null;
   top_artist_releases: number | null;
   first_year: number | null;
   last_year: number | null;
@@ -167,7 +178,6 @@ interface HitRow {
   id: number;
   name: string;
   release_count: number;
-  is_seed?: number;
   channel_a?: number;
   channel_b?: number;
   relevance?: Relevance;
@@ -280,13 +290,14 @@ export function getLabel(id: number): Label | null {
               (SELECT count(*) FROM label_roster r WHERE r.label_id = l.id) AS artist_count,
               (SELECT count(DISTINCT rl.release_id) FROM release_labels rl WHERE rl.label_id = l.id)
                 AS release_count,
-              s.seed_ratio,
+              g.seed_ratio,
+              g.relevance,
               (SELECT max(release_count) FROM label_roster r WHERE r.label_id = l.id)
                 AS top_artist_releases,
               (SELECT min(first_year) FROM label_roster r WHERE r.label_id = l.id) AS first_year,
               (SELECT max(last_year)  FROM label_roster r WHERE r.label_id = l.id) AS last_year
          FROM labels l
-         LEFT JOIN seed_labels s ON s.label_id = l.id
+         LEFT JOIN label_coverage g ON g.label_id = l.id
         WHERE l.id = ?`,
     )
     .get(id) as LabelRow | undefined;
@@ -299,7 +310,7 @@ export function getLabel(id: number): Label | null {
     urls: row.urls ? row.urls.split("\n").filter(Boolean) : [],
     artistCount: row.artist_count,
     releaseCount: row.release_count,
-    isSeed: row.seed_ratio !== null,
+    relevance: row.relevance ?? "none",
     seedRatio: row.seed_ratio,
     isImprint: row.release_count > 1 && row.top_artist_releases === row.release_count,
     firstYear: row.first_year,
@@ -623,10 +634,10 @@ export function search(query: string, limit = 40): SearchResults {
       `SELECT l.id, l.name, l.profile, l.urls,
               (SELECT count(DISTINCT rl.release_id) FROM release_labels rl WHERE rl.label_id = l.id)
                 AS release_count,
-              (sd.label_id IS NOT NULL) AS is_seed
+              coalesce(g.relevance, 'none') AS relevance
          FROM label_search s
          JOIN labels l ON l.id = s.rowid
-         LEFT JOIN seed_labels sd ON sd.label_id = l.id
+         LEFT JOIN label_coverage g ON g.label_id = l.id
         WHERE label_search MATCH ?
         ORDER BY release_count DESC
         LIMIT ?`,
@@ -644,10 +655,10 @@ export function search(query: string, limit = 40): SearchResults {
    * Graded first, so a sceptic searching "Mozart" sees at a glance that the
    * scene artists are the answer and he is a footnote.
    *
-   * Labels are not on the artist scale, so they are ranked by the one they do
-   * have: a seed label sorts with the strong artists, anything else with the
-   * weak. Ranking every label below every graded artist would bury Chain
-   * Reaction under the two unrelated acts that share its name.
+   * Artists and labels sort against each other on the one scale, which they can
+   * now that a label is graded in four steps rather than two. It used to be two
+   * lists interleaved by a rule of thumb, and the rule of thumb was the reason
+   * Ndagga sorted level with a label that has nothing to do with any of this.
    */
   const ORDER: Record<string, number> = { high: 0, medium: 1, low: 2, none: 3 };
 
@@ -659,7 +670,6 @@ export function search(query: string, limit = 40): SearchResults {
       releaseCount: r.release_count,
       relevance: r.relevance ?? "none",
       connection: connection(r),
-      coreLabel: null,
       rank: ORDER[r.relevance ?? "none"]!,
     })),
     ...labels.map((r) => ({
@@ -667,10 +677,9 @@ export function search(query: string, limit = 40): SearchResults {
       name: r.name,
       kind: "label" as const,
       releaseCount: r.release_count,
-      relevance: null,
+      relevance: r.relevance ?? "none",
       connection: null,
-      coreLabel: r.is_seed === 1,
-      rank: r.is_seed === 1 ? ORDER.high! : ORDER.low!,
+      rank: ORDER[r.relevance ?? "none"]!,
     })),
   ];
 

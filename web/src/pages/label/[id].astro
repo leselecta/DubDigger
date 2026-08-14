@@ -34,13 +34,17 @@ const roster = active === "roster" ? getRoster(label.id, limit) : [];
 const releases = active === "releases" ? getLabelReleases(label.id, limit) : [];
 
 /**
- * How close to the cluster, in the words the search results use.
+ * How close to the cluster, in the words the search results and the artist page
+ * use. Four steps, from a measure of the label's own: how much of what it
+ * released is in the cluster. The grade comes first and the reason rides
+ * alongside, since a label's grade rests entirely on a percentage worth reading.
  *
- * Labels are not on the artist scale, but they have a measure of their own: a
- * seed label is a cluster label by roster concentration. The grade comes first
- * for the same reason it does on the artist page, one vocabulary whichever page
- * you land on, and the reason rides alongside it, since a label's grade rests
- * entirely on a percentage worth reading.
+ * THE DENOMINATOR IS NOT THE ROSTER ABOVE, and the sentence is worded so it
+ * cannot be read as though it were. The roster tab lists corpus artists,
+ * engineers included; the grade counts every act the label released across the
+ * whole dump, which is the only denominator that keeps a major at 7% instead of
+ * 32%. Ndagga shows nine names and is measured on seven, and "of roster" said
+ * about one of those sets while showing the other was the bug this fixed.
  *
  * A one artist label is not a thin roster, it is an imprint, and saying
  * "partial roster" about Purpose Maker would be describing complete data as
@@ -68,11 +72,13 @@ const mainEntity = {
   sameAs: `https://www.discogs.com/label/${label.id}`,
 };
 
+const grade = label.relevance === "none" ? "Very low" : label.relevance;
+
 const reason = label.isImprint
   ? "artist-run imprint, one artist on every release"
   : label.seedRatio !== null
-    ? `${percent(label.seedRatio)} of roster in the dub techno cluster`
-    : "here through its artists, not as a label in the dub techno cluster";
+    ? `${percent(label.seedRatio)} of everyone it released is in the dub techno cluster`
+    : "no named artist on its releases, so there is nothing to measure";
 ---
 
 <Base
@@ -105,8 +111,8 @@ const reason = label.isImprint
 
     <dl class="mt-9 max-w-[760px]">
       <FieldRow label="Date active">{years(label.firstYear, label.lastYear) || "—"}</FieldRow>
-      <FieldRow label="Relevance" accent={label.isSeed}>
-        {label.isSeed ? "High" : "Low"}
+      <FieldRow label="Relevance" accent={label.relevance !== "none"}>
+        <span class="capitalize">{grade}</span>
         <span class="text-ink-faint">, {reason}</span>
       </FieldRow>
       <FieldRow label="View on" last>

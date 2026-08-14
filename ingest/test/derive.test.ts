@@ -33,6 +33,16 @@ function corpus(
     "INSERT INTO release_labels (release_id, position, label_id, name) VALUES (?, ?, ?, ?)",
   );
   const ca = db.prepare("INSERT OR IGNORE INTO corpus_artists (artist_id, is_seed) VALUES (?, 1)");
+  // Pass 1 writes one pair per (label, artist line) across the WHOLE dump, and
+  // the label grade is measured against it, so the fixtures have to carry it
+  // too. Credits are deliberately absent: an engineer on a record is not
+  // evidence about who the label puts out.
+  const lp = db.prepare(
+    "INSERT OR IGNORE INTO label_artist_pairs (label_id, artist_id) VALUES (?, ?)",
+  );
+  // The label rows `entities` writes. label_coverage is driven from them, since
+  // a label with no page is a label with nothing to grade.
+  const lb = db.prepare("INSERT OR IGNORE INTO labels (id, name) VALUES (?, ?)");
 
   for (const rel of releases) {
     r.run(rel.id, `Release ${rel.id}`, rel.year ?? null, rel.seed === false ? 0 : 1);
@@ -46,7 +56,11 @@ function corpus(
       c.run(rel.id, i, id, `Artist ${id}`, role);
       ca.run(id);
     });
-    (rel.labels ?? []).forEach((id, i) => l.run(rel.id, i, id, `Label ${id}`));
+    (rel.labels ?? []).forEach((id, i) => {
+      l.run(rel.id, i, id, `Label ${id}`);
+      lb.run(id, `Label ${id}`);
+      for (const artist of rel.artists ?? []) lp.run(id, artist);
+    });
   }
   return db;
 }
@@ -155,6 +169,85 @@ test("label roster is ranked by release count", async () => {
     { artist_id: 10, release_count: 2 },
     { artist_id: 11, release_count: 1 },
   ]);
+});
+
+const labelGrade = (db: Database.Database, id: number) =>
+  db.prepare("SELECT relevance FROM label_coverage WHERE label_id = ?").pluck().get(id);
+
+/** A label with `total` acts on its line, `seeds` of them in the seed set. */
+const roster = (labelId: number, total: number, seeds: number) => {
+  const rows = Array.from({ length: total }, (_, i) => ({
+    id: labelId * 10 + i,
+    artists: [labelId * 100 + i],
+    labels: [labelId],
+  }));
+  return {
+    rows,
+    seeds: Array.from({ length: seeds }, (_, i) => [labelId * 100 + i, 9, 10] as [number, number, number]),
+  };
+};
+
+test("a label is graded on the same four steps as an artist", async () => {
+  // Chain Reaction: everyone it puts out is in the cluster. The top step is the
+  // seed-label rule itself, so what the corpus calls a scene label and what a
+  // reader is told are one decision, not two.
+  const pure = roster(500, 4, 4);
+  // Ndagga: three of the seven acts it released are in the cluster, which is
+  // under the seed-label dial and nowhere near a major. This is the case the
+  // scale exists for; before it, this label read the same word as Columbia.
+  const near = roster(600, 7, 3);
+  // A major: one act in the cluster among twenty.
+  const major = roster(700, 20, 1);
+
+  const db = corpus([...pure.rows, ...near.rows, ...major.rows]);
+  seed(db, [...pure.seeds, ...near.seeds, ...major.seeds]);
+  await runDerive(db);
+
+  assert.equal(labelGrade(db, 500), "high");
+  assert.equal(labelGrade(db, 600), "medium");
+  assert.equal(labelGrade(db, 700), "low");
+});
+
+test("a label ratio needs two names behind it", async () => {
+  // One act, in the cluster, and nothing else: 100% of a roster of one. The
+  // floor is what stops a single self-release reading as a scene label, and it
+  // guards the middle step for the same reason it guards the top one.
+  const one = roster(800, 1, 1);
+  const db = corpus(one.rows);
+  seed(db, one.seeds);
+  await runDerive(db);
+
+  assert.equal(labelGrade(db, 800), "low");
+});
+
+test("a label with nobody from the cluster on its line is graded, not skipped", async () => {
+  const db = corpus(roster(900, 3, 0).rows);
+  await runDerive(db);
+
+  assert.deepEqual(db.prepare("SELECT seed_artist_count, line_artist_count, relevance FROM label_coverage WHERE label_id = 900").get(), {
+    seed_artist_count: 0,
+    line_artist_count: 3,
+    relevance: "none",
+  });
+});
+
+test("the label grade reads the artist line, not the roster the page lists", async () => {
+  // The distinction that made this table necessary. A mastering engineer from
+  // the cluster appears on the label page's roster and says nothing about who
+  // the label puts out, so the grade must not count him. The roster still
+  // lists him: two different questions, and the page has to answer both.
+  const db = corpus([
+    { id: 1, artists: [10], credits: [[11, "Mastered By"]], labels: [450] },
+    { id: 2, artists: [10], credits: [[11, "Mastered By"]], labels: [450] },
+  ]);
+  seed(db, [[11, 9, 10]]);
+  await runDerive(db);
+
+  assert.equal(labelGrade(db, 450), "none");
+  assert.equal(
+    db.prepare("SELECT count(*) FROM label_roster WHERE label_id = 450").pluck().get(),
+    2,
+  );
 });
 
 test("coverage tells 'no credits recorded' apart from 'worked solo'", async () => {

@@ -53,10 +53,11 @@ const RESULT_GRID = "grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_11rem_5rem]
  * belongs between medium and low. Everything below stays in the ink ramp, so
  * the colour still marks a boundary rather than shading four steps.
  *
- * Labels are graded on the same words, from the measure they do have: a seed
- * label is a scene label by roster concentration. The underlying test is not
- * the artist one, but one column asking one question in one vocabulary beats
- * two scales sharing a heading.
+ * Labels are graded on the same four words, from a measure of their own: how
+ * much of what they released is in the cluster. The underlying test is not the
+ * artist one, and it does not need to be. One column asking one question in one
+ * vocabulary beats two scales sharing a heading, and until a label had four
+ * steps this column had a two-step scale pretending to be a four-step one.
  */
 const RELEVANCE_SHADE: Record<string, string> = {
   high: "text-accent",
@@ -65,10 +66,8 @@ const RELEVANCE_SHADE: Record<string, string> = {
   "very low": "text-ink-faint",
 };
 
-function gradeOf(hit: SearchHit): string {
-  if (hit.kind === "label") return hit.coreLabel ? "high" : "low";
-  return hit.relevance === null || hit.relevance === "none" ? "very low" : hit.relevance;
-}
+/** "none" is a grade, not a missing one, and reads as the bottom step. */
+const gradeOf = (hit: SearchHit): string => (hit.relevance === "none" ? "very low" : hit.relevance);
 
 /** Graded up here, so the row below reads as markup rather than as a function. */
 const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));

@@ -1,5 +1,11 @@
 import type Database from "better-sqlite3";
-import { derive as deriveDefaults, lineage, relevance } from "../config.ts";
+import {
+  derive as deriveDefaults,
+  labelRelevance,
+  lineage,
+  relevance,
+  seedLabel,
+} from "../config.ts";
 import { startRun } from "../db/open.ts";
 
 const { high, medium } = relevance;
@@ -78,6 +84,8 @@ export interface DeriveStats {
   artistCoverage: number;
   /** Per tradition: how many carry the tag, and how many it lifted. */
   lineage: { name: string; tagged: number; lifted: number }[];
+  /** Labels per grade, which is how the label dials are steered. */
+  labelGrades: { relevance: string; labels: number }[];
   /** Compilations too large to imply collaboration. Kept, but not paired. */
   releasesSkippedForPairs: number;
 }
@@ -91,7 +99,7 @@ export async function runDerive(
 
   const run = startRun(db, "derive", null, { maxPeoplePerRelease: maxPeople });
 
-  for (const table of ["artist_collaborators", "artist_labels", "label_roster", "artist_coverage"]) {
+  for (const table of ["artist_collaborators", "artist_labels", "label_roster", "artist_coverage", "label_coverage"]) {
     db.exec(`DELETE FROM ${table}`);
   }
 
@@ -325,6 +333,53 @@ export async function runDerive(
     ).run(t.floor, t.name, ...below);
   }
 
+  // Labels, on the same four steps, from the same measure the seed-label rule
+  // uses: every act on the artist line across the whole dump, and how many of
+  // them are seed artists. `high` is that rule exactly, so a label the corpus
+  // treats as a scene label and a label the page calls high are one decision.
+  //
+  // NOT computed from label_roster, though that is what the page lists. The
+  // roster is corpus artists only and counts credits, and both differences push
+  // one way: measured on it EMI comes out at 32% against Tresor's 45%, which is
+  // the whole separation gone.
+  step("grading labels");
+  if (
+    (db.prepare("SELECT count(*) FROM release_labels").pluck().get() as number) > 0 &&
+    (db.prepare("SELECT count(*) FROM label_artist_pairs").pluck().get() as number) === 0
+  ) {
+    // Silently grading every label 'none' would be the worst outcome available:
+    // a whole scale reading as an answer when it is really an absence.
+    throw new Error(
+      "label_artist_pairs is empty, so no label can be graded. Re-run pass1, or " +
+        "seed-labels without --drop-pairs.",
+    );
+  }
+  db.exec(`
+    INSERT INTO label_coverage (label_id, line_artist_count, seed_artist_count, seed_ratio, relevance)
+    SELECT l.id,
+           coalesce(p.total, 0),
+           coalesce(p.seeds, 0),
+           CASE WHEN p.total > 0 THEN 1.0 * p.seeds / p.total END,
+           CASE
+             WHEN coalesce(p.seeds, 0) = 0                       THEN 'none'
+             WHEN p.seeds >= ${seedLabel.minSeedArtists}
+              AND 1.0 * p.seeds / p.total >= ${seedLabel.minSeedArtistRatio}   THEN 'high'
+             WHEN p.seeds >= ${labelRelevance.medium.minSeedArtists}
+              AND 1.0 * p.seeds / p.total
+                  >= ${labelRelevance.medium.minSeedArtistRatio}               THEN 'medium'
+             ELSE 'low'
+           END
+      FROM labels l
+      LEFT JOIN (
+        SELECT p.label_id,
+               count(*) AS total,
+               count(s.artist_id) AS seeds
+          FROM label_artist_pairs p
+          LEFT JOIN seed_artists s ON s.artist_id = p.artist_id
+         GROUP BY p.label_id
+      ) p ON p.label_id = l.id;
+  `);
+
   db.exec(`DROP TABLE IF EXISTS temp.release_people;
             DROP TABLE IF EXISTS temp.pairable;
             DROP TABLE IF EXISTS temp.pair_counts;
@@ -353,12 +408,23 @@ export async function runDerive(
     )
     .all() as DeriveStats["lineage"];
 
+  const labelGrades = db
+    .prepare(
+      `SELECT relevance, count(*) AS labels
+         FROM label_coverage
+        GROUP BY relevance
+        ORDER BY CASE relevance
+                   WHEN 'high' THEN 0 WHEN 'medium' THEN 1 WHEN 'low' THEN 2 ELSE 3 END`,
+    )
+    .all() as DeriveStats["labelGrades"];
+
   const stats: DeriveStats = {
     artistCollaborators: count("artist_collaborators"),
     artistLabels: count("artist_labels"),
     labelRoster: count("label_roster"),
     artistCoverage: count("artist_coverage"),
     lineage: perTradition,
+    labelGrades,
     releasesSkippedForPairs,
   };
 

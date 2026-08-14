@@ -263,6 +263,25 @@ CREATE TABLE IF NOT EXISTS artist_coverage (
   lineage            TEXT
 );
 
+-- The label grade, on the same four steps as an artist so one word means one
+-- thing site-wide. Dials in config.ts under labelRelevance.
+--
+-- The counts come from label_artist_pairs: every act on the artist line of this
+-- label's releases across the whole dump. That is deliberately NOT the roster
+-- the label page lists, which holds corpus artists only and counts credits as
+-- well, and would put EMI at 32% against Tresor's 45%. Two questions, two
+-- denominators, and the page words them differently so neither claims the
+-- other's set.
+CREATE TABLE IF NOT EXISTS label_coverage (
+  label_id          INTEGER PRIMARY KEY,
+  line_artist_count INTEGER NOT NULL DEFAULT 0,
+  seed_artist_count INTEGER NOT NULL DEFAULT 0,
+  -- NULL only when the dump records no artist line for this label at all, which
+  -- is not the same as a roster with nobody from the cluster on it.
+  seed_ratio        REAL,
+  relevance         TEXT NOT NULL DEFAULT 'none'
+);
+
 -- Search: the entry point to the whole tool is typing a name.
 -- External-content FTS, rebuilt at the end of ingest with:
 --   INSERT INTO artist_search(artist_search) VALUES('rebuild');

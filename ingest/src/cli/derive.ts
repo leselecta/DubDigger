@@ -35,11 +35,14 @@ console.log(`
   artist_labels          ${n(stats.artistLabels)}
   label_roster           ${n(stats.labelRoster)}
   artist_coverage        ${n(stats.artistCoverage)}
+  label_coverage         ${n(stats.labelGrades.reduce((t, g) => t + g.labels, 0))}
   compilations unpaired  ${n(stats.releasesSkippedForPairs)}
 
 ${stats.lineage
   .map((t) => `  ${t.name.padEnd(23)}${n(t.tagged)} tagged, ${n(t.lifted)} lifted to the floor`)
   .join("\n")}
+
+${stats.labelGrades.map((g) => `  labels ${g.relevance.padEnd(16)}${n(g.labels)}`).join("\n")}
 
   elapsed                ${((Date.now() - started) / 1000).toFixed(1)}s
 `);

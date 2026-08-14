@@ -201,12 +201,20 @@ export const seedLabel = {
   /**
    * Ratio: guards against a large label qualifying on a single seed artist.
    *
-   * Measured against the 20260801 dump there is a clean gap here, so this is
-   * not a finger in the air. Majors land at 6-19% (EMI 6%, Sony 8%, Universal
-   * 10%, Virgin 19%) while the scene labels land at 67-100%: Chain Reaction,
-   * Basic Channel, Burial Mix, Rhythm & Sound, Echocord, Styrax Leaves,
-   * Echospace and Main Street all at 100%, then Ostgut Ton 84%, Kompakt 81%,
-   * Tresor 69%, Modern Love 67%. 0.50 sits in the empty middle.
+   * Measured against the 20260801 dump, the two ends are far apart and this is
+   * not a finger in the air. Majors land under 8% (Columbia 0.8%, EMI 1.9%,
+   * Sony 2.3%, Universal 2.9%, Virgin 7.4%) while the scene labels land at
+   * 58-100%: Chain Reaction, Basic Channel, Rhythm & Sound and Echocord at
+   * 100%, then Burial Mix 84%, Ostgut Ton 84%, Kompakt 77%, Hessle Audio 69%,
+   * Livity Sound 69%, Tresor 66%, Modern Love 58%.
+   *
+   * The middle is NOT empty, which this file claimed for a while and the
+   * distribution does not support: 5,206 labels sit between 35% and 50% and
+   * 5,829 between 50% and 65%. Tectonic at 49% and Hyperdub at 46% are on the
+   * wrong side of a cliff by a point or two. That is tolerable for the corpus
+   * boundary, which needs one answer and gets pass 2 channel A as a second
+   * route in, and it was NOT tolerable for the reader, which is what
+   * `labelRelevance` below now fixes.
    */
   minSeedArtistRatio: 0.5,
 };
@@ -351,6 +359,45 @@ export const relevance = {
    * else the artist did.
    */
   medium: { minSeedReleases: 2, minSeedShare: 0.05, orSeedReleases: 20 },
+};
+
+/**
+ * The same four steps for a label, so one word means one thing site-wide.
+ *
+ * WHY THIS EXISTS. A label used to be graded yes or no: a seed label read High
+ * and everything else read Low. That put Ndagga, Mark Ernestus' own Senegalese
+ * imprint at 43%, in the same bucket as Columbia at 0.8%, and Tectonic missed
+ * the cliff by a point. The dial is right for the corpus boundary, which needs
+ * one answer, and useless as a description.
+ *
+ * IT IS THE SAME MEASURE, NOT A NEW ONE. Read from `label_artist_pairs`: every
+ * act on the artist line of the label's releases across the whole dump, and how
+ * many of them are seed artists. `high` IS the seed-label rule, so what the
+ * corpus calls a scene label and what a reader is told stay one decision.
+ *
+ * WHAT IT IS NOT MEASURED ON. Not the roster the label page lists. That roster
+ * is corpus artists only, artist line plus credits, and both differences push
+ * the same way: every act on it is already scene-adjacent by construction, and
+ * mastering engineers count as roster. Measured that way EMI comes out at 32%
+ * and Columbia at 31% against Tresor's 45%, which is the separation destroyed.
+ * The page therefore lists one set and grades another, and the wording says so
+ * rather than calling the denominator "roster".
+ *
+ * As built: 18,498 high, 10,507 medium, 51,677 low, 33,270 none.
+ */
+export const labelRelevance = {
+  /**
+   * The middle step, and the whole point of the table. 2 seed artists and 25%
+   * catches the labels the cliff cut in half: Tectonic 49%, Hyperdub 46%,
+   * Ndagga 43%, Metroplex 40%, Honest Jon's 39%, Warp 31%. Every major stays
+   * below it, the closest being Virgin at 7.4%.
+   *
+   * The floor is the seed rule's own, and it guards the middle step for the
+   * same reason it guards the top one: 26,393 labels are a single seed artist
+   * at 50% or more, nearly all of them one act releasing one record on their
+   * own name. A ratio needs two names behind it before it describes anything.
+   */
+  medium: { minSeedArtists: 2, minSeedArtistRatio: 0.25 },
 };
 
 /**

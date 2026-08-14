@@ -22,7 +22,7 @@ Beta, and the footer says so. The corpus is built, the app is written, the VPS i
 | Seed | 132,571 artists · 18,498 labels |
 | Pages | home and search, artist, label, Core Artists, Core Labels, Info, 404 |
 | Ingest database | 5.3 GB, `ingest/data/dubdigger.sqlite` |
-| Published database | 928 MB, `web/data/dubdigger.sqlite` |
+| Published database | 887 MB, `web/data/dubdigger.sqlite` |
 
 ## Scope (v1) — hold this line
 
@@ -95,7 +95,7 @@ Two more rules decide who becomes a **seed artist**:
 Then the **seed label set**: every label a seed artist released on, qualifying only if BOTH hold.
 
 - **Floor, `minSeedArtists` 2.** Guards against a tiny label qualifying on one coincidence.
-- **Ratio, `minSeedArtistRatio` 0.5.** Guards against a large label qualifying because one seed artist released on it once. There is a clean gap to sit in: majors land at 6–19% (EMI 6%, Sony 8%, Universal 10%, Virgin 19%) and scene labels at 67–100% (Chain Reaction, Basic Channel, Burial Mix, Rhythm & Sound, Echocord, Main Street all 100%, Ostgut Ton 84%, Kompakt 81%, Tresor 69%, Modern Love 67%). 0.5 is the empty middle.
+- **Ratio, `minSeedArtistRatio` 0.5.** Guards against a large label qualifying because one seed artist released on it once. The two ends are far apart: majors land under 8% (Columbia 0.8%, EMI 1.9%, Sony 2.3%, Universal 2.9%, Virgin 7.4%) and scene labels at 58–100% (Chain Reaction, Basic Channel, Rhythm & Sound and Echocord all 100%, Burial Mix 84%, Ostgut Ton 84%, Kompakt 77%, Hessle Audio 69%, Livity Sound 69%, Tresor 66%, Modern Love 58%). **The middle is not empty, and this file said it was until 2026-08-14:** 5,206 labels sit between 35% and 50% and 5,829 between 50% and 65%, so Tectonic at 49% and Hyperdub at 46% are on the wrong side by a point or two. Tolerable for the corpus boundary, which needs one answer and has channel A as a second route in. Not tolerable for a reader, which is what the label grade below fixes.
 
 Both sets are held in memory and persisted as saved artifacts, because they are the definitional core of the corpus: needed for debugging "why is this person in?", for the provenance marker, and for re-running pass 2 without redoing pass 1.
 
@@ -147,7 +147,7 @@ Four monthly gzipped XML files: `artists`, `labels`, `masters`, `releases`. We u
 
 **Raw:** `releases`, `release_artists`, `release_credits`, `release_labels`, `release_styles`, `release_genres`, `artists`, `labels`, `artist_relations`.
 
-**Ingest bookkeeping, not published:** `seed_artists`, `seed_artist_totals`, `label_artist_pairs`, `roles_seen`, `ingest_runs`. Measure role coverage against the ingest database, not the web copy.
+**Ingest bookkeeping, not published:** `seed_artists`, `seed_artist_totals`, `label_artist_pairs`, `seed_labels`, `roles_seen`, `ingest_runs`. Measure role coverage against the ingest database, not the web copy. `label_artist_pairs` is the biggest table in there and `derive` needs it, so `seed-labels --drop-pairs` costs a full pass 1 to undo: derive throws rather than grading every label `none` in silence.
 
 **Derived, what the app reads:**
 
@@ -155,7 +155,7 @@ Four monthly gzipped XML files: `artists`, `labels`, `masters`, `releases`. We u
 - `artist_labels` / `label_roster` (1.37M rows each) — the same edge from both ends, with counts and date ranges
 - `artist_coverage` (one row per artist) — release and credited-release counts, collaborator and label counts, year span, seed releases and share, and the three grading columns below
 - `corpus_artists` — seed membership and channel A/B provenance
-- `seed_labels` — kept, since a label's grade rests on it
+- `label_coverage` (one row per label) — the label grade, with the counts behind it
 - `artist_search` / `label_search` — FTS5
 
 Coverage flags must distinguish "no credits recorded" from "worked solo". That distinction is load-bearing in the UI.
@@ -166,9 +166,13 @@ Coverage flags must distinguish "no credits recorded" from "worked solo". That d
 - `lineage` — a tradition the scene came out of, keeps company with, or handed its inheritance on to, or NULL. Seven of them, below.
 - `relevance` — **what the interface shows**: `scene_relevance` raised to the tradition's floor when a lineage applies. One scale, one column, so a result reads the same in search as on its page. As built: 16,985 high, 48,730 medium, 70,629 low, 284,231 none.
 
+**A label is graded on the same four steps, and it took until 2026-08-14.** `label_coverage.relevance`, dialled in `labelRelevance`. Before it a label was High or Low and nothing else, which put Ndagga (Mark Ernestus' own Senegalese imprint, 43%) in the same bucket as Columbia (0.8%) and cut Tectonic off at 49% by a point. `high` IS the seed-label rule, so what the corpus calls a scene label and what a page calls high are one decision, and `check-corpus` asserts the two counts match. `medium` is 2+ seed artists at 25%, which catches Tectonic 49%, Hyperdub 46%, Ndagga 43%, Metroplex 40%, Honest Jon's 39% and Warp 31% while leaving every major below it. As built: 18,498 high, 10,507 medium, 51,677 low, 33,270 none.
+
+**And it is NOT measured on the roster the label page lists.** The grade counts every act on the artist line across the whole dump, from `label_artist_pairs`. The roster tab lists corpus artists including engineers, and both differences push one way: measured on it EMI comes out at 32% against Tresor's 45%, which is the separation gone. So the page shows one set and grades another, and the wording has to say so. Ndagga lists nine names and is graded on seven. The reason line reads `43% of everyone it released is in the dub techno cluster`, never "of roster". The floor of 2 applies to `medium` as well as `high`, because 26,393 labels are a single seed artist at 100%, nearly all one act releasing one record: a ratio needs two names behind it. The cost is that a one-artist imprint like Purpose Maker reads low, and the imprint clause alongside it is what explains that.
+
 Never show `relevance` as a bare word where there is room to say what it stands on. Two different things put an artist on a step, and a page that says "medium" without saying which is claiming cluster work that may not exist. The artist page pattern: `Medium, very weak ties with the core dub techno cluster, here for lineage: roots dub, the Jamaican tradition dub techno grew out of`. The search results column is the one place the word stands alone, and that is a known cost of merging, not a licence to do it elsewhere.
 
-**Scene and cluster are not synonyms in the interface.** The *scene* is the whole extended map this tool draws, neighbours included: it is what the home page means by "Dig the Extended Scene". The *cluster* is the dub techno core it was drawn from, which is what the seed measures and therefore what every tie is measured against. A grade reads "ties with the core dub techno cluster" and a label reads "% of roster in the dub techno cluster", while the About panel and the headline keep saying scene. Prose in this file still says "the scene" for the general idea; the rule is about strings a visitor reads.
+**Scene and cluster are not synonyms in the interface.** The *scene* is the whole extended map this tool draws, neighbours included: it is what the home page means by "Dig the Extended Scene". The *cluster* is the dub techno core it was drawn from, which is what the seed measures and therefore what every tie is measured against. A grade reads "ties with the core dub techno cluster" and a label reads "% of everyone it released is in the dub techno cluster", while the About panel and the headline keep saying scene. Prose in this file still says "the scene" for the general idea; the rule is about strings a visitor reads.
 
 **Two numbers on an artist are close enough to confuse and are not the same thing.** The grade comes from pass 1's tally, which counts APPEARANCES across the whole dump (someone on the artist line who also engineered the record counts twice) and only exists for artists who cleared the seed ratio. What a page displays is recomputed in `derive` as DISTINCT releases, for everyone. Pass 1 has Jeff Mills at 160 where the corpus holds 116. Do not quietly reconcile them by regrading on the displayed figure: that moves every dial under the acts they were pinned to, and it is a decision to take deliberately.
 

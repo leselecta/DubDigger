@@ -45,6 +45,10 @@ const NOT_SERVED = [
   "roles_seen",
   "seed_artists",
   "ingest_runs",
+  // Served until label_coverage existed, because a label's grade was read off
+  // membership of it. The grade now has its own table, whose 'high' step IS
+  // this rule, so shipping both would ship one fact twice.
+  "seed_labels",
 ];
 
 const dest =

@@ -237,12 +237,14 @@ export async function runDerive(
   // Metroplex reads "roots dub", which is the truer of the two.
   step("tagging traditions");
   for (const t of lineage.byTag) {
-    // Three shapes. Style with a genre gate (roots dub), style alone
-    // (afrobeat), and genre alone (reggae, whose records often carry no style
-    // at all: 17 of Toots & The Maytals' 45 are tagged Reggae and nothing else).
-    const releases = t.style
+    // Three shapes. Styles with a genre gate (roots dub), styles alone (afrobeat,
+    // dubstep and uk garage), and genre alone (reggae, whose records often carry
+    // no style at all: 17 of Toots & The Maytals' 45 are tagged Reggae and
+    // nothing else). The styles are a list because a tradition can outlive the
+    // name Discogs files it under: dubstep and UK garage are one scene under two.
+    const releases = t.styles
       ? `SELECT s.release_id FROM release_styles s
-          WHERE s.style = '${t.style}'
+          WHERE s.style IN (${t.styles.map((s) => `'${s}'`).join(", ")})
             ${
               t.genre
                 ? `AND EXISTS (SELECT 1 FROM release_genres g

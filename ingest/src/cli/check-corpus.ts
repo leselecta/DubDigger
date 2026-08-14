@@ -153,6 +153,19 @@ const ARTISTS_LINEAGE: [name: string, tradition: string][] = [
   ["Roni Size", "acid jazz and DNB"],
   ["Krust", "acid jazz and DNB"],
   ["Galliano", "acid jazz and DNB"],
+  // The generation after, and the same failure from the other side: these read
+  // low or nothing at all while Pinch, Shackleton and Peverelist read high off
+  // the same scene, because the seed only sees the half of it recorded in
+  // Berlin's styles. El-B and MJ Cole are here to keep the garage side of the
+  // rule honest: drop the UK Garage style and only they and Wookie fall out.
+  ["Burial", "dubstep and uk garage"],
+  ["Kode9", "dubstep and uk garage"],
+  ["Skream", "dubstep and uk garage"],
+  ["Loefah", "dubstep and uk garage"],
+  ["Silkie", "dubstep and uk garage"],
+  ["Kromestar", "dubstep and uk garage"],
+  ["El-B", "dubstep and uk garage"],
+  ["MJ Cole", "dubstep and uk garage"],
 ];
 
 /**
@@ -193,6 +206,12 @@ const ARTISTS_AT_LEAST_MEDIUM = [
   "Rhythim Is Rhythim",
   "Gilles Peterson",
   "Matthew Halsall",
+  // Burial reading low was the complaint that added the dubstep rule. Skream
+  // and Silkie were reading nothing.
+  "Burial",
+  "Kode9",
+  "Skream",
+  "Silkie",
 ];
 
 /**

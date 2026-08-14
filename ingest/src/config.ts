@@ -426,12 +426,69 @@ export const lineage = {
    * is small and precise enough to be honest about: 471 tagged, 113 lifted.
    * The interface says "keeps company with" for this one and "grew out of" for
    * the dub line, because those are different claims and only one is descent.
+   *
+   * dubstep and uk garage: the one tradition here that runs DOWNSTREAM, and the
+   * only one whose acts the corpus already holds in quantity. Every other rule
+   * names an ancestor or a neighbour; this names the generation after, the scene
+   * dub techno's own inheritance fed into. It is here because the measure fails
+   * the same way it failed King Tubby, only from the other direction: Burial
+   * read low and Kode9 low, Skream, Loefah, Silkie, Commodo and Kromestar read
+   * nothing at all, while Pinch, Shackleton, Peverelist and Mala already read
+   * high on measured scene work. One scene cannot be both, and the half the seed
+   * can see is the half that happened to record in Berlin's styles.
+   *
+   * Two styles, counted together, because the tradition is one thing and Discogs
+   * spells it two ways: Loefah's DMZ sides are Dubstep, El-B's and Wookie's are
+   * UK Garage, and the scene runs straight through both. Neither style alone
+   * reaches the floor for several of them.
+   *
+   * The separation is the cleanest of any rule here. Silkie 98.6%, Commodo 100%,
+   * Kromestar 95.7%, Mala 92.3%, Kode9 86.7%, Pinch 79.3%, Skream 67.5%, Burial
+   * 27.7%, against a flat zero for Madonna, Depeche Mode, Spice Girls, Mozart,
+   * The Beatles and Basic Channel, 0.15% for Björk, 0.6% for Bob Marley and 0.9%
+   * for Massive Attack. 1,273 tagged, 582 lifted, 348 of them from nothing.
+   *
+   * No fixture of any other tradition is touched: King Tubby, Scientist, Bob
+   * Marley, Toots, Gilles Peterson and Roni Size all sit under the dials on it.
+   * It does re-claim 56 artists reading "reggae" and 11 reading "uk jazz", and
+   * both are corrections rather than losses: DJ Madd, Von D and Kahn are dubstep
+   * producers whose records carry genre Reggae, and Mala read "uk jazz" off Mala
+   * In Cuba on Brownswood.
+   *
+   * The floor is medium, not the low that acid jazz and DNB gets, and the
+   * difference is the distance to dub. Acid jazz inherits from Jamaica at one
+   * remove; dubstep is named for dub, built on sound-system weight, and Kode9
+   * called his label Hyperdub. Same inheritance as this scene, one generation
+   * on, which is kinship rather than descent: the interface says "shares" and
+   * not "grew out of", because dubstep came after dub techno, not before it.
+   *
+   * TWO KNOWN COSTS, both accepted. Skrillex is tagged, on 7 of 19 releases that
+   * are honestly Dubstep and UK Garage in the dump; the rule catches him because
+   * he really did make those records, and the alternative dials that drop him
+   * also drop Todd Edwards and MJ Cole. Horsepower Productions is missed, on 4
+   * of the 6 releases the corpus holds, one under the floor: the same shape as
+   * Shabaka Hutchings, and loosening to 3 releases would take the tag from 1,273
+   * artists to 2,420 and start catching Rihanna at 3 of 6.
    */
   byTag: [
     /** Style and genre together. Either alone is a different music. */
-    { name: "roots dub", style: "Dub", genre: "Reggae", minReleases: 5, minShare: 0.2, floor: "medium" },
+    { name: "roots dub", styles: ["Dub"], genre: "Reggae", minReleases: 5, minShare: 0.2, floor: "medium" },
     /** Afrobeat is specific enough as a style that no genre gate is needed. */
-    { name: "afrobeat", style: "Afrobeat", genre: null, minReleases: 5, minShare: 0.2, floor: "medium" },
+    { name: "afrobeat", styles: ["Afrobeat"], genre: null, minReleases: 5, minShare: 0.2, floor: "medium" },
+    /**
+     * Two styles, one scene, and no genre gate: both names are specific enough
+     * that nothing else wears them. After the dub line, so a Jamaican engineer
+     * with dubstep remixes still reads as what he mostly is, and before reggae,
+     * so a dubstep producer working in reggae does not read as the catch-all.
+     */
+    {
+      name: "dubstep and uk garage",
+      styles: ["Dubstep", "UK Garage"],
+      genre: null,
+      minReleases: 5,
+      minShare: 0.2,
+      floor: "medium",
+    },
     /**
      * Genre alone, and last, so anything more specific claims the artist first.
      *
@@ -450,7 +507,7 @@ export const lineage = {
      * Mozart, The Beatles and Iron Maiden. The Clash sits at 19%, just under,
      * and is already medium on scene work anyway.
      */
-    { name: "reggae", style: null, genre: "Reggae", minReleases: 5, minShare: 0.2, floor: "low" },
+    { name: "reggae", styles: null, genre: "Reggae", minReleases: 5, minShare: 0.2, floor: "low" },
   ],
 
   /**

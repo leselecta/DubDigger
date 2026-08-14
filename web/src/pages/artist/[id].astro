@@ -85,6 +85,10 @@ const SCENE_REASON: Record<string, string> = {
  * anyone traces dub techno back to Lagos or to Peckham. Acid jazz and DNB is
  * inheritance at one remove, which is why it is the one tradition that lifts to
  * low rather than to medium.
+ *
+ * Dubstep and uk garage is the only one that points forward. It cannot say
+ * "grew out of" in either direction, since it came after this scene rather than
+ * before it, so it says what the two actually have in common instead.
  */
 const LINEAGE_REASON: Record<string, string> = {
   "roots dub": "the Jamaican tradition dub techno grew out of",
@@ -93,6 +97,7 @@ const LINEAGE_REASON: Record<string, string> = {
   afrobeat: "a tradition this scene keeps company with",
   "uk jazz": "the scene around Gilles Peterson and Brownswood",
   "acid jazz and DNB": "UK scenes with Jamaican roots of their own",
+  "dubstep and uk garage": "the UK scene that inherited dub the generation after",
 };
 
 const lifted = artist.lineage !== null && artist.relevance !== artist.sceneRelevance;

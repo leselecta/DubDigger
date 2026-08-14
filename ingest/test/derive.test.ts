@@ -348,6 +348,27 @@ test("afrobeat and detroit techno are traditions too", async () => {
   assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 13").pluck().get(), "detroit techno");
 });
 
+test("a tradition can be read off more than one style", async () => {
+  // Dubstep and UK garage are one tradition and two Discogs styles, so the rule
+  // has to count them together. Three dubstep records and two garage ones is a
+  // catalogue in that scene; neither style on its own reaches the floor of five,
+  // and a rule that could only name one style would miss the artist entirely.
+  const db = corpus([
+    ...Array.from({ length: 3 }, (_, i) => ({ id: 21000 + i, artists: [21], seed: false, styles: ["Dubstep"] })),
+    ...Array.from({ length: 2 }, (_, i) => ({ id: 21100 + i, artists: [21], seed: false, styles: ["UK Garage"] })),
+    { id: 21999, artists: [21], seed: false },
+  ]);
+  await runDerive(db);
+
+  assert.deepEqual(coverageOf(db, 21), {
+    seed_releases: 0,
+    seed_share: null,
+    scene_relevance: "none",
+    relevance: "medium",
+    lineage: "dubstep and uk garage",
+  });
+});
+
 test("a tradition can be read off the genre alone", async () => {
   // Reggae, and the reason it has to be: 17 of Toots & The Maytals' 45 records
   // carry a genre and no style at all, so a style rule cannot see them.

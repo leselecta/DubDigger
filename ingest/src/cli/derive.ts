@@ -38,7 +38,7 @@ console.log(`
   compilations unpaired  ${n(stats.releasesSkippedForPairs)}
 
 ${stats.lineage
-  .map((t) => `  ${t.name.padEnd(21)}${n(t.tagged)} tagged, ${n(t.lifted)} lifted to the floor`)
+  .map((t) => `  ${t.name.padEnd(23)}${n(t.tagged)} tagged, ${n(t.lifted)} lifted to the floor`)
   .join("\n")}
 
   elapsed                ${((Date.now() - started) / 1000).toFixed(1)}s

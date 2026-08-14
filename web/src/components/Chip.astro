@@ -1,18 +1,39 @@
 ---
-/** Bordered mono chip, used for the groups an artist belongs to. */
+/**
+ * Bordered mono chip, used for the groups an artist belongs to.
+ *
+ * Without an href it is the same chip and not a link, which is the honest
+ * rendering for a name the corpus holds no page for. Most relations point
+ * outside it: 43% of members, 66% of aliases, 69% of "member of", all of them
+ * real names the dump gives inline, none of them somewhere to pivot to. A chip
+ * that looks like every other chip and answers with a 404 is the interface
+ * claiming a page it does not have.
+ *
+ * It loses the hover and the pointer with the href, so nothing invites the
+ * click in the first place.
+ */
 interface Props {
-  href: string;
+  href?: string;
   name: string;
   count?: number;
 }
 
 const { href, name, count } = Astro.props;
+
+const chip =
+  "inline-flex items-baseline gap-2 border border-edge px-[14px] py-2 font-mono text-[0.8125rem]";
 ---
 
-<a
-  href={href}
-  class="hover:border-accent hover:text-accent inline-flex items-baseline gap-2 border border-edge px-[14px] py-2 font-mono text-[0.8125rem] text-ink transition-colors"
->
-  {name}
-  {count !== undefined && count > 0 && <span class="text-ink-faint">{count}</span>}
-</a>
+{
+  href ? (
+    <a href={href} class={`${chip} hover:border-accent hover:text-accent text-ink transition-colors`}>
+      {name}
+      {count !== undefined && count > 0 && <span class="text-ink-faint">{count}</span>}
+    </a>
+  ) : (
+    <span class={`${chip} border-hairline text-ink-dim`}>
+      {name}
+      {count !== undefined && count > 0 && <span class="text-ink-faint">{count}</span>}
+    </span>
+  )
+}

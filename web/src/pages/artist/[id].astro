@@ -237,7 +237,11 @@ const route =
           <LabelledBand label={label}>
             <div class="flex max-w-[760px] flex-wrap gap-x-3 gap-y-[10px]">
               {of.map((r) => (
-                <Chip href={`/artist/${r.id}`} name={r.name} count={r.releaseCount} />
+                <Chip
+                  href={r.inCorpus ? `/artist/${r.id}` : undefined}
+                  name={r.name}
+                  count={r.releaseCount}
+                />
               ))}
             </div>
           </LabelledBand>

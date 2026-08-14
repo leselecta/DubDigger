@@ -47,6 +47,12 @@ const RESULT_GRID = "grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_11rem_5rem]
  * while a label reading "Low" was not, which is the opposite of what the colour
  * should say.
  *
+ * The accent covers the top two grades, not just the top one. This column is
+ * scanned rather than read, and what a digger is scanning for is the near half
+ * of the scale: high and medium are both "worth stopping on" and the split
+ * belongs between medium and low. Everything below stays in the ink ramp, so
+ * the colour still marks a boundary rather than shading four steps.
+ *
  * Labels are graded on the same words, from the measure they do have: a seed
  * label is a scene label by roster concentration. The underlying test is not
  * the artist one, but one column asking one question in one vocabulary beats
@@ -54,7 +60,7 @@ const RESULT_GRID = "grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_11rem_5rem]
  */
 const RELEVANCE_SHADE: Record<string, string> = {
   high: "text-accent",
-  medium: "text-ink",
+  medium: "text-accent",
   low: "text-ink-muted",
   "very low": "text-ink-faint",
 };

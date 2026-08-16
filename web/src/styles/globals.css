@@ -4,13 +4,70 @@
  * Self-hosted, so the deploy touches no third party. That matters here beyond
  * performance: the target is one small VPS serving one SQLite file, and a
  * webfont CDN would be the only outside host the app talks to.
- *
- * Helvetica Neue is a system font on the machines this is designed for, so it
- * stays a plain stack. Downloading a fallback for it would defeat the point.
  */
 @import "@fontsource/ibm-plex-mono/latin-400.css";
 @import "@fontsource/ibm-plex-mono/latin-500.css";
 @import "@fontsource/ibm-plex-mono/latin-600.css";
+
+/*
+ * The sans was a bare system stack until 2026-08-16, on the premise that
+ * "Helvetica Neue is a system font on the machines this is designed for". True
+ * of the machine it was designed ON, and of nothing else: Windows fell to Arial
+ * and Android to Roboto, which measures 6-7% narrower than the design on every
+ * string tested. Names are set at up to 104px, so that is a redrawn page rather
+ * than a redrawn letter.
+ *
+ * `HN Local` resolves to the installed Helvetica Neue and stops there, so Apple
+ * platforms download nothing and see exactly what they saw before. `local()`
+ * matches on full name or PostScript name, never the family name, which is why
+ * the bold face names `HelveticaNeue-Bold` rather than `Helvetica Neue`.
+ *
+ * Everywhere else both faces fail to match, the family falls through, and
+ * DubDigger Sans loads: TeX Gyre Heros, a real Helvetica clone rather than a
+ * lookalike, within 1.4% of Helvetica Neue on width where Roboto is 6% out. Its
+ * only visible tell is that Heros clones Helvetica's bold, which is lighter than
+ * Neue's. See web/public/fonts/README.md.
+ */
+@font-face {
+  font-family: "HN Local";
+  src: local("HelveticaNeue"), local("Helvetica Neue");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "HN Local";
+  src: local("HelveticaNeue-Bold"), local("Helvetica Neue Bold");
+  font-weight: 700;
+  font-style: normal;
+}
+
+/*
+ * The overrides pin Heros to Helvetica Neue's real vertical metrics, read off
+ * the font files: Heros ships an ascent of 114.8% against Neue's 95.2%, a line
+ * box a fifth too tall. They live on these faces and not on `HN Local`, because
+ * an override applies to the whole face including a `local()` match, so one
+ * shared face would have rewritten Helvetica Neue's own metrics on macOS.
+ */
+@font-face {
+  font-family: "DubDigger Sans";
+  src: url("/fonts/dubdigger-sans-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 95.2%;
+  descent-override: 21.3%;
+  line-gap-override: 2.8%;
+}
+@font-face {
+  font-family: "DubDigger Sans";
+  src: url("/fonts/dubdigger-sans-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 97.5%;
+  descent-override: 21.7%;
+  line-gap-override: 2.9%;
+}
 
 /*
  * Tokens from the design handoff. There is no imagery in v1, so typography and
@@ -18,7 +75,7 @@
  * doing the work borders would otherwise do.
  */
 @theme {
-  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-sans: "HN Local", "DubDigger Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
   --color-bg: #060606;

@@ -33,9 +33,10 @@
         <p class="sg-eyebrow">Typography</p>
         <h1 class="sg-title">Two families<span class="dot">.</span></h1>
         <p class="sg-lead">
-          Helvetica Neue for names and headlines. IBM Plex Mono, uppercase and letterspaced, for
-          everything structural: labels, counts, roles, meta, controls. There is no third family
-          and no italic anywhere.
+          Helvetica Neue for names and headlines, with a self-hosted Helvetica clone standing in
+          where it is not installed. IBM Plex Mono, uppercase and letterspaced, for everything
+          structural: labels, counts, roles, meta, controls. There is no third family and no
+          italic anywhere.
         </p>
       </div>
 
@@ -55,11 +56,13 @@
                 <tbody>
                   <tr>
                     <td class="key">--font-sans</td>
-                    <td>"Helvetica Neue", Helvetica, Arial, sans-serif</td>
+                    <td>"HN Local", "DubDigger Sans", "Helvetica Neue", Helvetica, Arial, sans-serif</td>
                     <td class="note">
-                      Names, headlines, prose. A plain system stack, deliberately: it is a system
-                      font on the machines this is designed for, so downloading a fallback would
-                      defeat the point.
+                      Names, headlines, prose. <code>HN Local</code> is a <code>local()</code>-only
+                      face, so macOS and iOS resolve the installed Helvetica Neue and download
+                      nothing. Everywhere else it falls through to DubDigger Sans, a subset of TeX
+                      Gyre Heros, which is a real Helvetica clone within 1.4% of Neue on width.
+                      Windows used to get Arial and Android Roboto, 6% narrower.
                     </td>
                   </tr>
                   <tr>

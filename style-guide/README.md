@@ -69,9 +69,11 @@ or it is dilution.
 - **Display is fluid, reading is fixed.** A 104px name needs 900px of viewport, so the handoff size
   is the top of a clamp.
 - **Leading rides on the token.** Never respell it with `leading-*`.
-- Families: `--font-sans` = `"Helvetica Neue", Helvetica, Arial, sans-serif` (system, not
-  downloaded). `--font-mono` = `"IBM Plex Mono", ui-monospace, monospace`, self-hosted, **400/500/600
-  only**.
+- Families: `--font-sans` = `"HN Local", "DubDigger Sans", "Helvetica Neue", Helvetica, Arial,
+  sans-serif`. `HN Local` is a `local()`-only face, so macOS and iOS use the installed Helvetica Neue
+  and download nothing; everywhere else it falls through to DubDigger Sans, a subset of TeX Gyre
+  Heros (a Helvetica clone) with its vertical metrics overridden to match Neue. `--font-mono` =
+  `"IBM Plex Mono", ui-monospace, monospace`, self-hosted, **400/500/600 only**.
 
 ### Mono sizes (no tokens — arbitrary values at the call site)
 

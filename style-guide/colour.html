@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Colour — Dub Digger Style Guide</title>
+    <meta name="robots" content="noindex" />
+    <link rel="stylesheet" href="./styleguide.css" />
+  </head>
+  <body>
+    <header class="sg-header">
+      <div class="column">
+        <div class="sg-wordmark">
+          <a href="./index.html">dub<span style="color: var(--color-accent)">.</span>digger</a>
+          <span>Style guide</span>
+        </div>
+      </div>
+    </header>
+
+    <nav class="sg-nav" aria-label="Style guide sections">
+      <div class="column">
+        <a href="./index.html">Overview</a>
+        <a href="./typography.html">Typography</a>
+        <a href="./colour.html" aria-current="page">Colour</a>
+        <a href="./components.html">Components</a>
+        <a href="./patterns.html">Patterns</a>
+        <a href="./behaviour.html">Behaviour</a>
+      </div>
+    </nav>
+
+    <main>
+      <div class="column sg-head">
+        <p class="sg-eyebrow">Colour</p>
+        <h1 class="sg-title">One accent<span class="dot">.</span></h1>
+        <p class="sg-lead">
+          A near-black ground, four greys below white, four hairline weights, and a single accent.
+          There is no second hue anywhere on the site, and spending the one more widely is exactly
+          what would stop it working.
+        </p>
+      </div>
+
+      <div class="column">
+        <section class="sg-band">
+          <h2 class="mono-label">The ink ramp</h2>
+          <div>
+            <div class="sg-swatches">
+              <div class="sg-swatch">
+                <div class="sg-chip" style="background: #ffffff"></div>
+                <dl>
+                  <dt>ink-strong</dt>
+                  <dd>#ffffff</dd>
+                  <dd>20.26:1</dd>
+                </dl>
+              </div>
+              <div class="sg-swatch">
+                <div class="sg-chip" style="background: #f2f2f2"></div>
+                <dl>
+                  <dt>ink</dt>
+                  <dd>#f2f2f2</dd>
+                  <dd>18.10:1</dd>
+                </dl>
+              </div>
+              <div class="sg-swatch">
+                <div class="sg-chip" style="background: #9a9a9a"></div>
+                <dl>
+                  <dt>ink-muted</dt>
+                  <dd>#9a9a9a</dd>
+                  <dd>7.20:1</dd>
+                </dl>
+              </div>
+              <div class="sg-swatch">
+                <div class="sg-chip" style="background: #8a8a8a"></div>
+                <dl>
+                  <dt>ink-dim</dt>
+                  <dd>#8a8a8a</dd>
+                  <dd>5.87:1</dd>
+                </dl>
+              </div>
+              <div class="sg-swatch">
+                <div class="sg-chip" style="background: #7a7a7a"></div>
+                <dl>
+                  <dt>ink-faint</dt>
+                  <dd>#7a7a7a</dd>
+                  <dd>4.72:1</dd>
+                </dl>
+              </div>
+              <div class="sg-swatch">
+                <div class="sg-chip" style="background: #6fcabd"></div>
+                <dl>
+                  <dt>accent</dt>
+                  <dd>#6fcabd</dd>
+                  <dd>10.48:1</dd>
+                </dl>
+              </div>
+              <div class="sg-swatch">
+                <div class="sg-chip" style="background: #060606; border-color: var(--color-edge)"></div>
+                <dl>
+                  <dt>bg</dt>
+                  <dd>#060606</dd>
+                  <dd>the ground</dd>
+                </dl>
+              </div>
+            </div>
+
+            <div class="sg-block">
+              <div class="sg-ramp">
+                <p style="color: var(--color-ink-strong)"><span>ink-strong</span> Basic Channel</p>
+                <p style="color: var(--color-ink)"><span>ink</span> Basic Channel</p>
+                <p style="color: var(--color-ink-muted)"><span>ink-muted</span> Basic Channel</p>
+                <p style="color: var(--color-ink-dim)"><span>ink-dim</span> Basic Channel</p>
+                <p style="color: var(--color-ink-faint)"><span>ink-faint</span> Basic Channel</p>
+              </div>
+            </div>
+
+            <p class="sg-rule">
+              <b>The ramp has a floor, and it is a contrast floor.</b> A new grey has to clear
+              4.5:1 or it is not a grey, it is a bug. The bottom two used to be
+              <code>#787878</code> and <code>#6a6a6a</code>; the latter came to 3.75:1 while
+              carrying every column heading, count, year and the whole footer.
+            </p>
+            <p class="sg-rule">
+              <b>The three quiet greys are 16 apart in hex.</b> That even step is what makes them
+              read as a deliberate ramp rather than as three shades that drifted. Move one and move
+              the others with it.
+            </p>
+
+            <div class="sg-block sg-scroll">
+              <table class="sg-spec">
+                <caption>What each grey carries</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Token</th>
+                    <th scope="col">Class</th>
+                    <th scope="col">Job</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="key">--color-ink-strong</td>
+                    <td>text-ink-strong</td>
+                    <td class="note">
+                      Headlines, the three figures, the active tab, the contact address. The one
+                      thing on screen you are meant to land on.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">--color-ink</td>
+                    <td>text-ink</td>
+                    <td class="note">
+                      Body default, set on <code>&lt;body&gt;</code>. Field values, chip labels,
+                      nav cells, the type column in results.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">--color-ink-muted</td>
+                    <td>text-ink-muted</td>
+                    <td class="note">
+                      Prose. Every <code>text-lead</code> and <code>text-body</code> paragraph, the
+                      absence rows, the "low" grade, the search icon at rest.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">--color-ink-dim</td>
+                    <td>text-ink-dim</td>
+                    <td class="note">
+                      Role strings under a name, resting tab labels, a chip with no page behind it.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">--color-ink-faint</td>
+                    <td>text-ink-faint</td>
+                    <td class="note">
+                      Column headings, counts, years, field labels, the "(Beta)" note, the whole
+                      footer, the grey clause after a relevance grade.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">Hairlines</h2>
+          <div>
+            <div class="sg-prose">
+              <p>
+                <strong>Hairlines, not borders.</strong> Separation without drawing a box. All four
+                are white at low alpha rather than a grey, so they sit on whatever is behind them.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <div class="sg-demo" style="padding: 0">
+                <div style="border-bottom: 1px solid var(--color-hairline); padding: 1.25rem 1.75rem; font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-ink-faint)">
+                  hairline — 0.12 — structural: band tops, list heads, the header and footer rules
+                </div>
+                <div style="border-bottom: 1px solid var(--color-hairline-soft); padding: 1.25rem 1.75rem; font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-ink-faint)">
+                  hairline-soft — 0.08 — between rows of a list, so the head reads heavier than the rows
+                </div>
+                <div style="border-bottom: 1px solid var(--color-edge); padding: 1.25rem 1.75rem; font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-ink-faint)">
+                  edge — 0.22 — decoration only, 1.86:1. Chips at rest, and nothing that is a control boundary
+                </div>
+                <div style="border-bottom: 1px solid var(--color-edge-strong); padding: 1.25rem 1.75rem; font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-ink-faint)">
+                  edge-strong — 0.35 — 3.08:1. Every control boundary: the header field, ghost buttons, the dialog
+                </div>
+              </div>
+            </div>
+
+            <p class="sg-rule">
+              <b>Anything that is the boundary of a control wears <code>edge-strong</code>.</b> At
+              0.22 alpha <code>edge</code> is 1.86:1, under the 3:1 a control boundary has to clear
+              — and on a field the boundary is the whole of what says where to click.
+            </p>
+            <p class="sg-rule">
+              <b><code>link-rule</code> marks anything that pivots</b>, at whatever size the type
+              is: <code>border-bottom: 1px solid rgb(255 255 255 / 0.25)</code>. With one accent and
+              no room to spend it, that hairline is how a link is told apart from the text beside
+              it.
+            </p>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">The accent</h2>
+          <div>
+            <div class="sg-prose">
+              <p>
+                <code>#6fcabd</code>, 10.48:1 as type on the ground and the same ratio the other way
+                round, which is why <code>bg-accent text-bg</code> is a legal pairing for the
+                current nav cell and the skip link.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <div class="sg-demo">
+                <p class="spec-grades" style="margin: 0 0 0.75rem">
+                  <span class="g-high">high</span> worth stopping on
+                </p>
+                <p class="spec-grades" style="margin: 0 0 0.75rem">
+                  <span class="g-medium">medium</span> worth stopping on
+                </p>
+                <p class="spec-grades" style="margin: 0 0 0.75rem">
+                  <span class="g-low">low</span> in the ink ramp
+                </p>
+                <p class="spec-grades" style="margin: 0">
+                  <span class="g-verylow">very low</span> in the ink ramp
+                </p>
+              </div>
+              <pre class="sg-code"><i>// web/src/pages/index.astro</i>
+const RELEVANCE_SHADE = {
+  high: "<b>text-accent</b>", medium: "<b>text-accent</b>",
+  low: "text-ink-muted", "very low": "text-ink-faint",
+};</pre>
+              <p class="sg-rule">
+                <b>The accent covers the top two grades, not just the top one.</b> This column is
+                scanned rather than read, and what a digger is scanning for is the near half of the
+                scale. The split belongs between medium and low, so the colour marks a boundary
+                rather than shading four steps.
+              </p>
+            </div>
+
+            <div class="sg-block sg-scroll">
+              <table class="sg-spec">
+                <caption>Every place the accent appears</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">As</th>
+                    <th scope="col">Where</th>
+                    <th scope="col">Why it earns it</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="key">type</td>
+                    <td>Eyebrow</td>
+                    <td class="note">Names what you are looking at, which the big name cannot: "Chain Reaction" is both a label and two artists.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">type</td>
+                    <td>The two headline stops</td>
+                    <td class="note">The full stops in "Dig the Extended Scene." and "Dub Techno First." Also the wordmark's dot and the Info / Core headings.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">type</td>
+                    <td>Link hover</td>
+                    <td class="note">Global <code>a:hover</code>, in the <code>base</code> layer so a utility can override it.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">type</td>
+                    <td>High and medium grades</td>
+                    <td class="note">The results column, and the Relevance value in the identity block.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">type</td>
+                    <td>"Nothing found"</td>
+                    <td class="note">The one heading that has to be read rather than counted past. It spends colour the dropped headline just freed.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">type</td>
+                    <td>The three-count line</td>
+                    <td class="note">Releases · collaborators · labels, under an entity name. The separators are <code>ink-strong</code>.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">ground</td>
+                    <td>Current nav cell, skip link</td>
+                    <td class="note"><code>bg-accent text-bg</code> at 10.48:1. A filled cell is legible from the far side of the row.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">border</td>
+                    <td>Hero search field</td>
+                    <td class="note">It wears the accent from the start, because it is why the home page exists.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">state</td>
+                    <td>Focus ring, chip hover, header field focus, drawer current row</td>
+                    <td class="note">Reaching for something is the other thing the colour is allowed to say.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">state</td>
+                    <td><code>::selection</code></td>
+                    <td class="note">Accent ground, <code>bg</code> type.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p class="sg-rule">
+              <b>Ten places, in two categories, and the categories are the test.</b> As type the
+              accent says what a thing is; as a ground, a border or a state it says what you are on
+              or reaching for. A new use is either a step in the near half of a scale or a thing
+              being reached for, or it is dilution. Counted and settled 2026-08-16.
+            </p>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">States</h2>
+          <div>
+            <div class="sg-block">
+              <p class="sg-sub">Focus</p>
+              <div class="sg-demo">
+                <a href="#focus" class="spec-ghost" style="outline: 2px solid var(--color-accent); outline-offset: 3px">Tab to me</a>
+              </div>
+              <pre class="sg-code">a:focus-visible, input:focus-visible, button:focus-visible, <b>summary:focus-visible</b> {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}</pre>
+              <p class="sg-rule">
+                <b><code>summary</code> is in the list on purpose.</b> The phone menu is one, and it
+                is the only control on the site that is neither an anchor nor a button. Left out, it
+                fell back to whatever ring the browser draws — the one focus state the design did
+                not choose.
+              </p>
+              <p class="sg-rule">
+                <b>The hero field is the one exception</b>, and it marks focus with an inset shadow
+                instead. A ring sits 3px outside the box, and the hero is the widest thing on the
+                home page.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">Hover</p>
+              <div class="sg-demo" style="display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: center">
+                <a href="#hover" class="link-rule">A link, accent on hover</a>
+                <a href="#hover" class="spec-chip">Maurizio <em>47</em></a>
+                <a href="#hover" class="spec-ghost">Load more <em>1,372</em></a>
+              </div>
+              <pre class="sg-code"><i>// three hover idioms, and they are not interchangeable</i>
+a               → <b>hover:text-accent</b>          <i>(global, base layer)</i>
+chip            → <b>hover:border-accent hover:text-accent</b>
+ghost button    → <b>hover:bg-ink hover:text-bg</b>   <i>(inverts, so it reads as a control)</i></pre>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="sg-footer">
+      <div class="column">
+        <p>dub.digger — style guide</p>
+        <p>Contrast ratios computed against bg #060606 per WCAG 2.1. The code is the truth.</p>
+      </div>
+    </footer>
+  </body>
+</html>

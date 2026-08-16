@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dub Digger — Style Guide</title>
+    <meta name="robots" content="noindex" />
+    <link rel="stylesheet" href="./styleguide.css" />
+  </head>
+  <body>
+    <header class="sg-header">
+      <div class="column">
+        <div class="sg-wordmark">
+          <a href="./index.html">dub<span style="color: var(--color-accent)">.</span>digger</a>
+          <span>Style guide</span>
+        </div>
+      </div>
+    </header>
+
+    <nav class="sg-nav" aria-label="Style guide sections">
+      <div class="column">
+        <a href="./index.html" aria-current="page">Overview</a>
+        <a href="./typography.html">Typography</a>
+        <a href="./colour.html">Colour</a>
+        <a href="./components.html">Components</a>
+        <a href="./patterns.html">Patterns</a>
+        <a href="./behaviour.html">Behaviour</a>
+      </div>
+    </nav>
+
+    <main>
+      <div class="column sg-head">
+        <p class="sg-eyebrow">The design, written down</p>
+        <h1 class="sg-title">Style Guide<span class="dot">.</span></h1>
+        <p class="sg-lead">
+          Every token, component and page pattern in the Dub Digger web app, with the reasoning
+          that put it there. Built to be read by a person and used as a lookup table by an agent,
+          so nothing has to be re-derived from the source the next time something is added.
+        </p>
+      </div>
+
+      <div class="column">
+        <section class="sg-band">
+          <h2 class="mono-label">How to use it</h2>
+          <div>
+            <div class="sg-prose">
+              <p>
+                <strong>The source of truth is the code, not this folder.</strong> Tokens live in
+                <code>web/src/styles/globals.css</code>; components live in
+                <code>web/src/components/</code>. These pages open from disk with no build step, so
+                Tailwind cannot run here and the values below are hand-mirrored. If the two ever
+                disagree, the code is right and this guide is the bug.
+              </p>
+              <p>
+                Every specimen is the real thing reproduced in plain CSS, with the Tailwind class
+                string the app actually ships printed underneath it. Copy the string, not the
+                stylesheet.
+              </p>
+              <p>
+                <strong>For fast lookup, read <code>README.md</code> in this folder.</strong> It is
+                the same material as a dense table: token, value, class, where it is used. Cheaper
+                to scan than six HTML pages when the question is only "what grey is that".
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">The pages</h2>
+          <div>
+            <div class="sg-cards">
+              <a class="sg-card" href="./typography.html">
+                <h3>Typography</h3>
+                <p>
+                  Two families split by job, the fluid display scale against the fixed reading
+                  sizes, and the mono settings that carry every label, count and control.
+                </p>
+                <span>7 tokens · 4 mono sizes</span>
+              </a>
+              <a class="sg-card" href="./colour.html">
+                <h3>Colour</h3>
+                <p>
+                  The ink ramp and its contrast floor, the four hairline weights, and the two
+                  categories the one accent is allowed to be spent in.
+                </p>
+                <span>11 tokens · 1 accent</span>
+              </a>
+              <a class="sg-card" href="./components.html">
+                <h3>Components</h3>
+                <p>
+                  All seventeen, with props, the class strings, and the rule each one exists to
+                  hold. Rendered, not described.
+                </p>
+                <span>17 components</span>
+              </a>
+              <a class="sg-card" href="./patterns.html">
+                <h3>Patterns</h3>
+                <p>
+                  The compositions: page head, labelled band, identity block, tab bar and list,
+                  results table, absence. What a new page is assembled from.
+                </p>
+                <span>8 patterns · 2 grids</span>
+              </a>
+              <a class="sg-card" href="./behaviour.html">
+                <h3>Behaviour</h3>
+                <p>
+                  The client JavaScript budget, the five inline scripts, and the rules that decide
+                  whether a thing may be a script at all.
+                </p>
+                <span>19,435 bytes, heaviest page</span>
+              </a>
+              <a class="sg-card" href="./README.md">
+                <h3>README.md</h3>
+                <p>
+                  The whole guide as flat reference tables. Written for an agent reading before an
+                  implementation, and for anyone who wants the values without the argument.
+                </p>
+                <span>Lookup tables</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">The principles</h2>
+          <div>
+            <div class="sg-prose">
+              <p>
+                Five rules sit above every token below. They come from
+                <code>CLAUDE.md</code> and they are the tie-breaker when a new decision is not
+                covered by anything on these pages.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-rule">
+                <b>Density comes from the ink ramp and the mono, not from crushed spacing.</b> Four
+                greys below <code>ink-strong</code> let one row carry a name, a count, a role string
+                and a year without any of it shouting. The vertical rhythm is deliberately open:
+                page heads at <code>pt-16 pb-16 md:pt-24</code>, bands at <code>py-14</code>, list
+                rows at <code>py-[18px]</code>. Do not tighten these to fit more in.
+              </p>
+              <p class="sg-rule">
+                <b>Ranked lists over graphs, and one click to pivot.</b> Lists sorted by strength
+                answer "who matters here" on sight. Every artist and label is a link to its own
+                page. Frequency is the signal, so nothing is ordered alphabetically by default.
+              </p>
+              <p class="sg-rule">
+                <b>Except where there is no page, and then it is not a link.</b>
+                <code>Chip</code> drops its <code>href</code> when the related id is outside the
+                corpus. A link that pivots into a 404 is the interface claiming something it does
+                not hold.
+              </p>
+              <p class="sg-rule">
+                <b>Show data absence honestly.</b> "No credits recorded" must be visibly distinct
+                from "worked alone". Never render an empty result that looks like a positive
+                answer, and never present a weak tie as a strong one.
+              </p>
+              <p class="sg-rule">
+                <b>One question, one vocabulary.</b> Relevance reads in the same four steps
+                wherever it appears, with the reason for the step alongside it in grey. The search
+                results column is the one place the word stands alone, and that is a known cost.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">Hard limits</h2>
+          <div>
+            <div class="sg-scroll">
+              <table class="sg-spec">
+                <caption>
+                  Break one of these and something else breaks with it
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Limit</th>
+                    <th scope="col">Value</th>
+                    <th scope="col">What it protects</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="key">Text contrast</td>
+                    <td class="num">4.5:1</td>
+                    <td class="note">
+                      WCAG 2.1 AA, claimed in the footer in public. A new grey clears it or it is
+                      not a grey, it is a bug.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">Control boundary contrast</td>
+                    <td class="num">3:1</td>
+                    <td class="note">
+                      Why a field wears <code>edge-strong</code> (3.08:1) and not
+                      <code>edge</code> (1.86:1). <code>edge</code> is decoration only.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">Client JavaScript</td>
+                    <td class="num">19,435 B</td>
+                    <td class="note">
+                      Heaviest page, of which the router is 82%. A sixth inline script needs the
+                      same argument the five made.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">UI framework</td>
+                    <td class="num">none</td>
+                    <td class="note">
+                      Every page is <code>.astro</code>. React was here for a week and bought a
+                      hamburger menu and a counter for 184 KB.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">Images</td>
+                    <td class="num">none</td>
+                    <td class="note">
+                      Discogs images are Restricted Data, not CC0. Deferred to v1.1.
+                      <code>public/og.jpg</code> is the site's own drawing and is not a precedent.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">Third-party hosts</td>
+                    <td class="num">0</td>
+                    <td class="note">
+                      Fonts are self-hosted. No tracking, no cookies, no ads, and the footer says
+                      so.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="sg-footer">
+      <div class="column">
+        <p>dub.digger — style guide</p>
+        <p>Mirrors web/src/styles/globals.css and web/src/components/. The code is the truth.</p>
+      </div>
+    </footer>
+  </body>
+</html>

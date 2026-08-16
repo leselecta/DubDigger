@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Patterns — Dub Digger Style Guide</title>
+    <meta name="robots" content="noindex" />
+    <link rel="stylesheet" href="./styleguide.css" />
+  </head>
+  <body>
+    <header class="sg-header">
+      <div class="column">
+        <div class="sg-wordmark">
+          <a href="./index.html">dub<span style="color: var(--color-accent)">.</span>digger</a>
+          <span>Style guide</span>
+        </div>
+      </div>
+    </header>
+
+    <nav class="sg-nav" aria-label="Style guide sections">
+      <div class="column">
+        <a href="./index.html">Overview</a>
+        <a href="./typography.html">Typography</a>
+        <a href="./colour.html">Colour</a>
+        <a href="./components.html">Components</a>
+        <a href="./patterns.html" aria-current="page">Patterns</a>
+        <a href="./behaviour.html">Behaviour</a>
+      </div>
+    </nav>
+
+    <main>
+      <div class="column sg-head">
+        <p class="sg-eyebrow">Patterns</p>
+        <h1 class="sg-title">How a page is built<span class="dot">.</span></h1>
+        <p class="sg-lead">
+          Bands stacked down the column, each one a full-width rule with its contents inside 1200px.
+          A page renders its own bands and nothing else: the shell around them is drawn once in
+          <code>Base.astro</code>.
+        </p>
+      </div>
+
+      <div class="column">
+        <section class="sg-band">
+          <h2 class="mono-label">The skeleton</h2>
+          <div>
+            <div class="sg-map">
+              <div>
+                <b>Base.astro</b>
+                <span>Skip link → SiteHeader → &lt;main id="content"&gt;&lt;slot /&gt;&lt;/main&gt; → SiteFooter → ContactDialog → scroll-hold script</span>
+              </div>
+              <div>
+                <b>Page head band</b>
+                <span>column pt-16 pb-16 md:pt-24 — Eyebrow, h1, and either a lead paragraph or the count line</span>
+              </div>
+              <div>
+                <b>Identity block</b>
+                <span>&lt;dl class="mt-9 max-w-[760px]"&gt; of FieldRows — entity pages only</span>
+              </div>
+              <div>
+                <b>Labelled bands</b>
+                <span>border-t py-14, mono label left, content right — bio, relations, prose sections</span>
+              </div>
+              <div>
+                <b>List band</b>
+                <span>column pt-14 pb-32 — Tabs, ListHeader, CreditRow ×n or Absence, LoadMore</span>
+              </div>
+            </div>
+
+            <pre class="sg-code" style="margin-top: 1.5rem">&lt;Base
+  title={`${artist.name} — Dub Digger`}
+  description={description}
+  pageType="ProfilePage"        <i>// WebPage | CollectionPage | ProfilePage | AboutPage</i>
+  mainEntity={mainEntity}       <i>// folded into the JSON-LD graph as the page's subject</i>
+  breadcrumbs={[{ name, href }]}  <i>// Home is added for you</i>
+  noindex                       <i>// 404 only</i>
+  search={false}                <i>// home page only: it carries its own in the hero</i>
+&gt;</pre>
+
+            <p class="sg-rule">
+              <b>Every page has one <code>&lt;main id="content"&gt;</code> and exactly one
+              <code>&lt;h1&gt;</code>.</b> On the home page the h1 is the headline, and when a query
+              is present it is the result count instead, because that is what the page is then.
+            </p>
+            <p class="sg-rule">
+              <b>Bands span the full width, their contents stay in the column.</b>
+              <code>column</code> is 1200px with 1.5rem of gutter, 3rem from 768px up. A band that
+              needs a rule across the viewport puts the border on the outer element and the
+              <code>column</code> inside it.
+            </p>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">Entity page head</h2>
+          <div>
+            <div class="sg-demo">
+              <p class="spec-eyebrow" style="margin: 0 0 1.5rem">Artist</p>
+              <p class="spec-name" style="font-size: clamp(2.25rem, 6vw, 4rem)">Moritz von Oswald</p>
+              <p style="margin: 2.5rem 0 0; color: var(--color-accent); font-family: var(--font-mono); font-size: 0.8125rem; letter-spacing: 0.06em; text-transform: uppercase">
+                116 releases <span style="color: var(--color-ink-strong)">&nbsp;·&nbsp;</span> 1,412
+                collaborators <span style="color: var(--color-ink-strong)">&nbsp;·&nbsp;</span> 38 labels
+              </p>
+              <dl class="spec-fields" style="margin-top: 2.25rem">
+                <div class="spec-field"><dt>Date active</dt><dd>1988 – 2024</dd></div>
+                <div class="spec-field">
+                  <dt>Relevance</dt>
+                  <dd class="is-accent">High<span class="reason">, very strong ties with the core dub techno cluster</span></dd>
+                </div>
+                <div class="spec-field is-last"><dt>View on</dt><dd><a href="#d" class="link-rule">Discogs</a></dd></div>
+              </dl>
+            </div>
+            <pre class="sg-code">&lt;div class="<b>column pt-16 pb-16 md:pt-24</b>"&gt;
+  &lt;Eyebrow&gt;Artist&lt;/Eyebrow&gt;
+  &lt;h1 class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]"&gt;
+  &lt;p class="text-accent <b>mt-10</b> font-mono text-[0.8125rem] tracking-[0.06em] uppercase"&gt;
+     <i>releases · collaborators · labels — separators are text-ink-strong</i>
+  &lt;dl class="<b>mt-9 max-w-[760px]</b>"&gt; ...FieldRows, the last one with `last` </pre>
+            <p class="sg-rule">
+              <b>Three counts and nothing else on that line.</b> The seed tally that used to close
+              it ("2 in the dub techno cluster, 100% of output") is the working of the grade rather
+              than a fact about the artist, and the Relevance row already says what it comes to in
+              words. The same measurement, read out once instead of twice.
+            </p>
+            <p class="sg-rule">
+              <b>The label page uses <code>text-name-label</code>, one step larger.</b> Otherwise
+              the two heads are the same pattern with a different eyebrow.
+            </p>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">List band</h2>
+          <div>
+            <div class="sg-demo">
+              <div class="spec-tabs" style="margin-bottom: 2.5rem">
+                <nav aria-label="Lists">
+                  <a href="#t" aria-current="page">Collaborators <em>1,412</em></a>
+                  <a href="#t">Labels <em>38</em></a>
+                  <a href="#t">Releases <em>116</em></a>
+                </nav>
+              </div>
+              <div class="spec-listhead">
+                <span>Name</span><span>Releases together</span><span class="col3"></span>
+              </div>
+              <ul class="spec-list">
+                <li class="spec-listrow">
+                  <div style="min-width: 0">
+                    <a href="#r" class="spec-row-name">Mark Ernestus</a>
+                    <p class="roles">Producer, Mixed By, Written-By, Engineer</p>
+                  </div>
+                  <span class="count">116</span>
+                  <span class="col3"></span>
+                </li>
+                <li class="spec-listrow">
+                  <div style="min-width: 0">
+                    <a href="#r" class="spec-row-name">Thomas Fehlmann</a>
+                    <p class="roles">Written-By, Producer</p>
+                  </div>
+                  <span class="count">41</span>
+                  <span class="col3"></span>
+                </li>
+              </ul>
+              <a href="#m" class="spec-ghost" style="margin-top: 2.5rem">Load more <em>1,370</em></a>
+            </div>
+            <pre class="sg-code">&lt;div class="<b>column pt-14 pb-32</b>"&gt;
+  &lt;Tabs tabs={tabs} active={active} basePath={base} /&gt;      <i>// mb-10 is its own</i>
+  &lt;ListHeader name="Name" count="Releases together" /&gt;
+  &lt;ul&gt; &lt;CreditRow ... /&gt; &lt;/ul&gt;                              <i>// or &lt;Absence&gt;</i>
+  &lt;LoadMore href={`${base}?tab=${active}&amp;show=${limit + PAGE_SIZE}`} ... /&gt;</pre>
+            <p class="sg-rule">
+              <b>State lives in the URL: <code>?tab=</code>, <code>?sort=</code>,
+              <code>?show=</code>, <code>?q=</code>.</b> Tabs, pagination and search are links and a
+              plain GET form. That is what keeps a 556-row roster from being serialised into the
+              page as JSON, and what makes every view a real address.
+            </p>
+            <p class="sg-rule">
+              <b>The canonical drops the query string, deliberately</b>, and
+              <code>robots.txt</code> disallows <code>/*?</code>. The tabs are the same page
+              answering the same question, so the canonical says so.
+            </p>
+            <p class="sg-rule">
+              <b>The column heading unit stays in the heading.</b> "Releases together" rather than
+              "Collaborations", because the figure counts records, not partnerships: Rhett Davies
+              and Eno are 335 here.
+            </p>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">Results table</h2>
+          <div>
+            <div class="sg-demo">
+              <p class="mono-label" style="margin: 0 0 1.5rem">3 found for "chain reaction"</p>
+              <div class="spec-listhead" style="grid-template-columns: 1fr 5.5rem 11rem 5rem">
+                <span>Name</span><span>Releases</span><span class="col3">Relevance</span><span class="col3">Type</span>
+              </div>
+              <ul class="spec-list">
+                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 11rem 5rem">
+                  <div><a href="#s" class="spec-row-name">Chain Reaction</a></div>
+                  <span class="count">204</span>
+                  <span class="col3 spec-grades"><span class="g-high" style="min-width: 0">high</span></span>
+                  <span class="col3" style="color: var(--color-ink); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase">label</span>
+                </li>
+                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 11rem 5rem">
+                  <div><a href="#s" class="spec-row-name">Chain Reaction</a></div>
+                  <span class="count">6</span>
+                  <span class="col3 spec-grades"><span class="g-verylow" style="min-width: 0">very low</span></span>
+                  <span class="col3" style="color: var(--color-ink); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase">artist</span>
+                </li>
+              </ul>
+            </div>
+            <pre class="sg-code">const RESULT_GRID = "<b>grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_11rem_5rem]</b>";
+<i>// index.astro only. The tab lists use LIST_GRID, which is a different shape.</i>
+
+<i>h1 on a results page is the count, and a miss takes the accent:</i>
+class:list={["mono-label mb-6", results.hits.length === 0 &amp;&amp; "text-accent"]}</pre>
+            <p class="sg-rule">
+              <b>The search results column is the one place a grade stands alone</b>, with no room
+              to say what it stands on. That is a known cost of merging the two axes into one
+              scale, not a licence to do it elsewhere.
+            </p>
+            <p class="sg-rule">
+              <b>A miss is a real answer, and the copy says why.</b> "This corpus is a slice centred
+              on dub techno, not all of Discogs, so plenty of real artists and labels are
+              legitimately absent. That is the boundary working, not a gap." The same paragraph is
+              the 404.
+            </p>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">Folding columns</h2>
+          <div>
+            <div class="sg-prose">
+              <p>
+                Below <code>md</code> the third and fourth columns drop under the name, where the
+                header row above has no column left to name them from. So each value carries its own
+                heading down with it and reads "Active: 2002 – 2026" on a phone.
+              </p>
+            </div>
+
+            <div class="sg-pair" style="margin-top: 2rem">
+              <div class="sg-yes">
+                <h4>Do</h4>
+                <pre class="sg-code">&lt;span class="col-start-1 <b>md:col-start-3</b>"&gt;
+  &lt;span class="<b>md:sr-only</b>"&gt;Active:&lt;/span&gt;
+  2002 – 2026
+&lt;/span&gt;</pre>
+              </div>
+              <div class="sg-no">
+                <h4>Don't</h4>
+                <pre class="sg-code">&lt;span class="col-start-1 md:col-start-3"&gt;
+  &lt;span class="<b>md:hidden</b>"&gt;Active:&lt;/span&gt;
+  2002 – 2026
+&lt;/span&gt;</pre>
+              </div>
+            </div>
+
+            <p class="sg-rule">
+              <b><code>md:sr-only</code>, never <code>md:hidden</code>.</b>
+              <code>ListHeader</code> is a sibling element and cannot tell a screen reader which
+              column it names, so <code>display: none</code> took the label out of the accessible
+              tree and a row read aloud at desktop width came out "Basic Channel, 47, high, artist".
+              Out of flow and still spoken, every value keeps the word for what it is.
+            </p>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">Figures band</h2>
+          <div>
+            <div class="sg-demo">
+              <dl class="spec-figures" style="margin: 0">
+                <div>
+                  <dt class="mono-label">Artists</dt>
+                  <dd class="spec-stat" style="font-size: clamp(2rem, 5vw, 3rem)">420,575</dd>
+                </div>
+                <div>
+                  <dt class="mono-label">Labels</dt>
+                  <dd class="spec-stat" style="font-size: clamp(2rem, 5vw, 3rem)">113,952</dd>
+                </div>
+                <div>
+                  <dt class="mono-label">Releases</dt>
+                  <dd class="spec-stat" style="font-size: clamp(2rem, 5vw, 3rem)">1,025,881</dd>
+                </div>
+              </dl>
+            </div>
+            <pre class="sg-code">&lt;dl class="border-hairline grid border-t <b>sm:grid-cols-3</b>" data-figures&gt;
+  &lt;div class="px-0 py-10 <b>sm:px-10 sm:py-14</b> [+ border-b sm:border-r sm:border-b-0]"&gt;
+    &lt;dt class="mono-label"&gt;  &lt;dd class="text-stat ... tabular-nums" <b>data-count={value}</b>&gt;</pre>
+            <p class="sg-rule">
+              <b>The server renders the real figures; the script only takes them once it is going to
+              animate.</b> No JavaScript, and a reader who has asked for less motion, both get the
+              true number with nothing to notice.
+            </p>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">Measurements</h2>
+          <div>
+            <div class="sg-scroll">
+              <table class="sg-spec">
+                <caption>Grids, measures and the spacing that is already decided</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Thing</th>
+                    <th scope="col">Value</th>
+                    <th scope="col">Where</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td class="key">column</td><td class="num">1200px / 1.5rem / 3rem md</td><td class="note">The content column utility. Never respell it.</td></tr>
+                  <tr><td class="key">LIST_GRID</td><td class="num">1fr 5rem → 1fr 6rem 10rem</td><td class="note">Tab lists, Core pages. From <code>components/list-grid.ts</code>.</td></tr>
+                  <tr><td class="key">RESULT_GRID</td><td class="num">1fr 4.5rem → 1fr 5.5rem 11rem 5rem</td><td class="note">Search results, in <code>index.astro</code>.</td></tr>
+                  <tr><td class="key">grid gap-x</td><td class="num">22px</td><td class="note">Both grids, head and rows.</td></tr>
+                  <tr><td class="key">page head</td><td class="num">pt-16 pb-16 md:pt-24</td><td class="note">Every page's first band.</td></tr>
+                  <tr><td class="key">labelled band</td><td class="num">py-14</td><td class="note">With <code>border-t border-hairline</code>.</td></tr>
+                  <tr><td class="key">list row</td><td class="num">py-[18px]</td><td class="note">CreditRow, Absence, search results.</td></tr>
+                  <tr><td class="key">identity row</td><td class="num">py-2</td><td class="note">FieldRow.</td></tr>
+                  <tr><td class="key">list band</td><td class="num">pt-14 pb-32</td><td class="note">The last band on an entity page.</td></tr>
+                  <tr><td class="key">header height</td><td class="num">76px</td><td class="note">The wordmark row.</td></tr>
+                  <tr><td class="key">field heights</td><td class="num">64px / 44px</td><td class="note">Hero and header search.</td></tr>
+                  <tr><td class="key">prose measure</td><td class="num">720px / 760px / 920px</td><td class="note">Prose and absence / identity and bands / a role string under a name.</td></tr>
+                  <tr><td class="key">hero field</td><td class="num">640px</td><td class="note">Header field is 420px.</td></tr>
+                  <tr><td class="key">drawer</td><td class="num">min(20rem, 82vw)</td><td class="note">The strip of dimmed page down the right is the point.</td></tr>
+                  <tr><td class="key">dialog</td><td class="num">min(26rem, 100vw − 3rem)</td><td class="note">The contact card.</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="sg-scroll" style="margin-top: 2.5rem">
+              <table class="sg-spec">
+                <caption>The three breakpoints that carry decisions</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Breakpoint</th>
+                    <th scope="col">What changes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="key">sm — 640px</td>
+                    <td class="note">
+                      Figures band goes to three columns. The header search field appears, and the
+                      drawer's own field disappears: each is on screen exactly where the other is
+                      not. FieldRow's label column widens from 7rem to 180px.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">md — 768px</td>
+                    <td class="note">
+                      Nav cells replace the drawer. The third list column unfolds. The column gutter
+                      goes 1.5rem → 3rem. LabelledBand and the footer become two columns. Page heads
+                      gain their extra top padding.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">1200px</td>
+                    <td class="note">The column stops growing. Not a Tailwind breakpoint, a max-width.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p class="sg-rule">
+              <b>Spacing is Tailwind's default scale.</b> There is no <code>--spacing</code>
+              override and there should not be one. The vertical rhythm is deliberately open: the
+              page holds a lot because most of it is quiet, not because it is small.
+            </p>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">New page checklist</h2>
+          <div>
+            <div class="sg-prose">
+              <p>In order, for a page that has to look like it belongs.</p>
+            </div>
+            <pre class="sg-code">1.  &lt;Base title description pageType breadcrumbs&gt; — never render SiteHeader yourself
+2.  Page head band: column pt-16 pb-16 md:pt-24 → Eyebrow → one h1 → text-lead
+3.  Content bands: LabelledBand for prose, or the list band for data
+4.  Lists: ListHeader + CreditRow + LIST_GRID, Absence when empty, LoadMore past 40
+5.  Any state (tab, sort, page, query) goes in the URL, not in a script
+6.  Any pivot gets link-rule; anything with no page gets a Chip without an href
+7.  Grades read in the four steps, with the reason beside them in ink-faint
+8.  New grey? Check 4.5:1. New control border? edge-strong, 3:1.
+9.  New script? Bind to <b>astro:page-load</b>, guard prefers-reduced-motion, argue the bytes
+10. Numbers: toLocaleString("en-GB") and tabular-nums</pre>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="sg-footer">
+      <div class="column">
+        <p>dub.digger — style guide</p>
+        <p>Patterns read off web/src/pages/ and web/src/layouts/Base.astro. The code is the truth.</p>
+      </div>
+    </footer>
+  </body>
+</html>

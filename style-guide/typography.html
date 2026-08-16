@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Typography — Dub Digger Style Guide</title>
+    <meta name="robots" content="noindex" />
+    <link rel="stylesheet" href="./styleguide.css" />
+  </head>
+  <body>
+    <header class="sg-header">
+      <div class="column">
+        <div class="sg-wordmark">
+          <a href="./index.html">dub<span style="color: var(--color-accent)">.</span>digger</a>
+          <span>Style guide</span>
+        </div>
+      </div>
+    </header>
+
+    <nav class="sg-nav" aria-label="Style guide sections">
+      <div class="column">
+        <a href="./index.html">Overview</a>
+        <a href="./typography.html" aria-current="page">Typography</a>
+        <a href="./colour.html">Colour</a>
+        <a href="./components.html">Components</a>
+        <a href="./patterns.html">Patterns</a>
+        <a href="./behaviour.html">Behaviour</a>
+      </div>
+    </nav>
+
+    <main>
+      <div class="column sg-head">
+        <p class="sg-eyebrow">Typography</p>
+        <h1 class="sg-title">Two families<span class="dot">.</span></h1>
+        <p class="sg-lead">
+          Helvetica Neue for names and headlines. IBM Plex Mono, uppercase and letterspaced, for
+          everything structural: labels, counts, roles, meta, controls. There is no third family
+          and no italic anywhere.
+        </p>
+      </div>
+
+      <div class="column">
+        <section class="sg-band">
+          <h2 class="mono-label">The families</h2>
+          <div>
+            <div class="sg-scroll">
+              <table class="sg-spec">
+                <thead>
+                  <tr>
+                    <th scope="col">Token</th>
+                    <th scope="col">Stack</th>
+                    <th scope="col">Job</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="key">--font-sans</td>
+                    <td>"Helvetica Neue", Helvetica, Arial, sans-serif</td>
+                    <td class="note">
+                      Names, headlines, prose. A plain system stack, deliberately: it is a system
+                      font on the machines this is designed for, so downloading a fallback would
+                      defeat the point.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">--font-mono</td>
+                    <td>"IBM Plex Mono", ui-monospace, monospace</td>
+                    <td class="note">
+                      Everything structural. Self-hosted from
+                      <code>@fontsource/ibm-plex-mono</code>, weights 400, 500 and 600 only, so the
+                      deploy touches no third party.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="sg-rule">
+              <b>Only 400, 500 and 600 of the mono are downloaded.</b> Asking for any other weight
+              gets a synthesised face. The footer's wordmark line and the site header both use 600,
+              which is why <code>font-semibold</code> is the heaviest mono on the site.
+            </p>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">Display scale</h2>
+          <div>
+            <div class="sg-prose">
+              <p>
+                <strong>Display type is fluid, reading type is fixed.</strong> The handoff specifies
+                pixel sizes that are wider than a phone: a 104px "Moritz von Oswald" needs 900px of
+                viewport. So the handoff size is the upper bound of a clamp rather than an
+                absolute, and these degrade instead of overflowing.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <div class="sg-demo">
+                <p class="spec-hero">Dig the Extended Scene<span style="color: var(--color-accent)">.</span></p>
+              </div>
+              <pre class="sg-code"><i>&lt;!-- home page h1 --&gt;</i>
+class="<b>text-hero</b> text-ink-strong mt-9 leading-[0.98] font-bold tracking-[-0.035em]"</pre>
+            </div>
+
+            <div class="sg-block">
+              <div class="sg-demo">
+                <p class="spec-name">Moritz von Oswald</p>
+              </div>
+              <pre class="sg-code"><i>&lt;!-- artist, label, info and 404 h1 --&gt;</i>
+class="<b>text-name</b> text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]"</pre>
+            </div>
+
+            <div class="sg-block">
+              <div class="sg-demo">
+                <p class="spec-stat">1,025,881</p>
+              </div>
+              <pre class="sg-code"><i>&lt;!-- the three figures on the home page --&gt;</i>
+class="<b>text-stat</b> text-ink-strong mt-3 font-bold tracking-[-0.03em] tabular-nums"</pre>
+            </div>
+
+            <div class="sg-scroll" style="margin-top: 2rem">
+              <table class="sg-spec">
+                <thead>
+                  <tr>
+                    <th scope="col">Token</th>
+                    <th scope="col">Value</th>
+                    <th scope="col">Tracking</th>
+                    <th scope="col">Leading</th>
+                    <th scope="col">Where</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="key">--text-hero</td>
+                    <td class="num">clamp(2.75rem, 8.5vw, 5.75rem)</td>
+                    <td class="num">-0.035em</td>
+                    <td class="num">0.98</td>
+                    <td class="note">Home page headline only.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">--text-name</td>
+                    <td class="num">clamp(2.5rem, 8vw, 6.5rem)</td>
+                    <td class="num">-0.04em</td>
+                    <td class="num">0.92</td>
+                    <td class="note">Artist, Core Artists, Core Labels, Info, 404 headings.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">--text-name-label</td>
+                    <td class="num">clamp(2.5rem, 9vw, 7.5rem)</td>
+                    <td class="num">-0.04em</td>
+                    <td class="num">0.92</td>
+                    <td class="note">
+                      The label page name, one step larger than an artist's. A label name is
+                      usually shorter, so it can carry the extra size.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">--text-stat</td>
+                    <td class="num">clamp(2.5rem, 6vw, 4.125rem)</td>
+                    <td class="num">-0.03em</td>
+                    <td class="num">—</td>
+                    <td class="note">The three corpus figures. Always <code>tabular-nums</code>.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p class="sg-rule">
+              <b>Add a new size only if the design has one.</b> Four display tokens and three
+              reading tokens is the whole scale. A one-off <code>text-[2.5rem]</code> is a new size
+              that nothing else will ever match.
+            </p>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">Reading scale</h2>
+          <div>
+            <div class="sg-prose">
+              <p>
+                Two reading sizes, told apart by the job rather than by the page. They were both
+                1.1875rem once, which made a standfirst and four paragraphs of explanation read as
+                one undifferentiated block.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <div class="sg-demo">
+                <p class="spec-lead" style="margin: 0">
+                  Dub Digger is a tool for digging. Dub techno first. Type an artist, and you see
+                  who they worked with and which labels they released on.
+                </p>
+              </div>
+              <pre class="sg-code"><i>&lt;!-- the paragraph directly under a headline --&gt;</i>
+class="<b>text-lead</b> text-ink-muted mt-10 max-w-[760px]"</pre>
+            </div>
+
+            <div class="sg-block">
+              <div class="sg-demo">
+                <p class="spec-body" style="margin: 0">
+                  Every record is connected to another. A producer, a mixing engineer, a bassist who
+                  turns up on four other records you already enjoy. That web of credits is how crate
+                  diggers actually find music, and it all sits in Discogs. It just isn't optimised
+                  for digging this way.
+                </p>
+              </div>
+              <pre class="sg-code"><i>&lt;!-- prose you settle into: a bio, the Info bands --&gt;</i>
+class="<b>text-body</b> text-ink-muted max-w-[760px] space-y-5"</pre>
+            </div>
+
+            <div class="sg-scroll" style="margin-top: 2rem">
+              <table class="sg-spec">
+                <thead>
+                  <tr>
+                    <th scope="col">Token</th>
+                    <th scope="col">Value</th>
+                    <th scope="col">Leading</th>
+                    <th scope="col">Job</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="key">--text-lead</td>
+                    <td class="num">1.1875rem</td>
+                    <td class="num">1.6</td>
+                    <td class="note">
+                      A subheading doing a headline's work: it says what the page is before anyone
+                      decides to read it. One per page, directly under the h1.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">--text-body</td>
+                    <td class="num">1.0625rem</td>
+                    <td class="num">1.6</td>
+                    <td class="note">Bios, label info, the Info page bands, the "no database" notice.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">--text-row</td>
+                    <td class="num">1.25rem</td>
+                    <td class="num">—</td>
+                    <td class="note">
+                      The clickable name in every list row. Bold, <code>tracking-[-0.01em]</code>,
+                      always with <code>link-rule</code> under it.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p class="sg-rule">
+              <b>The line height rides on the token, so never respell it.</b> A paragraph asks for a
+              size and gets the leading that belongs to it. Eleven call sites used to write 1.6 by
+              hand, three of them as <code>leading-relaxed</code>, which is 1.625 and was nobody's
+              decision.
+            </p>
+            <p class="sg-rule">
+              <b>Prose measures are capped.</b> <code>max-w-[720px]</code> for prose and absence
+              rows, <code>max-w-[760px]</code> for the identity block and the labelled bands,
+              <code>max-w-[920px]</code> for a role string wrapping under a name.
+            </p>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">The mono scale</h2>
+          <div>
+            <div class="sg-prose">
+              <p>
+                Four sizes, all uppercase, all letterspaced. There is no token for these: they are
+                written as Tailwind arbitrary values at the call site, because the tracking changes
+                with the job and a token would fix one pairing for everything. The
+                <code>mono-label</code> utility is the one combination common enough to name.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <div class="sg-demo">
+                <p class="mono-label" style="margin: 0 0 1.5rem">Collaborators</p>
+                <p style="margin: 0 0 1.5rem; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--color-ink-faint)">
+                  Name &nbsp;&nbsp; Releases together
+                </p>
+                <p style="margin: 0 0 1.5rem; font-family: var(--font-mono); font-size: 0.8125rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-ink-strong)">
+                  Collaborators <span style="color: var(--color-ink-faint)">1,412</span>
+                </p>
+                <p style="margin: 0; font-family: var(--font-mono); font-size: 0.9375rem; color: var(--color-ink-strong)">
+                  simone.ferraro@nutek.it
+                </p>
+              </div>
+              <pre class="sg-code"><i>&lt;!-- the utility, for a section label --&gt;</i>
+class="<b>mono-label</b>"   <i>= font-mono uppercase, 0.75rem, 0.2em, ink-muted</i></pre>
+            </div>
+
+            <div class="sg-scroll" style="margin-top: 2rem">
+              <table class="sg-spec">
+                <caption>Every mono size on the site, and what wears it</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Size</th>
+                    <th scope="col">Tracking</th>
+                    <th scope="col">Colour</th>
+                    <th scope="col">Where</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="key">0.6875rem</td>
+                    <td class="num">0.2em</td>
+                    <td class="num">ink-faint</td>
+                    <td class="note">
+                      List column headings (<code>ListHeader</code>), the sort control, the contact
+                      copy button.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">0.6875rem</td>
+                    <td class="num">0.14em</td>
+                    <td class="num">ink</td>
+                    <td class="note">Nav cells and drawer rows. A step below the tab bar, deliberately.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">0.6875rem</td>
+                    <td class="num">0.05em</td>
+                    <td class="num">ink-faint</td>
+                    <td class="note">
+                      "(Beta)" beside the wordmark. Tracked tight because it sits next to a name
+                      rather than over a column.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">0.75rem</td>
+                    <td class="num">0.2em</td>
+                    <td class="num">ink-muted</td>
+                    <td class="note">The <code>mono-label</code> utility, and "Load more".</td>
+                  </tr>
+                  <tr>
+                    <td class="key">0.75rem</td>
+                    <td class="num">0.32em</td>
+                    <td class="num">accent</td>
+                    <td class="note"><code>Eyebrow</code>, the widest tracking on the site.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">0.75rem</td>
+                    <td class="num">0.16em</td>
+                    <td class="num">ink-muted</td>
+                    <td class="note">The "Read more" / "Collapse" toggle.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">0.75rem</td>
+                    <td class="num">0.1em</td>
+                    <td class="num">by grade</td>
+                    <td class="note">The relevance and type columns in search results.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">0.75rem</td>
+                    <td class="num">0.05em</td>
+                    <td class="num">ink-faint</td>
+                    <td class="note">
+                      The footer, and the role string wrapping under a name (which is the one mono
+                      run in sentence case, at leading 1.65).
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">0.8125rem</td>
+                    <td class="num">0.14em</td>
+                    <td class="num">ink-strong / ink-dim</td>
+                    <td class="note">Tab labels, active and resting.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">0.8125rem</td>
+                    <td class="num">0.12em</td>
+                    <td class="num">ink-faint</td>
+                    <td class="note">The identity block's labels (<code>FieldRow</code> dt).</td>
+                  </tr>
+                  <tr>
+                    <td class="key">0.8125rem</td>
+                    <td class="num">0.06em</td>
+                    <td class="num">accent</td>
+                    <td class="note">The three-count line under an entity name.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">0.8125rem</td>
+                    <td class="num">none</td>
+                    <td class="num">varies</td>
+                    <td class="note">
+                      Chips, field values, row counts and meta, the absence paragraph, the header
+                      search field. The workhorse size.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">0.9375rem</td>
+                    <td class="num">none</td>
+                    <td class="num">ink / ink-strong</td>
+                    <td class="note">The hero search field, and the address in the contact card.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p class="sg-rule">
+              <b>Counts are <code>tabular-nums</code>, always.</b> A column of figures that shifts
+              width as it counts up, or between rows, reads as noise. It is on the row count, the
+              meta column, the three figures and the stat line.
+            </p>
+            <p class="sg-rule">
+              <b>Numbers are formatted <code>toLocaleString("en-GB")</code>.</b> Never printed raw.
+              The one exception is a year, which is a label rather than a quantity.
+            </p>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="sg-footer">
+      <div class="column">
+        <p>dub.digger — style guide</p>
+        <p>Mirrors web/src/styles/globals.css and web/src/components/. The code is the truth.</p>
+      </div>
+    </footer>
+  </body>
+</html>

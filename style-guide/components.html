@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Components — Dub Digger Style Guide</title>
+    <meta name="robots" content="noindex" />
+    <link rel="stylesheet" href="./styleguide.css" />
+  </head>
+  <body>
+    <header class="sg-header">
+      <div class="column">
+        <div class="sg-wordmark">
+          <a href="./index.html">dub<span style="color: var(--color-accent)">.</span>digger</a>
+          <span>Style guide</span>
+        </div>
+      </div>
+    </header>
+
+    <nav class="sg-nav" aria-label="Style guide sections">
+      <div class="column">
+        <a href="./index.html">Overview</a>
+        <a href="./typography.html">Typography</a>
+        <a href="./colour.html">Colour</a>
+        <a href="./components.html" aria-current="page">Components</a>
+        <a href="./patterns.html">Patterns</a>
+        <a href="./behaviour.html">Behaviour</a>
+      </div>
+    </nav>
+
+    <main>
+      <div class="column sg-head">
+        <p class="sg-eyebrow">Components</p>
+        <h1 class="sg-title">Seventeen<span class="dot">.</span></h1>
+        <p class="sg-lead">
+          All of them in <code>web/src/components/</code>, all of them <code>.astro</code>. Each one
+          below is rendered, then given the class string the app actually ships and the rule it
+          exists to hold.
+        </p>
+      </div>
+
+      <div class="column">
+        <!-- ───────────────────────────────────────────────── lists ── -->
+        <section class="sg-band">
+          <h2 class="mono-label">Lists</h2>
+          <div>
+            <div class="sg-prose">
+              <p>
+                The core of the tool. A list header, rows under it, an absence when there are none,
+                a tab bar over the top and a "Load more" at the bottom. All five share one grid
+                constant so the columns line up down the page.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">ListHeader + CreditRow + list-grid.ts</p>
+              <div class="sg-demo">
+                <div class="spec-listhead">
+                  <span>Name</span><span>Releases together</span><span class="col3"></span>
+                </div>
+                <ul class="spec-list">
+                  <li class="spec-listrow">
+                    <div style="min-width: 0">
+                      <a href="#row" class="spec-row-name">Mark Ernestus</a>
+                      <p class="roles">Producer, Mixed By, Written-By, Engineer, Bass, Percussion</p>
+                    </div>
+                    <span class="count">116</span>
+                    <span class="col3">1993 – 2021</span>
+                  </li>
+                  <li class="spec-listrow">
+                    <div style="min-width: 0">
+                      <a href="#row" class="spec-row-name">Thomas Fehlmann</a>
+                      <p class="roles">Written-By, Producer</p>
+                    </div>
+                    <span class="count">41</span>
+                    <span class="col3">1988 – 2019</span>
+                  </li>
+                </ul>
+              </div>
+              <pre class="sg-code"><i>// web/src/components/list-grid.ts — shared by the head and every row</i>
+export const LIST_GRID = "<b>grid-cols-[1fr_5rem] md:grid-cols-[1fr_6rem_10rem]</b>";
+
+<i>&lt;!-- ListHeader --&gt;</i>
+class="border-hairline text-ink-faint grid gap-x-[22px] border-b pb-3
+       font-mono text-[0.6875rem] tracking-[0.2em] uppercase"
+
+<i>&lt;!-- CreditRow --&gt;</i>
+class="border-hairline-soft grid items-baseline gap-x-[22px] border-b <b>py-[18px]</b>"
+  name   → "link-rule text-row justify-self-start font-bold tracking-[-0.01em]"
+  detail → "text-ink-dim mt-2 max-w-[920px] font-mono text-xs leading-[1.65]"
+  count  → "text-ink-faint font-mono text-[0.8125rem] font-medium tabular-nums"</pre>
+              <div class="sg-scroll" style="margin-top: 1.5rem">
+                <table class="sg-spec">
+                  <caption>CreditRow props</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Prop</th>
+                      <th scope="col">Type</th>
+                      <th scope="col">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td class="key">count</td><td>string | number</td><td class="note">Column two. A shared-release count, or a year on the releases tab.</td></tr>
+                    <tr><td class="key">href</td><td>string</td><td class="note">Where the name pivots to.</td></tr>
+                    <tr><td class="key">name</td><td>string</td><td class="note">The clickable title.</td></tr>
+                    <tr><td class="key">detail</td><td>string | null</td><td class="note">Long text wrapped under the name. Roles, mostly, via <code>creditLine()</code>.</td></tr>
+                    <tr><td class="key">meta</td><td>string | null</td><td class="note">Column three. Years, a label name, a catalogue number.</td></tr>
+                    <tr><td class="key">metaLabel</td><td>string</td><td class="note">Repeats <code>ListHeader</code>'s <code>meta</code> string, printed in front of the value once the column folds under the name. Keep the two in step.</td></tr>
+                    <tr><td class="key">external</td><td>boolean</td><td class="note">Marks the row with an arrow, opens a new tab, and says both in the accessible name.</td></tr>
+                    <tr><td class="key">slot="meta"</td><td>markup</td><td class="note">Lets a row put a link in column three. Used on the releases tab so the label stays a pivot when the title leaves for Discogs.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="sg-rule">
+                <b>Anything long wraps under the name, never into a narrow column.</b> Juan Atkins
+                holds fourteen distinct role strings on Moritz von Oswald's records.
+              </p>
+              <p class="sg-rule">
+                <b>There is no cap on roles.</b> Collapsing is what shortens a row: David Byrne's
+                101 stored credit strings across 258 shared releases come to 24 named roles, and all
+                24 show. A "+N more" was tried and removed, since a row that stops early is
+                answering a question nobody asked.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">Absence</p>
+              <div class="sg-demo">
+                <p class="spec-absence" style="margin: 0 0 1.5rem">
+                  No credits recorded. Nobody has entered credits for any of these 27 releases, so
+                  this is missing data rather than solo work.
+                </p>
+                <p class="spec-absence" style="margin: 0">
+                  Worked alone. Credits exist on 14 of 27 releases and name no one else.
+                </p>
+              </div>
+              <pre class="sg-code">class="border-hairline-soft text-ink-muted max-w-[720px] border-b py-[18px]
+       font-mono text-[0.8125rem] leading-relaxed"</pre>
+              <p class="sg-rule">
+                <b>Absence gets the same weight on the page as a list would.</b> An empty result
+                that looks like an answer is worse than an honest "no data here". The three states
+                are different sentences and the coverage flags tell them apart: no releases at all,
+                no credits entered, or genuinely solo.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">Tabs</p>
+              <div class="sg-demo">
+                <div class="spec-tabs">
+                  <nav aria-label="Lists">
+                    <a href="#tabs" aria-current="page">Collaborators <em>1,412</em></a>
+                    <a href="#tabs">Labels <em>38</em></a>
+                    <a href="#tabs">Releases <em>116</em></a>
+                  </nav>
+                </div>
+              </div>
+              <pre class="sg-code"><i>&lt;!-- the hairline sits on the wrapper, not the scrolling row --&gt;</i>
+&lt;div class="border-hairline <b>mb-10</b> border-b"&gt;
+  &lt;nav class="flex gap-6 overflow-x-auto sm:gap-[34px]" <b>aria-label="Lists"</b>&gt;
+    &lt;a href={...} <b>data-hold-scroll</b> aria-current={isActive ? "page" : undefined}
+       class="shrink-0 pb-4 font-mono text-[0.8125rem] tracking-[0.14em] uppercase
+              <i>active:</i> text-ink-strong border-b-[1.5px] border-ink-strong
+              <i>resting:</i> text-ink-dim"&gt;</pre>
+              <p class="sg-rule">
+                <b>Tabs are links carrying a search param, never client state.</b> The lists stay
+                server rendered so a 556-row roster is never serialised into the page as JSON, every
+                tab is a real URL, and it works before any JavaScript arrives.
+              </p>
+              <p class="sg-rule">
+                <b>A tab must not move the page.</b> <code>data-hold-scroll</code> asks for that;
+                the script that honours it lives in the layout. The <code>mb-10</code> is the gap
+                before the list starts: two hairlines close together read as one thick rule.
+              </p>
+              <p class="sg-rule">
+                <b>The count stays one grey in both states.</b> It used to take a dimmer shade when
+                inactive, which asked the ramp for a step below <code>ink-faint</code> that does not
+                exist, and said the same thing twice.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">LoadMore</p>
+              <div class="sg-demo">
+                <a href="#more" class="spec-ghost">Load more <em>1,372</em></a>
+              </div>
+              <pre class="sg-code">class="border-edge-strong hover:bg-ink hover:text-bg mt-10 inline-block border
+       px-8 py-[15px] font-mono text-xs tracking-[0.2em] uppercase transition-colors"
+<b>data-hold-scroll</b>   <i>// the longer list is the same list with rows added to the end</i></pre>
+              <p class="sg-rule">
+                <b>Pagination is a link, and the page size is 40.</b> <code>PAGE_SIZE</code> in
+                <code>lib/view.ts</code>, with <code>pageSize()</code> clamping a hand-typed
+                <code>?show=</code> to 1,000. The same ghost-button shape is the 404's "Keep
+                digging" and the contact card's "Copy".
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">SortBy</p>
+              <div class="sg-demo">
+                <div style="display: flex; align-items: baseline; justify-content: flex-end; gap: 1.25rem; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.2em; text-transform: uppercase">
+                  <span style="color: var(--color-ink-faint)">Sort by</span>
+                  <a href="#sort" style="color: var(--color-ink-strong); border-bottom: 1px solid var(--color-ink-strong); padding-bottom: 0.25rem">Ranking</a>
+                  <a href="#sort" style="color: var(--color-ink-faint); padding-bottom: 0.25rem">A–Z</a>
+                </div>
+              </div>
+              <pre class="sg-code">basePath  <i>// the default sort is the bare URL, not a parameter</i>
+active    <i>// "ranking" | "name"</i>
+<b>SHOW_SORT = false</b>  <i>// lib/view.ts — hidden for now, one flag from being back</i></pre>
+              <p class="sg-rule">
+                <b>"Ranking", not "Relevance".</b> Relevance is spoken for: it is the four-step
+                grade a search result and an artist page both show. This sorts by scene weighting,
+                which is a different measure. One question, one vocabulary.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ──────────────────────────────────────────────── identity ── -->
+        <section class="sg-band">
+          <h2 class="mono-label">Identity</h2>
+          <div>
+            <div class="sg-block">
+              <p class="sg-sub">Eyebrow</p>
+              <div class="sg-demo">
+                <p class="spec-eyebrow" style="margin: 0">Artist</p>
+              </div>
+              <pre class="sg-code">class="text-accent font-mono text-xs <b>tracking-[0.32em]</b> uppercase"</pre>
+              <p class="sg-rule">
+                <b>It names what you are looking at</b>, which is the one thing the big name below
+                it cannot tell you: "Chain Reaction" is both a label and two unrelated artists.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">FieldRow</p>
+              <div class="sg-demo">
+                <dl class="spec-fields">
+                  <div class="spec-field">
+                    <dt>Real name</dt>
+                    <dd>Osborne Ruddock</dd>
+                  </div>
+                  <div class="spec-field">
+                    <dt>Date active</dt>
+                    <dd>1968 – 2024</dd>
+                  </div>
+                  <div class="spec-field">
+                    <dt>Relevance</dt>
+                    <dd class="is-accent">
+                      Medium<span class="reason">, very weak ties with the core dub techno cluster,
+                      here for lineage: roots dub, the Jamaican tradition dub techno grew out of</span>
+                    </dd>
+                  </div>
+                  <div class="spec-field is-last">
+                    <dt>View on</dt>
+                    <dd><a href="#discogs" class="link-rule">Discogs</a></dd>
+                  </div>
+                </dl>
+              </div>
+              <pre class="sg-code">class="border-hairline grid <b>grid-cols-[7rem_1fr] sm:grid-cols-[180px_1fr]</b> gap-x-6
+       border-t py-2 font-mono text-[0.8125rem]"
+  dt → "text-ink-faint tracking-[0.12em] uppercase"
+  dd → accent ? "text-accent" : "text-ink"
+
+props: label, accent?, <b>last?</b>  <i>// last closes the block with a bottom hairline</i></pre>
+              <p class="sg-rule">
+                <b>Never show a grade as a bare word where there is room to say what it stands on.</b>
+                Two different things put an artist on a step, and a page saying "medium" without
+                saying which is claiming cluster work that may not exist. The clause after the comma
+                is <code>ink-faint</code>, and a lifted grade always says it was lifted.
+              </p>
+              <p class="sg-rule">
+                <b><code>last</code> is a prop, not a wrapping div.</b> A <code>&lt;dl&gt;</code> may
+                hold a <code>&lt;div&gt;</code> grouping a <code>dt</code> and a <code>dd</code> —
+                and that is exactly the div this component already is, so wrapping it put a second
+                one in between and the grouping stopped being one the parser recognises.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">Chip</p>
+              <div class="sg-demo" style="display: flex; flex-wrap: wrap; gap: 0.75rem 0.625rem">
+                <a href="#chip" class="spec-chip">Maurizio <em>47</em></a>
+                <a href="#chip" class="spec-chip">Rhythm &amp; Sound <em>62</em></a>
+                <span class="spec-chip is-flat">Mbene Diatta Seck <em>3</em></span>
+              </div>
+              <pre class="sg-code">const chip = "inline-flex items-baseline gap-2 <b>border border-edge</b> px-[14px] py-2
+              font-mono text-[0.8125rem]";
+
+<i>with href:</i>    chip + "hover:border-accent hover:text-accent text-ink transition-colors"
+<i>without href:</i> chip + "<b>border-hairline text-ink-dim</b>"   <i>// a span, not an anchor</i></pre>
+              <p class="sg-rule">
+                <b>No page means no link.</b> 43% of member relations, 66% of aliases and 69% of
+                "member of" point at ids with no page. <code>getRelations</code> returns
+                <code>inCorpus</code> and the chip drops the href without it, losing the hover and
+                the pointer so nothing invites the click. The Ndagga Rhythm Force is the case that
+                found it.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">OutboundLinks</p>
+              <div class="sg-demo" style="display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-family: var(--font-mono); font-size: 0.8125rem">
+                <a href="#out" class="link-rule">Discogs</a>
+                <a href="#out" class="link-rule">Wikipedia</a>
+                <a href="#out" class="link-rule">Bandcamp</a>
+                <a href="#out" class="link-rule">hardwax.com</a>
+              </div>
+              <pre class="sg-code">props: kind ("artist" | "label"), id, urls[]
+<b>Max 5</b> of the entity's own URLs, deduped by name, plus Discogs always first.
+Unrecognised hosts keep their hostname rather than reading "Website".
+<b>http and https only</b> — the urls column is contributor-entered and holds exotic schemes.</pre>
+              <p class="sg-rule">
+                <b>This is the cheap middle ground on images, not a substitute for them.</b> The
+                Discogs URL is pure id substitution, so it needs no API call and carries no
+                licensing exposure. It is not "images are done".
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">ProfileText</p>
+              <pre class="sg-code"><i>// Renders Discogs' own markup in a bio</i>
+[a123] [l456]        → a link into this tool's own pages
+[a=Name] [l=Name]    → plain text, no id to resolve, so no guess
+[b] [i] [u]          → tag dropped, text kept
+[url=http://x]y[/url] → anchor, <b>http/https only</b>
+real newlines        → &lt;br&gt;, emitted here rather than via white-space: pre-line</pre>
+              <p class="sg-rule">
+                <b>The id forms are the interesting ones</b>: they turn a bio into more threads to
+                follow. Links inside prose use <code>underline underline-offset-2</code> rather than
+                <code>link-rule</code>, because a border-bottom inside a wrapping paragraph breaks
+                at the line end.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">CollapsibleText</p>
+              <div class="sg-demo">
+                <div style="position: relative; overflow: hidden; max-height: 145px; max-width: 720px">
+                  <p class="spec-body" style="margin: 0">
+                    Moritz von Oswald is a German electronic musician and producer, one half of
+                    Basic Channel with Mark Ernestus, and a founder of the Chain Reaction and
+                    Rhythm &amp; Sound labels. Trained as a classical percussionist, he played with
+                    Palais Schaumburg before turning to the studio work that defined Berlin techno's
+                    dub lineage. His records with Ernestus set the template a generation of
+                    producers worked from, and the mastering chain at Dubplates &amp; Mastering
+                    became part of the sound itself.
+                  </p>
+                  <div style="pointer-events: none; position: absolute; inset: auto 0 0 0; height: 3rem; background: linear-gradient(transparent, var(--color-bg))"></div>
+                </div>
+                <button type="button" class="spec-toggle" style="margin-top: 2rem" aria-expanded="false">
+                  Read more
+                  <span style="display: inline-flex">
+                    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                      <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                  </span>
+                </button>
+              </div>
+              <pre class="sg-code"><b>CLAMP_PX = 145</b>   <i>// 5.33 lines at the bio's 27.2px leading — deliberately not a</i>
+                 <i>// round number: a clamp landing on a clean line break reads as</i>
+                 <i>// the end of the text, and the fade looks like decoration</i>
+
+<i>Unclamped in the markup, clamped by the script.</i> With no JavaScript the whole
+bio is readable; clamping first would strand a reader at four lines.
+fade → "pointer-events-none absolute right-0 bottom-0 left-0 h-12"
+        style="background: linear-gradient(transparent, var(--color-bg))"</pre>
+              <p class="sg-rule">
+                <b>Collapsing moves the box and nothing else. The page is not scrolled.</b> Pinning
+                the control ran the page to scrollY 0 in 180ms and then let the control slide after
+                all: a lurch, and a collapse where the moving thing changed halfway through.
+              </p>
+              <p class="sg-rule">
+                <b>A change to <code>--text-body</code> changes what this shows.</b> The clamp is a
+                pixel height against a leading that comes from the token.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ────────────────────────────────────────────────── input ── -->
+        <section class="sg-band">
+          <h2 class="mono-label">Input</h2>
+          <div>
+            <div class="sg-block">
+              <p class="sg-sub">SearchField — hero (64px)</p>
+              <div class="sg-demo">
+                <form class="spec-search is-hero" onsubmit="return false">
+                  <input type="search" placeholder="Basic Channel, Chain Reaction, Maurizio…" aria-label="Search artists and labels" />
+                  <button type="submit" aria-label="Search">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                      <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"></circle>
+                      <line x1="12.5" y1="12.5" x2="17" y2="17" stroke="currentColor" stroke-width="1.4"></line>
+                    </svg>
+                  </button>
+                </form>
+              </div>
+              <p class="sg-sub" style="margin-top: 2rem">SearchField — header (44px)</p>
+              <div class="sg-demo">
+                <form class="spec-search is-header" onsubmit="return false">
+                  <input type="search" placeholder="Basic Channel, Chain Reaction…" aria-label="Search artists and labels" />
+                  <button type="submit" aria-label="Search">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                      <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.4"></circle>
+                      <line x1="10.25" y1="10.25" x2="14" y2="14" stroke="currentColor" stroke-width="1.4"></line>
+                    </svg>
+                  </button>
+                </form>
+              </div>
+              <pre class="sg-code"><i>&lt;!-- a plain GET form: search works with no JavaScript, every result is a URL --&gt;</i>
+&lt;form action="/"&gt;&lt;input type="search" name="q" ...&gt;
+
+hero   → "border-accent transition-shadow <b>focus:shadow-[inset_0_0_0_1px_var(--color-accent)]</b>
+          h-16 pr-14 pl-6 text-[0.9375rem]"
+header → "border-edge-strong transition-colors <b>focus:border-accent</b>
+          h-11 pr-11 pl-4 text-[0.8125rem]"
+
+<b>autofocus={hero &amp;&amp; !value}</b>  <i>// only while empty: on a results page it jumped a</i>
+                             <i>// reader past the answer they came back for</i></pre>
+              <p class="sg-rule">
+                <b>The two sizes ask for the accent in opposite ways.</b> The hero wears it from the
+                start, since it is why the home page exists, and marks focus by doubling the edge
+                with an inset shadow — a thicker border would eat its own padding box and shunt the
+                text sideways on every click. The header one rests quiet on
+                <code>edge-strong</code> and takes the accent only when reached for.
+              </p>
+              <p class="sg-rule">
+                <b>The magnifier is the submit button, not decoration.</b> It fills the full height
+                of the field so the target is the whole right end rather than an 18px glyph.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ────────────────────────────────────────────────── shell ── -->
+        <section class="sg-band">
+          <h2 class="mono-label">Shell</h2>
+          <div>
+            <div class="sg-prose">
+              <p>
+                <strong>The shell is drawn once, in <code>Base.astro</code>.</strong> Skip link,
+                header, <code>&lt;main id="content"&gt;</code>, footer, contact dialog. A page
+                renders its own bands and nothing else. It used to render its own
+                <code>&lt;SiteHeader /&gt;</code> too, which is how the site ended up with no
+                <code>&lt;main&gt;</code> on it anywhere.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">SiteHeader — wordmark row (76px) and nav cells</p>
+              <div class="sg-demo" style="padding: 0">
+                <div style="border-bottom: 1px solid var(--color-hairline); display: flex; height: 76px; align-items: center; gap: 2rem; padding-inline: 1.5rem">
+                  <div class="sg-wordmark" style="padding-left: 0.625rem">
+                    <a href="#wm">dub<span style="color: var(--color-accent)">.</span>digger</a>
+                    <span>(Beta)</span>
+                  </div>
+                </div>
+                <div class="spec-cells" style="justify-content: space-between">
+                  <div style="display: flex">
+                    <a href="#nav" class="is-current">Search Index</a>
+                    <a href="#nav">Core Labels</a>
+                    <a href="#nav">Core Artists</a>
+                  </div>
+                  <div style="display: flex">
+                    <a href="#nav">Info</a>
+                  </div>
+                </div>
+              </div>
+              <pre class="sg-code">cell     = "border-hairline border-l px-5 py-3 font-mono text-[0.6875rem]
+            tracking-[0.14em] whitespace-nowrap uppercase transition-colors"
+resting  = "text-ink hover:bg-accent hover:text-bg"
+current  = "<b>bg-accent text-bg</b>"        <i>// 10.48:1, and it beats the global a:hover</i>
+
+<i>Two groups, split by what they do.</i> Browsing left, Info right, because Info is
+not a place in the corpus. Each group closes its own right edge.
+<b>hidden md:flex</b> — below 768 the four cells stop fitting and stack in the drawer.</pre>
+              <p class="sg-rule">
+                <b>The nav sits a step below the tab bar.</b> This navigates between sections; the
+                tab bar switches the list you are reading. The smaller type says which is which, and
+                they mark themselves differently for the same reason: a filled cell here, a heavier
+                underline there.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">SiteHeader — the phone drawer</p>
+              <pre class="sg-code">&lt;details data-menu class="md:hidden"&gt;
+  &lt;summary&gt;  <i>three bars that fold into a cross, one SVG, transformed in CSS</i>
+  &lt;div data-scrim  class="fixed inset-0 z-40 <b>bg-black/60</b>"&gt;
+  &lt;div data-drawer class="border-hairline bg-bg fixed inset-y-0 left-0 z-50
+                          <b>w-[min(20rem,82vw)]</b> overflow-y-auto border-r px-6 py-5"&gt;
+
+row        = "border-hairline block border-t py-3.5 font-mono text-[0.6875rem]
+              tracking-[0.14em] uppercase transition-colors"
+rowCurrent = "<b>text-accent</b>"   <i>// type, not a filled ground: full-bleed it would</i>
+                          <i>// become a band rather than a marker</i>
+transform: 280ms cubic-bezier(0.4, 0, 0.2, 1)   <i>// sheet and scrim as one movement</i></pre>
+              <p class="sg-rule">
+                <b>A native <code>&lt;details&gt;</code>, so it announces its own state</b>, works
+                with the keyboard, and comes back closed after a router swap with no code. The
+                script buys only the two frames the element does not give you: opening off-canvas,
+                and staying open long enough to slide back.
+              </p>
+              <p class="sg-rule">
+                <b>The drawer wraps focus rather than hiding the page.</b> No <code>inert</code>, no
+                <code>aria-hidden</code> on the background. The page showing through the scrim is
+                the point of a sheet over a panel, and marking it inert would hide the very thing
+                the design keeps in view.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">ContactDialog</p>
+              <div class="sg-demo">
+                <div style="max-width: 26rem; border: 1px solid var(--color-edge-strong); padding: 2rem; position: relative">
+                  <span style="position: absolute; top: 1rem; right: 1.25rem; color: var(--color-ink-muted); font-family: var(--font-mono); font-size: 1.25rem; line-height: 1">×</span>
+                  <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em">
+                    Let's talk<span style="color: var(--color-accent)">.</span>
+                  </h3>
+                  <p class="mono-label" style="margin: 1.25rem 0 0">Drop me a message at</p>
+                  <div style="margin-top: 0.75rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem">
+                    <span style="color: var(--color-ink-strong); font-family: var(--font-mono); font-size: 0.9375rem">simone.ferraro@nutek.it</span>
+                    <span class="spec-ghost" style="padding: 0.5rem 1rem; font-size: 0.6875rem">Copy</span>
+                  </div>
+                </div>
+              </div>
+              <pre class="sg-code">&lt;dialog data-contact <b>autofocus tabindex="-1"</b> aria-labelledby="contact-heading"
+        class="bg-bg border-edge-strong m-auto w-[min(26rem,calc(100vw-3rem))]
+               border p-8 text-ink <b>backdrop:bg-black/70</b>"&gt;
+
+<i>Every opener is a real mailto: link the script intercepts, so with no</i>
+<i>JavaScript a click still reaches the address.</i></pre>
+              <p class="sg-rule">
+                <b>A modal hides the page and a sheet does not, and that is not a contradiction.</b>
+                A native <code>&lt;dialog&gt;</code> opened with <code>showModal()</code> gives the
+                inertness, the focus trap, Escape and the focus return for free. Two overlays, two
+                claims, two mechanisms.
+              </p>
+              <p class="sg-rule">
+                <b><code>autofocus</code> is on the dialog, not on anything inside it.</b> The
+                default is the first focusable descendant, which put focus on the close button — and
+                a touch browser rings that with the accent, as though closing were the offer.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">SiteFooter</p>
+              <div class="sg-demo" style="padding: 0">
+                <div style="display: grid; gap: 1.5rem 2.5rem; padding: 2.75rem 1.75rem; color: var(--color-ink-faint); font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.5; letter-spacing: 0.05em">
+                  <div>
+                    <p style="margin: 0 0 0.25rem; font-weight: 600; text-transform: uppercase">dub.digger — the dub techno index</p>
+                    <p style="margin: 0 0 0.25rem">MMXXVI <a href="#f" class="link-rule">Simone Ferraro</a></p>
+                    <p style="margin: 0 0 0.25rem">I made the tool, not the data. That comes from Discogs.</p>
+                    <p style="margin: 0 0 0.25rem">Website handcrafted in London. No tracking, no cookies, no ads, no third parties.</p>
+                    <p style="margin: 0">This website is designed to meet <a href="#f" class="link-rule">WCAG 2.1 AA</a>.</p>
+                  </div>
+                </div>
+              </div>
+              <pre class="sg-code">class="column text-ink-faint grid gap-x-10 gap-y-6 py-11 font-mono text-xs
+       leading-[1.5] tracking-wider <b>md:grid-cols-2</b>"
+<i>left:</i>  what the site is, who made it, whose the data is, what it promises
+<i>right:</i> the one line that asks for something back, <b>md:justify-self-end md:text-right</b></pre>
+              <p class="sg-rule">
+                <b>Two columns split by direction, not by subject.</b> Alone in the empty half,
+                "Let's talk" reads as an invitation; fourth in a list of statements it read as
+                another statement.
+              </p>
+              <p class="sg-rule">
+                <b>The accessibility claim is a link to the page that backs it.</b> It was a flat
+                sentence for a while, which is a promise with nowhere to check it.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">LabelledBand</p>
+              <div class="sg-demo" style="padding: 0">
+                <div style="border-top: 1px solid var(--color-hairline); display: grid; gap: 1.5rem; padding: 3.5rem 1.75rem">
+                  <h4 class="mono-label" style="margin: 0; font-weight: 400">The idea</h4>
+                  <div class="spec-body">
+                    Every record is connected to another. That web of credits is how crate diggers
+                    actually find music, and it all sits in Discogs.
+                  </div>
+                </div>
+              </div>
+              <pre class="sg-code">class="border-hairline grid gap-6 border-t <b>py-14</b> md:grid-cols-[180px_1fr]"
+  h2 → class="mono-label <b>md:mt-1</b>"</pre>
+              <p class="sg-rule">
+                <b>The <code>md:mt-1</code> is not a nudge, it is the leading.</b> The label is 12px
+                with the browser's own leading; body copy is 17px at 1.6, and that leading is split
+                above and below every line, so the prose starts about 4px lower. Below
+                <code>md</code> the grid is one column and there is nothing to align to.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="sg-footer">
+      <div class="column">
+        <p>dub.digger — style guide</p>
+        <p>Specimens reproduced in plain CSS. The class strings are the app's own. The code is the truth.</p>
+      </div>
+    </footer>
+  </body>
+</html>

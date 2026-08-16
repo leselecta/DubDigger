@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Behaviour — Dub Digger Style Guide</title>
+    <meta name="robots" content="noindex" />
+    <link rel="stylesheet" href="./styleguide.css" />
+  </head>
+  <body>
+    <header class="sg-header">
+      <div class="column">
+        <div class="sg-wordmark">
+          <a href="./index.html">dub<span style="color: var(--color-accent)">.</span>digger</a>
+          <span>Style guide</span>
+        </div>
+      </div>
+    </header>
+
+    <nav class="sg-nav" aria-label="Style guide sections">
+      <div class="column">
+        <a href="./index.html">Overview</a>
+        <a href="./typography.html">Typography</a>
+        <a href="./colour.html">Colour</a>
+        <a href="./components.html">Components</a>
+        <a href="./patterns.html">Patterns</a>
+        <a href="./behaviour.html" aria-current="page">Behaviour</a>
+      </div>
+    </nav>
+
+    <main>
+      <div class="column sg-head">
+        <p class="sg-eyebrow">Behaviour</p>
+        <h1 class="sg-title">Prefer the server<span class="dot">.</span></h1>
+        <p class="sg-lead">
+          Then a link, then a script. Tabs, pagination, sort and search are links and a plain GET
+          form carrying state in the URL. Five inline scripts exist, each one because the answer
+          genuinely is not knowable on the server, and a sixth needs the same argument.
+        </p>
+      </div>
+
+      <div class="column">
+        <section class="sg-band">
+          <h2 class="mono-label">The budget</h2>
+          <div>
+            <div class="sg-scroll">
+              <table class="sg-spec">
+                <caption>Measured, and the heaviest page is an artist or label at 19,435 bytes</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Script</th>
+                    <th scope="col">Bytes</th>
+                    <th scope="col">Where</th>
+                    <th scope="col">Why it cannot be the server</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="key">ClientRouter</td>
+                    <td class="num">16,075</td>
+                    <td>every page</td>
+                    <td class="note">
+                      82% of the budget, and deliberate: the premise is that a pivot costs one
+                      click, so the document is swapped rather than reloaded.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">drawer</td>
+                    <td class="num">1,064</td>
+                    <td>every page</td>
+                    <td class="note">
+                      Buys the two frames <code>&lt;details&gt;</code> does not give you: opening
+                      off-canvas, and staying open long enough to slide back. Plus the focus wrap.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">contact dialog</td>
+                    <td class="num">961</td>
+                    <td>every page</td>
+                    <td class="note">
+                      A dialog cannot come from the server. Everything the browser implements is
+                      left to the browser, which is why it is smaller than the drawer despite doing
+                      more.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">scroll hold</td>
+                    <td class="num">300</td>
+                    <td>every page</td>
+                    <td class="note">
+                      Where the reader was is not something a server response can carry. One script
+                      in the layout serving the tab bar, the sort control and "Load more".
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">collapsing bio</td>
+                    <td class="num">1,035</td>
+                    <td>artist, label</td>
+                    <td class="note">
+                      Whether the text overflows depends on the rendered line count at this
+                      viewport.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">figures count-up</td>
+                    <td class="num">644</td>
+                    <td>home</td>
+                    <td class="note">Whether the band has been scrolled to is not knowable either.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p class="sg-rule">
+              <b>There is no UI framework, and adding one needs an argument.</b> React was here for
+              a week and bought a hamburger menu and a counter for 184 KB, which is the whole case
+              against it. Client behaviour is a <code>&lt;script&gt;</code> tag in the component
+              that needs it, driving the DOM through <code>data-</code> attributes.
+            </p>
+            <p class="sg-rule">
+              <b>A fragment was tried for the scroll hold first</b>, to keep it a link and spend
+              nothing. A fragment can only say "put the tab bar at the top", which still moves the
+              page when you switch from a third of the way down.
+            </p>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">The two rules</h2>
+          <div>
+            <div class="sg-block">
+              <p class="sg-sub">Scripts must survive a ClientRouter navigation</p>
+              <div class="sg-pair">
+                <div class="sg-yes">
+                  <h4>Do</h4>
+                  <pre class="sg-code">document.addEventListener(
+  "<b>astro:page-load</b>", () =&gt; {
+    document
+      .querySelectorAll("[data-thing]")
+      .forEach(setUp);
+  },
+);</pre>
+                </div>
+                <div class="sg-no">
+                  <h4>Don't</h4>
+                  <pre class="sg-code">document
+  .querySelectorAll("[data-thing]")
+  .forEach(setUp);
+
+<i>// runs once at parse time, then</i>
+<i>// silently stops working on the</i>
+<i>// second page a visitor opens</i></pre>
+                </div>
+              </div>
+              <p class="sg-rule">
+                <b>The exception is a listener bound to <code>document</code> itself</b>, which the
+                swap does not replace. That is why the scroll hold needs no rebinding, and why it
+                also has to reset anything it left on the <code>&lt;html&gt;</code> element.
+              </p>
+            </div>
+
+            <div class="sg-block">
+              <p class="sg-sub">Motion is guarded</p>
+              <pre class="sg-code"><i>// all three scripted animations check it</i>
+if (matchMedia("<b>(prefers-reduced-motion: reduce)</b>").matches) return;
+
+<i>/* and so does the drawer's stylesheet */</i>
+@media (prefers-reduced-motion: reduce) {
+  .bar, [data-drawer], [data-scrim] { transition: none; }
+}</pre>
+              <p class="sg-rule">
+                <b>Reduced motion gets the true state, not a degraded one.</b> The figures show the
+                real numbers, the drawer opens and closes without sliding, the bio opens without
+                animating. Nothing is withheld.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">Timings</h2>
+          <div>
+            <div class="sg-scroll">
+              <table class="sg-spec">
+                <thead>
+                  <tr>
+                    <th scope="col">Movement</th>
+                    <th scope="col">Duration</th>
+                    <th scope="col">Easing</th>
+                    <th scope="col">Note</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="key">colour change</td>
+                    <td class="num">150ms</td>
+                    <td>Tailwind default</td>
+                    <td class="note"><code>transition-colors</code> on every hover: cells, chips, buttons, tabs.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">drawer + scrim</td>
+                    <td class="num">280ms</td>
+                    <td>cubic-bezier(.4,0,.2,1)</td>
+                    <td class="note">One duration for both, so the sheet and the ground it darkens read as one movement.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">bars → cross</td>
+                    <td class="num">220ms</td>
+                    <td>ease</td>
+                    <td class="note">The middle bar fades at 140ms, so it is gone before the diagonals arrive rather than crossing them.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">bio open/close</td>
+                    <td class="num">300ms</td>
+                    <td>ease-in-out</td>
+                    <td class="note">
+                      A panel opening, not an object arriving. <code>ease-out</code> threw most of a
+                      779px bio past the reader in the first 50ms and then crept.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">chevron</td>
+                    <td class="num">200ms</td>
+                    <td>Tailwind default</td>
+                    <td class="note">Rotates 180° with the state.</td>
+                  </tr>
+                  <tr>
+                    <td class="key">figures count-up</td>
+                    <td class="num">1400ms</td>
+                    <td>ease-out cubic</td>
+                    <td class="note">
+                      All three together, off the band rather than off each figure: one statement in
+                      three parts. Fires once, at <code>rootMargin: "0px 0px -12% 0px"</code>.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">Hooks</h2>
+          <div>
+            <div class="sg-scroll">
+              <table class="sg-spec">
+                <caption>The data attributes behaviour is wired through</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Attribute</th>
+                    <th scope="col">On</th>
+                    <th scope="col">Does</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td class="key">data-hold-scroll</td><td>Tabs, SortBy, LoadMore</td><td class="note">Keeps the viewport where it was across the swap. Records the destination too, so a click that never navigates cannot strand a position.</td></tr>
+                  <tr><td class="key">data-menu</td><td>the drawer's &lt;details&gt;</td><td class="note">Marks it for the slide script.</td></tr>
+                  <tr><td class="key">data-shown</td><td>same element</td><td class="note">Intent, not state: a details sliding shut is still <code>open</code>. The CSS reads this for the way out.</td></tr>
+                  <tr><td class="key">data-drawer / data-scrim</td><td>the sheet and the dim</td><td class="note">The two transitioned elements.</td></tr>
+                  <tr><td class="key">data-contact-open</td><td>any mailto: link</td><td class="note">Intercepted to open the dialog. Degrades to the real address.</td></tr>
+                  <tr><td class="key">data-contact / -close / -copy</td><td>the dialog</td><td class="note">The card, its × and its clipboard button. <code>data-copied</code> swaps the icon from CSS.</td></tr>
+                  <tr><td class="key">data-collapsible / -clamp / -inner / -fade / -toggle</td><td>bio, label info</td><td class="note">Measured after paint; a short bio renders as a paragraph with nothing to click.</td></tr>
+                  <tr><td class="key">data-figures / data-count</td><td>the home band</td><td class="note">The real value, handed to the script only when it is going to animate.</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="sg-rule">
+              <b>Behaviour is wired through <code>data-</code> attributes, never through class
+              names.</b> A class is styling and can be changed by a design decision; a data
+              attribute is a contract with a script.
+            </p>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">Two overlays</h2>
+          <div>
+            <div class="sg-scroll">
+              <table class="sg-spec">
+                <thead>
+                  <tr>
+                    <th scope="col"></th>
+                    <th scope="col">Drawer (sheet)</th>
+                    <th scope="col">Contact (modal)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td class="key">Element</td><td>&lt;details&gt;</td><td>&lt;dialog&gt; + showModal()</td></tr>
+                  <tr><td class="key">Page behind</td><td>dimmed, still readable</td><td>inert, hidden from the reader</td></tr>
+                  <tr><td class="key">Focus</td><td>wrapped by our script</td><td>trapped by the browser</td></tr>
+                  <tr><td class="key">Escape</td><td>our keydown handler</td><td>the browser</td></tr>
+                  <tr><td class="key">Focus return</td><td>explicit <code>summary.focus()</code></td><td>the browser</td></tr>
+                  <tr><td class="key">Scroll lock</td><td><code>documentElement.style.overflow</code></td><td>the browser</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="sg-rule">
+              <b>A sheet is a layer over something you can still see; a modal is the only thing on
+              screen until it is dismissed.</b> Two overlays, two different claims, two different
+              mechanisms. Marking the page inert behind the drawer would hide from a screen reader
+              the thing the design is making a point of keeping in view.
+            </p>
+          </div>
+        </section>
+
+        <section class="sg-band">
+          <h2 class="mono-label">Server-side vocabulary</h2>
+          <div>
+            <div class="sg-prose">
+              <p>
+                Two lookup tables sit in <code>web/src/lib/</code> rather than in the database,
+                deliberately: both are editorial, both will be revised, and nothing about them is
+                baked into the SQLite file. A wrong name is a code fix rather than a re-ingest.
+              </p>
+            </div>
+            <div class="sg-scroll" style="margin-top: 1.5rem">
+              <table class="sg-spec">
+                <thead>
+                  <tr>
+                    <th scope="col">File</th>
+                    <th scope="col">Holds</th>
+                    <th scope="col">Rule</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="key">lib/roles.ts</td>
+                    <td>61 entries, read by <code>creditLine()</code></td>
+                    <td class="note">
+                      Drops the bracketed qualifier, collapses the variants Discogs spells
+                      differently, states each role once. <b>The table's order is the display
+                      order</b>: what someone made, then how it was cut, then what they played, then
+                      the sleeve and the office. An unrecognised role keeps its raw wording and
+                      sorts last — never dropped, never guessed at. Coverage is 97.4% of 4,429,673
+                      credit occurrences.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">lib/scene.ts</td>
+                    <td>the canon: 19 artists, 52 labels</td>
+                    <td class="note">
+                      What the Core pages rank on. Aliases inherit their artist's standing above a
+                      floor of 10 releases; groups and members never do, because an alias is
+                      identity and a band is association.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">lib/view.ts</td>
+                    <td><code>PAGE_SIZE</code>, <code>SHOW_SORT</code>, <code>percent()</code>, <code>years()</code></td>
+                    <td class="note">
+                      40 rows before "Load more", clamped to 1,000. A share floors at "&lt;1%"
+                      rather than rounding to zero, because "0% of output" next to a count of 6
+                      reads as a broken figure.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">lib/seo.ts</td>
+                    <td><code>canonicalPath()</code>, <code>countLine()</code></td>
+                    <td class="note">
+                      The canonical drops the query string. The description is built from the tab
+                      counts and drops what the corpus does not have.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="sg-rule">
+              <b>Ingest stores the dump's string verbatim; the app names it.</b> That split is the
+              point, and it is why the vocabulary can change without a re-derive. A merge is a
+              claim, so only merge what means the same work.
+            </p>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="sg-footer">
+      <div class="column">
+        <p>dub.digger — style guide</p>
+        <p>Byte counts from CLAUDE.md, measured. The code is the truth.</p>
+      </div>
+    </footer>
+  </body>
+</html>

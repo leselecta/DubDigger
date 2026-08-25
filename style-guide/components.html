@@ -225,7 +225,7 @@ active    <i>// "ranking" | "name"</i>
               <div class="sg-demo">
                 <p class="spec-eyebrow" style="margin: 0">Artist</p>
               </div>
-              <pre class="sg-code">class="text-accent font-mono text-xs <b>tracking-[0.32em]</b> uppercase"</pre>
+              <pre class="sg-code">class="text-accent font-mono <b>text-[0.8125rem]</b> <b>tracking-[0.32em]</b> uppercase"</pre>
               <p class="sg-rule">
                 <b>It names what you are looking at</b>, which is the one thing the big name below
                 it cannot tell you: "Chain Reaction" is both a label and two unrelated artists.
@@ -575,7 +575,7 @@ transform: 280ms cubic-bezier(0.4, 0, 0.2, 1)   <i>// sheet and scrim as one mov
               <p class="sg-sub">LabelledBand</p>
               <div class="sg-demo" style="padding: 0">
                 <div style="border-top: 1px solid var(--color-hairline); display: grid; gap: 1.5rem; padding: 3.5rem 1.75rem">
-                  <h4 class="mono-label" style="margin: 0; font-weight: 400">The idea</h4>
+                  <h4 class="mono-label" style="margin: 0; font-weight: 400; color: var(--color-ink); font-size: 0.8125rem">The idea</h4>
                   <div class="spec-body">
                     Every record is connected to another. That web of credits is how crate diggers
                     actually find music, and it all sits in Discogs.
@@ -583,12 +583,21 @@ transform: 280ms cubic-bezier(0.4, 0, 0.2, 1)   <i>// sheet and scrim as one mov
                 </div>
               </div>
               <pre class="sg-code">class="border-hairline grid gap-6 border-t <b>py-14</b> md:grid-cols-[180px_1fr]"
-  h2 → class="mono-label <b>md:mt-1</b>"</pre>
+  h2 → class="mono-label <b>text-ink text-[0.8125rem]</b> <b>md:mt-1</b>"</pre>
               <p class="sg-rule">
-                <b>The <code>md:mt-1</code> is not a nudge, it is the leading.</b> The label is 12px
+                <b>The <code>md:mt-1</code> is not a nudge, it is the leading.</b> The label is 13px
                 with the browser's own leading; body copy is 17px at 1.6, and that leading is split
                 above and below every line, so the prose starts about 4px lower. Below
                 <code>md</code> the grid is one column and there is nothing to align to.
+              </p>
+              <p class="sg-rule">
+                <b>The heading overrides <code>mono-label</code> to <code>ink</code> at
+                <code>0.8125rem</code>.</b> Band prose
+                is <code>ink-muted</code>, which is the grey <code>mono-label</code> already
+                carries. Side by side that reads as one system; stacked on a phone it is a caption
+                above prose rather than a title over it. The other <code>mono-label</code> users
+                caption a value and stay muted at 0.75rem. The size is the top of the
+                structural range, not a new one.
               </p>
             </div>
           </div>

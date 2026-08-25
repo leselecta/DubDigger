@@ -87,10 +87,11 @@ or it is dilution.
 | 0.6875rem | 0.14em | ink | Nav cells, drawer rows |
 | 0.6875rem | 0.05em | ink-faint | "(Beta)" |
 | 0.75rem | 0.2em | ink-muted | `mono-label` utility, "Load more" |
-| 0.75rem | 0.32em | accent | `Eyebrow` |
 | 0.75rem | 0.16em | ink-muted | Bio toggle |
 | 0.75rem | 0.1em | by grade | Relevance and type columns in results |
 | 0.75rem | 0.05em | ink-faint | Footer; role strings (sentence case, leading 1.65) |
+| 0.8125rem | 0.32em | accent | `Eyebrow` |
+| 0.8125rem | 0.2em | ink | `LabelledBand` heading |
 | 0.8125rem | 0.14em | ink-strong / ink-dim | Tab labels, active / resting |
 | 0.8125rem | 0.12em | ink-faint | Field labels (`FieldRow` dt) |
 | 0.8125rem | 0.06em | accent | The three-count line |
@@ -104,7 +105,7 @@ Counts always `tabular-nums` and `toLocaleString("en-GB")`.
 | Utility | Is |
 |---|---|
 | `column` | `max-width: 1200px; margin-inline: auto; padding-inline: 1.5rem` → `3rem` at 768px |
-| `mono-label` | mono, uppercase, 0.75rem, 0.2em, `ink-muted` |
+| `mono-label` | mono, uppercase, 0.75rem, 0.2em, `ink-muted`. A `LabelledBand` heading overrides to `ink` at 0.8125rem |
 | `link-rule` | `border-bottom: 1px solid rgb(255 255 255 / 0.25)` |
 
 ---
@@ -120,9 +121,9 @@ All in `web/src/components/`, all `.astro`.
 | `CollapsibleText` | slot | `CLAMP_PX = 145`; fade `h-12`, `linear-gradient(transparent, var(--color-bg))` |
 | `ContactDialog` | — | `<dialog>` + `showModal()`, `w-[min(26rem,calc(100vw-3rem))]`, `backdrop:bg-black/70` |
 | `CreditRow` | `count`, `href`, `name`, `detail?`, `meta?`, `metaLabel?`, `external?`, `slot="meta"` | `LIST_GRID`, `py-[18px]`, `gap-x-[22px]` |
-| `Eyebrow` | slot | `text-accent font-mono text-xs tracking-[0.32em] uppercase` |
+| `Eyebrow` | slot | `text-accent font-mono text-[0.8125rem] tracking-[0.32em] uppercase` |
 | `FieldRow` | `label`, `accent?`, `last?` | `grid-cols-[7rem_1fr] sm:grid-cols-[180px_1fr] py-2` |
-| `LabelledBand` | `label` | `border-t py-14 md:grid-cols-[180px_1fr]`, h2 `mono-label md:mt-1` |
+| `LabelledBand` | `label` | `border-t py-14 md:grid-cols-[180px_1fr]`, h2 `mono-label text-ink text-[0.8125rem] md:mt-1` |
 | `ListHeader` | `name`, `count`, `meta?` | `LIST_GRID`, `text-[0.6875rem] tracking-[0.2em]`, `border-b pb-3` |
 | `LoadMore` | `href`, `remaining` | ghost button, `data-hold-scroll` |
 | `OutboundLinks` | `kind`, `id`, `urls[]` | max 5 + Discogs; http/https only |

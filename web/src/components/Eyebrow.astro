@@ -4,7 +4,12 @@
  * on an entity page it names what you are looking at, which is the one thing
  * the big name itself cannot tell you: "Chain Reaction" is both a label and two
  * unrelated artists.
+ *
+ * 0.8125rem rather than 0.75, to match the `LabelledBand` heading. The two are
+ * the only mono type on the site that heads something rather than captioning
+ * it, so they read at one size: an eyebrow naming the page and a band label
+ * naming a section are the same job at two altitudes.
  */
 ---
 
-<p class="text-accent font-mono text-xs tracking-[0.32em] uppercase"><slot /></p>
+<p class="text-accent font-mono text-[0.8125rem] tracking-[0.32em] uppercase"><slot /></p>

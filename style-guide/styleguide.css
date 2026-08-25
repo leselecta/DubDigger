@@ -667,7 +667,7 @@ code {
 .spec-eyebrow {
   color: var(--color-accent);
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   letter-spacing: 0.32em;
   text-transform: uppercase;
 }

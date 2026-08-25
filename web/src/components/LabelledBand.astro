@@ -10,7 +10,7 @@ const { label } = Astro.props;
 {/*
  * `md:mt-1` puts the label's caps on the same line as the first line of the
  * text beside it. Both boxes already start at the top of the row, but the type
- * inside them does not: the label is 12px with the browser's own leading, while
+ * inside them does not: the label is 13px with the browser's own leading, while
  * body copy is 17px at 1.6, and that leading is split above and below every
  * line. So the prose starts about 4px lower than the label does, and the row
  * reads as though the heading has floated up.
@@ -18,7 +18,27 @@ const { label } = Astro.props;
  * Only from md, because below it the grid is one column and the label sits on
  * its own line, where there is nothing to align it to.
  */}
+{/*
+ * The label overrides `mono-label`'s grey to the top of the ramp, and that is a
+ * hierarchy fix rather than a decorative one. Every band's prose is
+ * `text-ink-muted`, which is the colour `mono-label` already carries: at `md`
+ * the grid holds them apart and identical greys read as one system, but below
+ * it the heading sits directly on top of its paragraph in the same grey at a
+ * smaller size, which is a caption above prose rather than a title over it.
+ * `ink` against `ink-muted` is the step that was missing. It applies at both
+ * widths, since the desktop pairing was quiet rather than wrong.
+ *
+ * The size goes with it, 0.75rem to 0.8125rem. That is the top of the range
+ * structural type already runs in rather than a new size, so the band heading
+ * is now the largest of the mono labels instead of the same as the smallest.
+ * Colour alone left it reading as a bright caption; a step of size is what
+ * makes it read as a heading.
+ *
+ * Only the band heading moves. The other `mono-label` users caption a value
+ * rather than head a section: the figures band's `ARTISTS` is meant to sit
+ * under its own 100px number, not compete with it.
+ */}
 <div class="border-hairline grid gap-6 border-t py-14 md:grid-cols-[180px_1fr]">
-  <h2 class="mono-label md:mt-1">{label}</h2>
+  <h2 class="mono-label text-ink text-[0.8125rem] md:mt-1">{label}</h2>
   <div><slot /></div>
 </div>

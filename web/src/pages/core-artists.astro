@@ -49,12 +49,27 @@ const shown = ordered.slice(0, limit);
       ) : (
         <>
           {SHOW_SORT && <SortBy basePath="/core-artists" active={sort} />}
-          {/* Count column parked: "Releases in scene" was not saying plainly
-              enough what it counted. Pass `count` again to bring it back. */}
-          <ListHeader name="Artist" meta="Active" />
+          {/*
+           * "Releases", and it counts every release on their artist line.
+           *
+           * It was "Releases in scene" over `sceneReleases` until 2026-08-25,
+           * which is the number the list actually ranks on, and it was parked
+           * for not saying plainly enough what it counted. The heading is now
+           * the plain word, so the column carries the plain number: `releaseCount`
+           * off the coverage row, which is the same total the artist's own page
+           * prints under the same word. Not `sceneReleases`, which would read 58
+           * here against 171 there for Rhythm & Sound, and not `lineReleases`
+           * either, which counts artist lines only and would read 160.
+           *
+           * The cost is that the list ranks on a figure it does not show. That
+           * is the right way round: a column has to be true on its own before it
+           * has to be useful, and the ranking is explained in prose above.
+           */}
+          <ListHeader name="Artist" count="Releases" meta="Active" />
           <ul>
             {shown.map((artist) => (
               <CreditRow
+                count={artist.releaseCount.toLocaleString("en-GB")}
                 href={`/artist/${artist.id}`}
                 name={artist.name}
                 meta={years(artist.firstYear, artist.lastYear)}

@@ -365,6 +365,17 @@ export interface TopArtist {
   sceneReleases: number;
   /** Their artist-line releases in total. The pair is the honest statement. */
   lineReleases: number;
+  /**
+   * Every release they appear on, artist line and credits alike, straight off
+   * the coverage row.
+   *
+   * NOT `lineReleases`, and the difference is why this field exists: Rhythm &
+   * Sound is on 160 artist lines and 171 releases, the other eleven as a credit.
+   * The Core Artists column is headed "Releases", so it has to be the number
+   * the artist's own page prints under the same word. `lineReleases` stays as
+   * the ranking's denominator, which is a different question.
+   */
+  releaseCount: number;
   /** Read off their coverage row, the same span the artist's own page reports. */
   firstYear: number | null;
   lastYear: number | null;
@@ -460,6 +471,7 @@ function build(): { artists: TopArtist[]; labels: TopLabel[] } {
             )
        SELECT a.id, a.name, c.scene,
               (SELECT count(DISTINCT release_id) FROM release_artists WHERE artist_id = a.id) AS line,
+              coalesce(v.release_count, 0) AS releases,
               v.first_year, v.last_year
          FROM scene_count c
          JOIN artists a ON a.id = c.artist_id
@@ -471,6 +483,7 @@ function build(): { artists: TopArtist[]; labels: TopLabel[] } {
     name: string;
     scene: number;
     line: number;
+    releases: number;
     first_year: number | null;
     last_year: number | null;
   }[];
@@ -491,6 +504,7 @@ function build(): { artists: TopArtist[]; labels: TopLabel[] } {
       standing: standingOf(r.id, r.scene),
       sceneReleases: r.scene,
       lineReleases: r.line,
+      releaseCount: r.releases,
       firstYear: r.first_year,
       lastYear: r.last_year,
       rank: weight(r.scene, r.line),

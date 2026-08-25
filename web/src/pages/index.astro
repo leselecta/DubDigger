@@ -78,18 +78,27 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
    * Searching drops the tagline and keeps everything else. A headline
    * announcing what the site is has done its job by the time someone has
    * typed into it, and the results are what they came back for.
+   *
+   * On a phone the band is sized to a figures cell's `py-10`, so the headline
+   * reads as one block in a stack of blocks rather than as a hero with air
+   * around it. The top is 16 rather than 10 because the two edges are not built
+   * the same: below the tagline the 40px is followed by the 24px the figures
+   * wrapper holds above its own hairline, so 40 and 40 comes out visibly
+   * lopsided. 64 against 40 is what reads as equal. The desktop values are the
+   * design's and are left alone: there the band is the whole first screen and
+   * the air is the point.
    */}
   <div
     class:list={[
       "column text-center",
-      searching ? "pt-14 pb-12" : "pt-24 pb-16 md:pt-[130px] md:pb-24",
+      searching ? "pt-14 pb-12" : "pt-16 pb-10 md:pt-[130px] md:pb-24",
     ]}
   >
     <Eyebrow>The Dub Techno Index</Eyebrow>
 
     {
       !searching && (
-        <h1 class="text-hero text-ink-strong mt-9 leading-[0.92] font-bold tracking-[-0.04em]">
+        <h1 class="text-hero text-ink-strong mt-3 leading-[0.92] font-bold tracking-[-0.04em] md:mt-9">
           Dig the Extended Scene<span class="text-accent">.</span>
           <br />
           Dub Techno First<span class="text-accent">.</span>

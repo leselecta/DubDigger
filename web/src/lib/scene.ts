@@ -42,13 +42,22 @@
  * files as group members rather than aliases, so alias expansion cannot reach
  * them: Rod Modell ("DeepChord (Rod Modell)"), and Moritz von Oswald and Mark
  * Ernestus ("Basic Channel / Maurizio / Rhythm & Sound").
+ *
+ * Where a person and a recording name are two ids, the one that carries the
+ * catalogue is the one listed, and the alias floor sorts the other out. Pole
+ * (611) holds 142 releases and Stefan Betke (311802) holds 3, so listing the
+ * person put a 3 above Heavenchord's 382 at the foot of the core band while
+ * the name doing the work came in as an alias. Listed the other way round,
+ * Betke falls under `ALIAS_BAND_FLOOR` and lands in `found`, where 3 belongs.
+ * Wolfgang Voigt is not the same case and stays as the person: he holds 124
+ * under his own name against Gas's 78, so both are real rows either way.
  */
 export const CORE_ARTISTS = [
   13117, // Basic Channel
   975, // Porter Ricks
   534, // Monolake
   406, // Vladislav Delay
-  311802, // Stefan Betke, who records as Pole
+  611, // Pole, the name Stefan Betke records under
   16162, // Wolfgang Voigt, who records as Gas
   973, // Vainqueur
   12858, // DJ Pete, who records as Substance

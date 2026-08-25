@@ -40,25 +40,11 @@
 }
 
 /*
- * The sans, mirroring globals.css. `HN Local` resolves to the installed
- * Helvetica Neue, so Apple platforms download nothing; everywhere else the
- * family falls through to DubDigger Sans (a subset of TeX Gyre Heros), whose
+ * The sans, mirroring globals.css. DubDigger Sans (a subset of TeX Gyre Heros)
+ * serves every platform, including the Macs that have Helvetica Neue installed:
+ * one typeface and one rendering path beats a stack that changes by OS. The
  * overrides pin it to Helvetica Neue's vertical metrics.
  */
-
-@font-face {
-  font-family: "HN Local";
-  font-style: normal;
-  font-weight: 400;
-  src: local("HelveticaNeue"), local("Helvetica Neue");
-}
-
-@font-face {
-  font-family: "HN Local";
-  font-style: normal;
-  font-weight: 700;
-  src: local("HelveticaNeue-Bold"), local("Helvetica Neue Bold");
-}
 
 @font-face {
   font-family: "DubDigger Sans";
@@ -85,7 +71,7 @@
 /* ---------------------------------------------------------------- tokens -- */
 
 :root {
-  --font-sans: "HN Local", "DubDigger Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-sans: "DubDigger Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
   --color-bg: #060606;

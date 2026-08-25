@@ -17,36 +17,27 @@
  * string tested. Names are set at up to 104px, so that is a redrawn page rather
  * than a redrawn letter.
  *
- * `HN Local` resolves to the installed Helvetica Neue and stops there, so Apple
- * platforms download nothing and see exactly what they saw before. `local()`
- * matches on full name or PostScript name, never the family name, which is why
- * the bold face names `HelveticaNeue-Bold` rather than `Helvetica Neue`.
+ * It was fixed with a `local()`-first face, so Apple platforms kept the
+ * installed Helvetica Neue and only everyone else downloaded a clone. That
+ * worked, and it was dropped anyway on 2026-08-16: it made the typeface a
+ * function of the visitor's OS, and the branch that mattered was the one
+ * Simone cannot see from his own machine. A rendering path you cannot test is
+ * a liability whatever it costs in bytes.
  *
- * Everywhere else both faces fail to match, the family falls through, and
- * DubDigger Sans loads: TeX Gyre Heros, a real Helvetica clone rather than a
- * lookalike, within 1.4% of Helvetica Neue on width where Roboto is 6% out. Its
- * only visible tell is that Heros clones Helvetica's bold, which is lighter than
- * Neue's. See web/public/fonts/README.md.
- */
-@font-face {
-  font-family: "HN Local";
-  src: local("HelveticaNeue"), local("Helvetica Neue");
-  font-weight: 400;
-  font-style: normal;
-}
-@font-face {
-  font-family: "HN Local";
-  src: local("HelveticaNeue-Bold"), local("Helvetica Neue Bold");
-  font-weight: 700;
-  font-style: normal;
-}
-
-/*
+ * So DubDigger Sans now serves everyone: TeX Gyre Heros, a real Helvetica
+ * clone rather than a lookalike, within 0.88% of Helvetica Neue on width where
+ * Roboto is 6% out. One typeface, one rendering path, what Simone sees is what
+ * everyone sees. The price is 36.4 KB now paid on Apple platforms too, and a
+ * bold very slightly lighter than Neue's, because Heros clones Helvetica's
+ * bold rather than Neue's redrawn one.
+ *
+ * The trailing system names are a safety net for a failed download, not a
+ * second design. See web/public/fonts/README.md.
+ *
  * The overrides pin Heros to Helvetica Neue's real vertical metrics, read off
  * the font files: Heros ships an ascent of 114.8% against Neue's 95.2%, a line
- * box a fifth too tall. They live on these faces and not on `HN Local`, because
- * an override applies to the whole face including a `local()` match, so one
- * shared face would have rewritten Helvetica Neue's own metrics on macOS.
+ * box a fifth too tall. Keeping them means the layout is identical to what the
+ * design was built against, whichever face ends up on screen.
  */
 @font-face {
   font-family: "DubDigger Sans";
@@ -75,7 +66,7 @@
  * doing the work borders would otherwise do.
  */
 @theme {
-  --font-sans: "HN Local", "DubDigger Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-sans: "DubDigger Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
   --color-bg: #060606;

@@ -33,10 +33,9 @@
         <p class="sg-eyebrow">Typography</p>
         <h1 class="sg-title">Two families<span class="dot">.</span></h1>
         <p class="sg-lead">
-          Helvetica Neue for names and headlines, with a self-hosted Helvetica clone standing in
-          where it is not installed. IBM Plex Mono, uppercase and letterspaced, for everything
-          structural: labels, counts, roles, meta, controls. There is no third family and no
-          italic anywhere.
+          A self-hosted Helvetica clone for names and headlines, on every platform. IBM Plex Mono,
+          uppercase and letterspaced, for everything structural: labels, counts, roles, meta,
+          controls. There is no third family and no italic anywhere.
         </p>
       </div>
 
@@ -56,13 +55,13 @@
                 <tbody>
                   <tr>
                     <td class="key">--font-sans</td>
-                    <td>"HN Local", "DubDigger Sans", "Helvetica Neue", Helvetica, Arial, sans-serif</td>
+                    <td>"DubDigger Sans", "Helvetica Neue", Helvetica, Arial, sans-serif</td>
                     <td class="note">
-                      Names, headlines, prose. <code>HN Local</code> is a <code>local()</code>-only
-                      face, so macOS and iOS resolve the installed Helvetica Neue and download
-                      nothing. Everywhere else it falls through to DubDigger Sans, a subset of TeX
-                      Gyre Heros, which is a real Helvetica clone within 1.4% of Neue on width.
-                      Windows used to get Arial and Android Roboto, 6% narrower.
+                      Names, headlines, prose. DubDigger Sans is a subset of TeX Gyre Heros, a
+                      real Helvetica clone within 0.88% of Helvetica Neue on width, and it is
+                      served to every platform rather than only to the ones missing Neue. The
+                      trailing system names are a safety net for a failed download, not a second
+                      design. Windows used to get Arial and Android Roboto, 6% narrower.
                     </td>
                   </tr>
                   <tr>

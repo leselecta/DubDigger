@@ -49,7 +49,7 @@ const shown = ordered.slice(0, limit);
       ) : (
         <>
           {SHOW_SORT && <SortBy basePath="/core-artists" active={sort} />}
-          <ListHeader name="Artist" count="In scene" meta="Active" />
+          <ListHeader name="Artist" count="Releases in scene" meta="Active" />
           <ul>
             {shown.map((artist) => (
               <CreditRow

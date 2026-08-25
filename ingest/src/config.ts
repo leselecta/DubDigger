@@ -345,24 +345,61 @@ export function isPlaceholderLabel(name: string): boolean {
  */
 export const relevance = {
   /**
-   * Measured against the 20260801 dump, the boundary case is Jeff Mills at
-   * 15.4% and 160 seed releases. He is central to what this tool is for, so the
-   * threshold sits below him. Aphex Twin at 10.6% and The Clash at 8.8% stay
-   * medium, which is right: both belong in the corpus, neither is the scene.
+   * More than half. Added 2026-08-25, and it is a seam rather than a new dial:
+   * the old top step ran from Jeff Mills at 15.4% to Fluxion at 97.9% and put
+   * one word on 16,985 artists, so Basic Channel at 79% and someone with a
+   * fifth of their output in the cluster read the same.
    *
-   * The floor of 5 releases is what stops a one-off from reading as devotion.
+   * 50% is the cut because it says something a reader can check: most of what
+   * this artist did is in the cluster. It lands where the canon does. Above it,
+   * Fluxion 97.9%, Rhythm & Sound 93.8%, DeepChord 88.5%, Deadbeat 80.1%,
+   * Basic Channel 79.2%, Maurizio 76.4%, Monolake 66.7%, Vainqueur 64.1%,
+   * Porter Ricks 62.3%, Rod Modell 54.8%. Below it, the people who did this and
+   * also did other things: Vladislav Delay 48.5%, Mark Ernestus 46.8%, Moritz
+   * von Oswald 38.4%, Pole 37.3%, Wolfgang Voigt 29.2%.
+   *
+   * It is the same number the label rule already cuts at, which is not a
+   * coincidence worth hiding: on both sides of the site the top step means more
+   * than half, of an artist's output or of a label's roster.
+   *
+   * The floor of 5 releases is the old one, unmoved. It is what stops a one-off
+   * from reading as devotion, and it matters more here than anywhere: 31,809
+   * artists have 2 to 4 seed releases at 15% or better, 6,546 of them at 100%
+   * off two records out of two.
    */
-  high: { minSeedReleases: 5, minSeedShare: 0.15 },
+  veryHigh: { minSeedReleases: 5, minSeedShare: 0.5 },
+  /**
+   * The old top step, kept where it was, plus a route in on volume.
+   *
+   * The share bar does not move: Jeff Mills at 15.4% and 160 seed releases is
+   * the boundary case it was set by, and he is central to what this tool is
+   * for. What is new is `orSeedReleases`, which is the step reaching down into
+   * medium now that there is a step above it holding the top.
+   *
+   * IT REVERSES A CALL THIS FILE USED TO MAKE. Aphex Twin at 10.6% and The
+   * Clash at 8.8% were pinned as medium, on the argument that both belong in
+   * the corpus and neither is the scene. That argument was written when high
+   * was the top step and therefore meant "this is the scene". It is now second
+   * of five with the top step above it, so it means "deep in the cluster, among
+   * other things", which is exactly what a 114-record run through these styles
+   * is. The 5% share bar is what keeps the route honest: it admits 844 artists,
+   * and a mastering engineer with 60,000 credits reaches nothing.
+   */
+  high: { minSeedReleases: 5, minSeedShare: 0.15, orSeedReleases: 20, orMinSeedShare: 0.05 },
   /**
    * Either a real share of a small output, or enough core work that the share
    * stops mattering. 20 seed releases is a body of work in this scene whatever
    * else the artist did.
+   *
+   * Untouched by the fifth step, deliberately. Every lineage floor sits on this
+   * bar, so moving it would move King Tubby and Fela Kuti under a change that
+   * is about the top of the scale.
    */
   medium: { minSeedReleases: 2, minSeedShare: 0.05, orSeedReleases: 20 },
 };
 
 /**
- * The same four steps for a label, so one word means one thing site-wide.
+ * The same five steps for a label, so one word means one thing site-wide.
  *
  * WHY THIS EXISTS. A label used to be graded yes or no: a seed label read High
  * and everything else read Low. That put Ndagga, Mark Ernestus' own Senegalese
@@ -372,8 +409,10 @@ export const relevance = {
  *
  * IT IS THE SAME MEASURE, NOT A NEW ONE. Read from `label_artist_pairs`: every
  * act on the artist line of the label's releases across the whole dump, and how
- * many of them are seed artists. `high` IS the seed-label rule, so what the
- * corpus calls a scene label and what a reader is told stay one decision.
+ * many of them are seed artists. `very high` IS the seed-label rule, so what
+ * the corpus calls a scene label and what a reader is told stay one decision.
+ * That invariant did not move when the fifth step was added on 2026-08-25; the
+ * step it names did. `check-corpus` asserts it against the top step by name.
  *
  * WHAT IT IS NOT MEASURED ON. Not the roster the label page lists. That roster
  * is corpus artists only, artist line plus credits, and both differences push
@@ -383,14 +422,29 @@ export const relevance = {
  * The page therefore lists one set and grades another, and the wording says so
  * rather than calling the denominator "roster".
  *
- * As built: 18,498 high, 10,507 medium, 51,677 low, 33,270 none.
+ * As built: 18,498 very high, 4,953 high, 5,554 medium, 51,677 low, 33,270
+ * none.
  */
 export const labelRelevance = {
   /**
-   * The middle step, and the whole point of the table. 2 seed artists and 25%
-   * catches the labels the cliff cut in half: Tectonic 49%, Hyperdub 46%,
-   * Ndagga 43%, Metroplex 40%, Honest Jon's 39%, Warp 31%. Every major stays
-   * below it, the closest being Virgin at 7.4%.
+   * The step between the seed dial and the middle, added with the artist one so
+   * the two scales keep the same shape.
+   *
+   * 35% is where the labels sit that the seed dial cuts off by a point or two
+   * and that nobody would file next to Warp: Tectonic 49%, Hyperdub 46%,
+   * Ndagga 43%, Metroplex 40%, Honest Jon's 39%. Warp at 31% stays medium,
+   * which is the separation this step is for. Every major is an order of
+   * magnitude below, the closest being Virgin at 7.4%.
+   *
+   * The floor is the seed rule's own, for the reason spelled out under medium:
+   * a ratio needs two names behind it.
+   */
+  high: { minSeedArtists: 2, minSeedArtistRatio: 0.35 },
+  /**
+   * The middle step, and the whole point of the table when it had three steps.
+   * 2 seed artists and 25% catches the labels the cliff cut in half. Most of
+   * them have since moved up to `high`, which is what that step is for; what
+   * stays here is the band from Warp at 31% down, still clear of every major.
    *
    * The floor is the seed rule's own, and it guards the middle step for the
    * same reason it guards the top one: 26,393 labels are a single seed artist

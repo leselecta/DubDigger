@@ -251,7 +251,8 @@ CREATE TABLE IF NOT EXISTS artist_coverage (
   -- displays, and they are not the tally the grade below was computed from.
   seed_releases      INTEGER NOT NULL DEFAULT 0,
   seed_share         REAL,
-  -- 'high' | 'medium' | 'low' | 'none', as the seed measures it. The dials are
+  -- 'very high' | 'high' | 'medium' | 'low' | 'none', as the seed measures it.
+  -- The dials are
   -- in config.ts. This is the measurement, before any editorial rule runs.
   scene_relevance    TEXT NOT NULL DEFAULT 'none',
   -- What the interface shows: scene_relevance, raised to the lineage floor when
@@ -263,7 +264,7 @@ CREATE TABLE IF NOT EXISTS artist_coverage (
   lineage            TEXT
 );
 
--- The label grade, on the same four steps as an artist so one word means one
+-- The label grade, on the same five steps as an artist so one word means one
 -- thing site-wide. Dials in config.ts under labelRelevance.
 --
 -- The counts come from label_artist_pairs: every act on the artist line of this
@@ -279,6 +280,9 @@ CREATE TABLE IF NOT EXISTS label_coverage (
   -- NULL only when the dump records no artist line for this label at all, which
   -- is not the same as a roster with nobody from the cluster on it.
   seed_ratio        REAL,
+  -- The same five words an artist wears, from a measure of the label's own.
+  -- 'very high' IS the seed-label rule, which is what keeps the corpus boundary
+  -- and the top step of the display one decision.
   relevance         TEXT NOT NULL DEFAULT 'none'
 );
 

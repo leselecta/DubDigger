@@ -8,7 +8,7 @@ import {
 } from "../config.ts";
 import { startRun } from "../db/open.ts";
 
-const { high, medium } = relevance;
+const { veryHigh, high, medium } = relevance;
 
 /**
  * An artist's seed work as a share of everything they have ever appeared on.
@@ -54,8 +54,12 @@ const displayedShare =
  */
 const grade = `CASE
              WHEN s.artist_id IS NULL OR s.seed_releases < 1 THEN 'none'
+             WHEN s.seed_releases >= ${veryHigh.minSeedReleases}
+              AND ${share} >= ${veryHigh.minSeedShare}                THEN 'very high'
              WHEN s.seed_releases >= ${high.minSeedReleases}
               AND ${share} >= ${high.minSeedShare}                    THEN 'high'
+             WHEN s.seed_releases >= ${high.orSeedReleases}
+              AND ${share} >= ${high.orMinSeedShare}                  THEN 'high'
              WHEN s.seed_releases >= ${medium.orSeedReleases}         THEN 'medium'
              WHEN s.seed_releases >= ${medium.minSeedReleases}
               AND ${share} >= ${medium.minSeedShare}                  THEN 'medium'
@@ -333,10 +337,11 @@ export async function runDerive(
     ).run(t.floor, t.name, ...below);
   }
 
-  // Labels, on the same four steps, from the same measure the seed-label rule
+  // Labels, on the same five steps, from the same measure the seed-label rule
   // uses: every act on the artist line across the whole dump, and how many of
-  // them are seed artists. `high` is that rule exactly, so a label the corpus
-  // treats as a scene label and a label the page calls high are one decision.
+  // them are seed artists. `very high` is that rule exactly, so a label the
+  // corpus treats as a scene label and the top step a page shows are one
+  // decision. Renaming the step did not move it.
   //
   // NOT computed from label_roster, though that is what the page lists. The
   // roster is corpus artists only and counts credits, and both differences push
@@ -363,10 +368,14 @@ export async function runDerive(
            CASE
              WHEN coalesce(p.seeds, 0) = 0                       THEN 'none'
              WHEN p.seeds >= ${seedLabel.minSeedArtists}
-              AND 1.0 * p.seeds / p.total >= ${seedLabel.minSeedArtistRatio}   THEN 'high'
+              AND 1.0 * p.seeds / p.total
+                  >= ${seedLabel.minSeedArtistRatio}                      THEN 'very high'
+             WHEN p.seeds >= ${labelRelevance.high.minSeedArtists}
+              AND 1.0 * p.seeds / p.total
+                  >= ${labelRelevance.high.minSeedArtistRatio}            THEN 'high'
              WHEN p.seeds >= ${labelRelevance.medium.minSeedArtists}
               AND 1.0 * p.seeds / p.total
-                  >= ${labelRelevance.medium.minSeedArtistRatio}               THEN 'medium'
+                  >= ${labelRelevance.medium.minSeedArtistRatio}          THEN 'medium'
              ELSE 'low'
            END
       FROM labels l
@@ -414,7 +423,8 @@ export async function runDerive(
          FROM label_coverage
         GROUP BY relevance
         ORDER BY CASE relevance
-                   WHEN 'high' THEN 0 WHEN 'medium' THEN 1 WHEN 'low' THEN 2 ELSE 3 END`,
+                   WHEN 'very high' THEN 0 WHEN 'high' THEN 1
+                   WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END`,
     )
     .all() as DeriveStats["labelGrades"];
 

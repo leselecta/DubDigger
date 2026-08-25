@@ -187,25 +187,43 @@ const roster = (labelId: number, total: number, seeds: number) => {
   };
 };
 
-test("a label is graded on the same four steps as an artist", async () => {
+test("a label is graded on the same five steps as an artist", async () => {
   // Chain Reaction: everyone it puts out is in the cluster. The top step is the
   // seed-label rule itself, so what the corpus calls a scene label and what a
   // reader is told are one decision, not two.
   const pure = roster(500, 4, 4);
-  // Ndagga: three of the seven acts it released are in the cluster, which is
-  // under the seed-label dial and nowhere near a major. This is the case the
-  // scale exists for; before it, this label read the same word as Columbia.
-  const near = roster(600, 7, 3);
+  // Ndagga: three of the seven acts it released are in the cluster. Under the
+  // seed-label dial and nowhere near a major, which is the room the step below
+  // the top exists for. Before the scale it read the same word as Columbia,
+  // and before the fifth step it read the same word as Warp.
+  const close = roster(650, 7, 3);
+  // Warp: four of thirteen. Real ties, and not a room this scene lives in.
+  const near = roster(600, 13, 4);
   // A major: one act in the cluster among twenty.
   const major = roster(700, 20, 1);
 
-  const db = corpus([...pure.rows, ...near.rows, ...major.rows]);
-  seed(db, [...pure.seeds, ...near.seeds, ...major.seeds]);
+  const db = corpus([...pure.rows, ...close.rows, ...near.rows, ...major.rows]);
+  seed(db, [...pure.seeds, ...close.seeds, ...near.seeds, ...major.seeds]);
   await runDerive(db);
 
-  assert.equal(labelGrade(db, 500), "high");
+  assert.equal(labelGrade(db, 500), "very high");
+  assert.equal(labelGrade(db, 650), "high");
   assert.equal(labelGrade(db, 600), "medium");
   assert.equal(labelGrade(db, 700), "low");
+});
+
+test("the top label step is still exactly the seed-label rule", async () => {
+  // The invariant check-corpus asserts, in miniature. Renaming the top step
+  // must not move it: a label at the seed dial is very high and one a hair
+  // under it is not, whatever the step below is called.
+  const at = roster(510, 4, 2); // 50%, the dial itself
+  const under = roster(520, 5, 2); // 40%, a hair under
+  const db = corpus([...at.rows, ...under.rows]);
+  seed(db, [...at.seeds, ...under.seeds]);
+  await runDerive(db);
+
+  assert.equal(labelGrade(db, 510), "very high");
+  assert.equal(labelGrade(db, 520), "high");
 });
 
 test("a label ratio needs two names behind it", async () => {
@@ -308,9 +326,54 @@ test("relevance needs both a body of core work and a share of the output", async
   ]);
   await runDerive(db);
 
-  assert.equal(relevanceOf(db, 10), "high");
+  assert.equal(relevanceOf(db, 10), "very high");
+  assert.equal(relevanceOf(db, 11), "very high");
+  assert.equal(relevanceOf(db, 12), "high");
+});
+
+test("the top step is more than half the output, and the one below reaches down", async () => {
+  // The seam the fifth step opened. Everything here used to read one word.
+  const db = corpus([{ id: 1, artists: [10, 11, 12, 13] }]);
+  seed(db, [
+    [10, 142, 145], //  98%, Fluxion: the scene and almost nothing else
+    [11, 234, 609], //  38%, Moritz von Oswald: deep, and he does other things
+    [12, 160, 1039], // 15%, Jeff Mills: the bar the old top step sat on
+    [13, 114, 1079], // 11%, Aphex Twin: reaches high on volume, not on share
+  ]);
+  await runDerive(db);
+
+  assert.equal(relevanceOf(db, 10), "very high");
   assert.equal(relevanceOf(db, 11), "high");
-  assert.equal(relevanceOf(db, 12), "medium");
+  assert.equal(relevanceOf(db, 12), "high");
+  assert.equal(relevanceOf(db, 13), "high");
+});
+
+test("a deep catalogue with a thin share stops at high, not the top step", async () => {
+  // The volume route reaches the step below the top and no further. Share is
+  // what the top step measures, so a big number cannot buy it.
+  const db = corpus([{ id: 1, artists: [10] }]);
+  seed(db, [[10, 400, 4000]]); // 10%, a huge body of work
+  await runDerive(db);
+  assert.equal(relevanceOf(db, 10), "high");
+});
+
+test("the volume route needs a share behind it as well as a count", async () => {
+  // 25 records is a body of work whatever else the artist did, which is medium.
+  // It is not high unless a real fraction of the output is in the cluster.
+  const db = corpus([{ id: 1, artists: [10] }]);
+  seed(db, [[10, 25, 5000]]); // 0.5%
+  await runDerive(db);
+  assert.equal(relevanceOf(db, 10), "medium");
+});
+
+test("the five-release floor still guards the top step", async () => {
+  // Two records out of two is 100%, and the floor is what stops it reading as
+  // devotion. 31,809 artists sit in exactly this shape, which is why the floor
+  // did not move when the step above it was added.
+  const db = corpus([{ id: 1, artists: [10] }]);
+  seed(db, [[10, 2, 2]]);
+  await runDerive(db);
+  assert.equal(relevanceOf(db, 10), "medium");
 });
 
 test("one record in the seed is low however pure it looks", async () => {
@@ -413,8 +476,8 @@ test("a tradition lifts the grade to the floor, and keeps the measurement", asyn
 });
 
 test("a tradition lifts to the floor and no further", async () => {
-  // 11 is already high on scene work. The tag describes them; it cannot promote
-  // them, and it must not demote them to the floor either.
+  // 11 is already at the top step on scene work. The tag describes them; it
+  // cannot promote them, and it must not demote them to the floor either.
   const db = corpus([
     ...tradition(11, { styles: ["Dub"], genres: ["Reggae"] }),
     { id: 500, artists: [11] },
@@ -423,8 +486,8 @@ test("a tradition lifts to the floor and no further", async () => {
   await runDerive(db);
 
   const row = coverageOf(db, 11) as { scene_relevance: string; relevance: string };
-  assert.equal(row.scene_relevance, "high");
-  assert.equal(row.relevance, "high");
+  assert.equal(row.scene_relevance, "very high");
+  assert.equal(row.relevance, "very high");
 });
 
 test("afrobeat and detroit techno are traditions too", async () => {

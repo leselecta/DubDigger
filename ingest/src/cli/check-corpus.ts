@@ -237,9 +237,13 @@ const isCore = db.prepare(
   `SELECT count(*) FROM artists a JOIN corpus_artists m ON m.artist_id = a.id
     WHERE a.name = ? AND m.is_seed = 1`,
 );
+// The near half of the scale, not one step of it. The list below is the acts
+// nobody would argue about, and adding a step above `high` on 2026-08-25 split
+// them across two words: Basic Channel at 79% is very high, Jeff Mills at 15.4%
+// is high, and both are the assertion this makes.
 const isHigh = db.prepare(
   `SELECT count(*) FROM artists a JOIN artist_coverage c ON c.artist_id = a.id
-    WHERE a.name = ? AND c.relevance = 'high'`,
+    WHERE a.name = ? AND c.relevance IN ('very high', 'high')`,
 );
 const hasLineage = db.prepare(
   `SELECT count(*) FROM artists a JOIN artist_coverage c ON c.artist_id = a.id
@@ -251,7 +255,7 @@ const anyLineage = db.prepare(
 );
 const atLeastMedium = db.prepare(
   `SELECT count(*) FROM artists a JOIN artist_coverage c ON c.artist_id = a.id
-    WHERE a.name = ? AND c.relevance IN ('high', 'medium')`,
+    WHERE a.name = ? AND c.relevance IN ('very high', 'high', 'medium')`,
 );
 const isLow = db.prepare(
   `SELECT count(*) FROM artists a JOIN artist_coverage c ON c.artist_id = a.id
@@ -273,17 +277,19 @@ console.log();
 for (const name of LABELS_OUT) check("label", name, false, isSeedLabel.pluck().get(name) as number);
 
 // The top step of the label scale IS the seed-label rule, which is what lets a
-// page say "high" and the corpus say "scene label" and mean one thing. If these
-// two counts ever part, the display has quietly forked from the definition.
+// page say "very high" and the corpus say "scene label" and mean one thing. If
+// these two counts ever part, the display has quietly forked from the
+// definition. The step was called `high` until 2026-08-25 and the invariant is
+// the same one: it asserts the top step by name, whatever the name is.
 const seedLabelCount = db.prepare("SELECT count(*) FROM seed_labels").pluck().get() as number;
 const highLabelCount = db
-  .prepare("SELECT count(*) FROM label_coverage WHERE relevance = 'high'")
+  .prepare("SELECT count(*) FROM label_coverage WHERE relevance = 'very high'")
   .pluck()
   .get() as number;
 const agree = seedLabelCount === highLabelCount;
 if (!agree) failures++;
 console.log(
-  `\n  ${agree ? "ok  " : "FAIL"}  label  ${"high = seed labels".padEnd(26)}` +
+  `\n  ${agree ? "ok  " : "FAIL"}  label  ${"very high = seed labels".padEnd(26)}` +
     `${highLabelCount.toLocaleString("en-GB")} of ${seedLabelCount.toLocaleString("en-GB")}`,
 );
 
@@ -294,7 +300,7 @@ for (const name of ARTISTS_NOT_CORE) {
   check("artist", name, false, isCore.pluck().get(name) as number);
 }
 
-console.log("\nHigh relevance\n");
+console.log("\nHigh relevance or better\n");
 for (const name of ARTISTS_HIGH) check("artist", name, true, isHigh.pluck().get(name) as number);
 console.log();
 for (const name of ARTISTS_NOT_CORE) {

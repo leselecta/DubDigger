@@ -55,11 +55,16 @@ const releases = active === "releases" ? getArtistReleases(artist.id, limit) : [
 /**
  * One grade, and what it is standing on.
  *
- * The four steps are the ones the search results use. Two different things can
+ * The five steps are the ones the search results use. Two different things can
  * put an artist on a step, so the clause always says which: work inside the
  * cluster, or membership of a tradition it came out of. King Tubby reads
  * medium, and it would be a lie to let that imply dub techno records he never
  * made, so the clause says weak ties AND says why he is here anyway.
+ *
+ * The ladder had a gap in it before the fifth step arrived, and that is why
+ * this table barely moved: it ran very strong, strong, weak, very weak, with
+ * nothing in the middle. "Moderate" is the rung that was always missing, so the
+ * new step took the word at the top and everything else stayed where it was.
  *
  * "Cluster" rather than "scene" throughout: the scene is the whole extended
  * map this tool draws, and the cluster is the dub techno core it was drawn
@@ -70,8 +75,9 @@ const releases = active === "releases" ? getArtistReleases(artist.id, limit) : [
  * not a weak collaborator. That distinction is too useful to drop.
  */
 const SCENE_REASON: Record<string, string> = {
-  high: "very strong ties with the core dub techno cluster",
-  medium: "strong ties with the core dub techno cluster",
+  "very high": "very strong ties with the core dub techno cluster",
+  high: "strong ties with the core dub techno cluster",
+  medium: "moderate ties with the core dub techno cluster",
   low: "weak ties with the core dub techno cluster",
   none: "very weak ties with the core dub techno cluster",
 };

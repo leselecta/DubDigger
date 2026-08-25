@@ -13,7 +13,7 @@ import { ALIAS_BAND_FLOOR, CORE_ARTISTS, NAMED_ARTISTS, SCENE_LABELS } from "./s
  * reached the corpus by one hop, through a real credit or a shared label; the
  * connection is what the page should show, not a grade.
  */
-export type Relevance = "high" | "medium" | "low" | "none";
+export type Relevance = "very high" | "high" | "medium" | "low" | "none";
 
 export interface Artist {
   id: number;
@@ -76,9 +76,9 @@ export interface Label {
   artistCount: number;
   releaseCount: number;
   /**
-   * The same four steps an artist is graded on, so one word means one thing
+   * The same five steps an artist is graded on, so one word means one thing
    * site-wide. Measured on how much of what the label released is in the
-   * cluster; `high` is the seed-label rule itself.
+   * cluster; `very high` is the seed-label rule itself.
    */
   relevance: Relevance;
   /**
@@ -114,7 +114,7 @@ export interface SearchHit {
    * here, and saying so is honest where hiding him would not be.
    *
    * An artist is graded on their own work and a label on how much of what it
-   * released is in the cluster. Two measures, four steps, one vocabulary, which
+   * released is in the cluster. Two measures, five steps, one vocabulary, which
    * is the only way the column can be scanned as a single column.
    */
   relevance: Relevance;
@@ -656,11 +656,17 @@ export function search(query: string, limit = 40): SearchResults {
    * scene artists are the answer and he is a footnote.
    *
    * Artists and labels sort against each other on the one scale, which they can
-   * now that a label is graded in four steps rather than two. It used to be two
+   * now that a label is graded in five steps rather than two. It used to be two
    * lists interleaved by a rule of thumb, and the rule of thumb was the reason
    * Ndagga sorted level with a label that has nothing to do with any of this.
    */
-  const ORDER: Record<string, number> = { high: 0, medium: 1, low: 2, none: 3 };
+  const ORDER: Record<string, number> = {
+    "very high": 0,
+    high: 1,
+    medium: 2,
+    low: 3,
+    none: 4,
+  };
 
   const hits: (SearchHit & { rank: number })[] = [
     ...artists.map((r) => ({

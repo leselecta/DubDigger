@@ -49,20 +49,26 @@ const RESULT_GRID = "grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_11rem_5rem]
  *
  * The accent covers the top two grades, not just the top one. This column is
  * scanned rather than read, and what a digger is scanning for is the near half
- * of the scale: high and medium are both "worth stopping on" and the split
- * belongs between medium and low. Everything below stays in the ink ramp, so
- * the colour still marks a boundary rather than shading four steps.
+ * of the scale. Two of five is where the boundary sits now: it was high and
+ * medium against a four-step scale, and the fifth step took the top of medium
+ * up into high rather than adding a colour. Accenting three of five would be
+ * over half the scale, which is the point at which a mark stops marking.
  *
- * Labels are graded on the same four words, from a measure of their own: how
+ * Below the boundary the three quiet greys do the work, one step each, in the
+ * order the ramp already runs. That is why the scale is five words and not six:
+ * two accented steps plus the ramp is exactly what the tokens have.
+ *
+ * Labels are graded on the same five words, from a measure of their own: how
  * much of what they released is in the cluster. The underlying test is not the
  * artist one, and it does not need to be. One column asking one question in one
  * vocabulary beats two scales sharing a heading, and until a label had four
  * steps this column had a two-step scale pretending to be a four-step one.
  */
 const RELEVANCE_SHADE: Record<string, string> = {
+  "very high": "text-accent",
   high: "text-accent",
-  medium: "text-accent",
-  low: "text-ink-muted",
+  medium: "text-ink-muted",
+  low: "text-ink-dim",
   "very low": "text-ink-faint",
 };
 

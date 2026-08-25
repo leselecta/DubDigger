@@ -498,7 +498,9 @@ export const lineage = {
    *
    * A tradition raises an artist TO its floor and never past it, so the only
    * grades it may touch are the ones below. Written out rather than computed
-   * from an ordering, because there are four steps and two floors.
+   * from an ordering, because there are five steps and two floors, and the two
+   * floors are both near the bottom: the fifth step went in above every grade
+   * listed here, so adding it needed no edit to this map.
    */
   liftsFrom: {
     medium: ["none", "low"],

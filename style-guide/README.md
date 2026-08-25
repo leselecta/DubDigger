@@ -235,7 +235,7 @@ browser). Never give the drawer `inert`.
 4. Lists: `ListHeader` + `CreditRow` + `LIST_GRID`; `Absence` when empty; `LoadMore` past 40.
 5. Any state (tab, sort, page, query) goes in the URL.
 6. Any pivot gets `link-rule`; anything with no page gets a `Chip` with no `href`.
-7. Grades read in the four steps, with the reason beside them in `ink-faint`.
+7. Grades read in the five steps, with the reason beside them in `ink-faint`.
 8. New grey? 4.5:1. New control border? `edge-strong`, 3:1.
 9. New script? `astro:page-load`, motion guard, argue the bytes.
 10. Numbers: `toLocaleString("en-GB")` and `tabular-nums`.

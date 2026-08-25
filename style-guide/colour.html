@@ -235,10 +235,13 @@
             <div class="sg-block">
               <div class="sg-demo">
                 <p class="spec-grades" style="margin: 0 0 0.75rem">
+                  <span class="g-veryhigh">very high</span> worth stopping on
+                </p>
+                <p class="spec-grades" style="margin: 0 0 0.75rem">
                   <span class="g-high">high</span> worth stopping on
                 </p>
                 <p class="spec-grades" style="margin: 0 0 0.75rem">
-                  <span class="g-medium">medium</span> worth stopping on
+                  <span class="g-medium">medium</span> in the ink ramp
                 </p>
                 <p class="spec-grades" style="margin: 0 0 0.75rem">
                   <span class="g-low">low</span> in the ink ramp
@@ -249,14 +252,17 @@
               </div>
               <pre class="sg-code"><i>// web/src/pages/index.astro</i>
 const RELEVANCE_SHADE = {
-  high: "<b>text-accent</b>", medium: "<b>text-accent</b>",
-  low: "text-ink-muted", "very low": "text-ink-faint",
+  "very high": "<b>text-accent</b>", high: "<b>text-accent</b>",
+  medium: "text-ink-muted", low: "text-ink-dim",
+  "very low": "text-ink-faint",
 };</pre>
               <p class="sg-rule">
                 <b>The accent covers the top two grades, not just the top one.</b> This column is
                 scanned rather than read, and what a digger is scanning for is the near half of the
-                scale. The split belongs between medium and low, so the colour marks a boundary
-                rather than shading four steps.
+                scale. Two of five since the fifth step arrived on 2026-08-25: three would be over
+                half the scale, which is where a mark stops marking. Below the boundary the three
+                quiet greys take one step each, in the order the ramp already runs, which is why
+                the scale is five words and not six.
               </p>
             </div>
 

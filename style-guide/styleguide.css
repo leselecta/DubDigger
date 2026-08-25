@@ -1038,7 +1038,7 @@ code {
   color: var(--color-bg);
 }
 
-/* Results column: the four grades */
+/* Results column: the five grades */
 .spec-grades {
   font-family: var(--font-mono);
   font-size: 0.75rem;
@@ -1051,13 +1051,17 @@ code {
   min-width: 7rem;
 }
 
-.g-high,
-.g-medium {
+.g-veryhigh,
+.g-high {
   color: var(--color-accent);
 }
 
-.g-low {
+.g-medium {
   color: var(--color-ink-muted);
+}
+
+.g-low {
+  color: var(--color-ink-dim);
 }
 
 .g-verylow {

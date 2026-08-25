@@ -87,9 +87,16 @@ const metaHeading = metaLabel?.replace(/\.$/, "");
 
   <span class="text-ink-faint font-mono text-[0.8125rem] font-medium tabular-nums">{count}</span>
 
-  <span class="text-ink-faint col-start-1 font-mono text-[0.8125rem] tabular-nums md:col-start-3">
+  <span class="text-ink-faint col-start-1 mt-2 font-mono text-[0.8125rem] tabular-nums md:col-start-3 md:mt-0">
     {/*
      * The column header, brought down to the value.
+     *
+     * `mt-2` for the row gap the grid does not have. The name above carries
+     * `link-rule`, and with no gap the underline's bottom and this line's top
+     * are the same y. It only shows when the name wraps: short, the rule is as
+     * wide as the word and sits nowhere near this; wrapped, the name fills the
+     * column and a full-width rule lands flat on the meta line. Dropped at `md`,
+     * where this is back in column three of a single row.
      *
      * This column drops under the name below `md`, where `ListHeader` has no
      * room to keep its own heading — so a bare "2002 – 2026" sat under a title

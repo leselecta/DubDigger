@@ -229,6 +229,15 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
                        * own colour, so the grade's shade is still the thing the
                        * eye lands on.
                        *
+                       * `mt-2` because the grid has no row gap and the name
+                       * above carries `link-rule`, so the underline's bottom
+                       * and this line's top were the same y. A short name hides
+                       * that: the rule is only as wide as the word. A name that
+                       * wraps fills the column, and then a full-width rule sits
+                       * flat on "Relevance:" with nothing between them. Only
+                       * the first of the two moves; the pair stays tight,
+                       * because they are two lines of one block.
+                       *
                        * `md:sr-only` rather than `md:hidden`, which is the
                        * whole difference between a label that stops being drawn
                        * and one that stops existing. Above `md` the heading is
@@ -239,7 +248,7 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
                        * out "Basic Channel, 47, high, artist". Out of flow and
                        * still spoken, every value keeps the word for what it is.
                        */}
-                      <span class="col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:col-start-3">
+                      <span class="col-start-1 mt-2 font-mono text-xs tracking-[0.1em] uppercase md:col-start-3 md:mt-0">
                         <span class="text-ink-faint md:sr-only">Relevance:</span>
                         <span class={RELEVANCE_SHADE[grade]}>{grade}</span>
                       </span>

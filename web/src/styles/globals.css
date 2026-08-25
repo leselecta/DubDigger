@@ -105,7 +105,18 @@
    * a phone: "Moritz von Oswald" at 104px needs 900px of viewport. The design
    * did not cover small screens, so these degrade rather than overflow.
    */
-  --text-hero: clamp(2.75rem, 8.5vw, 5.75rem);
+
+  /*
+   * The home headline alone, and it tracks `--text-name` exactly until the top
+   * of the scale. Same floor, same 8vw, a ceiling 4px lower, because this is
+   * the one headline whose first line is a sentence rather than a name:
+   * "Dig the Extended Scene." is 10.75em, and the column's content box is
+   * 1104px once its 3rem gutters are off. At 6.5rem that line wants 1118px and
+   * "Scene." drops to a line of its own; at 6.25rem it comes to 1075px and sits
+   * in the column with 29px to spare. 6.375rem also fits, by 7.5px, which is
+   * not enough to survive a rounding difference.
+   */
+  --text-hero: clamp(2.5rem, 8vw, 6.25rem);
   --text-name: clamp(2.5rem, 8vw, 6.5rem);
   --text-name-label: clamp(2.5rem, 9vw, 7.5rem);
   --text-stat: clamp(2.5rem, 6vw, 4.125rem);

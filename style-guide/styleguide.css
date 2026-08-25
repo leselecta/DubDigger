@@ -87,7 +87,7 @@
   --color-edge: rgb(255 255 255 / 0.22);
   --color-edge-strong: rgb(255 255 255 / 0.35);
 
-  --text-hero: clamp(2.75rem, 8.5vw, 5.75rem);
+  --text-hero: clamp(2.5rem, 8vw, 6.25rem);
   --text-name: clamp(2.5rem, 8vw, 6.5rem);
   --text-name-label: clamp(2.5rem, 9vw, 7.5rem);
   --text-stat: clamp(2.5rem, 6vw, 4.125rem);
@@ -684,10 +684,10 @@ code {
 .spec-hero {
   margin: 0;
   color: var(--color-ink-strong);
-  font-size: clamp(2.75rem, 8.5vw, 5.75rem);
+  font-size: clamp(2.5rem, 8vw, 6.25rem);
   font-weight: 700;
-  letter-spacing: -0.035em;
-  line-height: 0.98;
+  letter-spacing: -0.04em;
+  line-height: 0.92;
 }
 
 .spec-stat {

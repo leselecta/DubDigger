@@ -58,7 +58,7 @@ or it is dilution.
 
 | Token | Value | Tracking | Leading | Where |
 |---|---|---|---|---|
-| `--text-hero` | `clamp(2.75rem, 8.5vw, 5.75rem)` | -0.035em | 0.98 | Home headline |
+| `--text-hero` | `clamp(2.5rem, 8vw, 6.25rem)` | -0.04em | 0.92 | Home headline |
 | `--text-name` | `clamp(2.5rem, 8vw, 6.5rem)` | -0.04em | 0.92 | Artist / Core / Info / 404 h1 |
 | `--text-name-label` | `clamp(2.5rem, 9vw, 7.5rem)` | -0.04em | 0.92 | Label page h1 |
 | `--text-stat` | `clamp(2.5rem, 6vw, 4.125rem)` | -0.03em | — | The three figures |
@@ -68,6 +68,10 @@ or it is dilution.
 
 - **Display is fluid, reading is fixed.** A 104px name needs 900px of viewport, so the handoff size
   is the top of a clamp.
+- **`--text-hero` is `--text-name` with a lower ceiling.** Same floor, same `8vw`, 6.25rem instead
+  of 6.5rem. The home headline is the only one whose first line is a sentence rather than a name:
+  "Dig the Extended Scene." is 10.75em against a 1104px content box, so 6.5rem drops "Scene." to
+  a line of its own and 6.25rem leaves 29px to spare.
 - **Leading rides on the token.** Never respell it with `leading-*`.
 - Families: `--font-sans` = `"DubDigger Sans", "Helvetica Neue", Helvetica, Arial, sans-serif`.
   DubDigger Sans is a subset of TeX Gyre Heros (a Helvetica clone) with its vertical metrics

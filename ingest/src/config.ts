@@ -527,8 +527,10 @@ export const lineage = {
    * roots and neighbours, and he wants that map to hold the black traditions
    * the music keeps company with rather than rank them as footnotes. The rule
    * is small and precise enough to be honest about: 471 tagged, 113 lifted.
-   * The interface says "keeps company with" for this one and "grew out of" for
-   * the dub line, because those are different claims and only one is descent.
+   * The interface says "a sound this scene often borrows from" for this one and
+   * "grew out of" for the dub line, because those are different claims and only
+   * one is descent. Borrowing is the honest verb: it is what the map actually
+   * asserts, and it is still not a line of descent.
    *
    * dubstep and uk garage: the one tradition here that runs DOWNSTREAM, and the
    * only one whose acts the corpus already holds in quantity. Every other rule

@@ -83,27 +83,32 @@ const SCENE_REASON: Record<string, string> = {
 };
 
 /**
- * What each tradition claims, in its own words.
+ * What each tradition claims, in its own words. Simone's wording.
  *
- * These are not the same claim and must not read as though they were. Roots dub
- * and Detroit are descent, and the phrasing says so. Afrobeat and uk jazz are
- * kinship: editorial choices about what this map should hold, not because
- * anyone traces dub techno back to Lagos or to Peckham. Acid jazz and DNB is
- * inheritance at one remove, which is why it is the one tradition that lifts to
- * low rather than to medium.
+ * These are not the same claim and must not read as though they were. The dub
+ * line is descent and the phrasing says so, "grew out of" and "came out of",
+ * one step each. Detroit is the ground the whole thing is built on rather than
+ * a parent, so it says scaffolds. Afrobeat and uk jazz are kinship: editorial
+ * choices about what this map should hold, not because anyone traces dub techno
+ * back to Lagos or to Peckham, and afrobeat says borrows because that is the
+ * honest verb for it. Acid jazz and DNB is inheritance at one remove, which is
+ * why it is the one tradition that lifts to low rather than to medium.
  *
  * Dubstep and uk garage is the only one that points forward. It cannot say
  * "grew out of" in either direction, since it came after this scene rather than
- * before it, so it says what the two actually have in common instead.
+ * before it, so it says where the dub went instead.
+ *
+ * "Sound" rather than "tradition" in five of the seven, which is deliberate:
+ * the column heading already says lineage, and a digger reads a sound.
  */
 const LINEAGE_REASON: Record<string, string> = {
-  "roots dub": "the Jamaican tradition dub techno grew out of",
-  reggae: "the tradition dub itself came out of",
-  "detroit techno": "the tradition Berlin was answering",
-  afrobeat: "a tradition this scene keeps company with",
+  "roots dub": "the Jamaican sound dub techno grew out of",
+  reggae: "the sound dub itself came out of",
+  "detroit techno": "the sound that scaffolds everything",
+  afrobeat: "a sound this scene often borrows from",
   "uk jazz": "the scene around Gilles Peterson and Brownswood",
   "acid jazz and DNB": "UK scenes with Jamaican roots of their own",
-  "dubstep and uk garage": "the UK scene that inherited dub the generation after",
+  "dubstep and uk garage": "the UK sound that emanated from dub the generation after",
 };
 
 const lifted = artist.lineage !== null && artist.relevance !== artist.sceneRelevance;

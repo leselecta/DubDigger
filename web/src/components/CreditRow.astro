@@ -1,8 +1,9 @@
 ---
-import { LIST_GRID } from "./list-grid";
+import { LIST_GRID, LIST_GRID_NO_COUNT } from "./list-grid";
 
 interface Props {
-  count: string | number;
+  /** Omitted drops the column entirely. Keep it in step with `ListHeader`. */
+  count?: string | number;
   href: string;
   name: string;
   /** Long text, wrapped under the name. Roles, mostly. */
@@ -44,7 +45,7 @@ const metaHeading = metaLabel?.replace(/\.$/, "");
 <li
   class:list={[
     "border-hairline-soft grid items-baseline gap-x-[22px] border-b py-[18px]",
-    LIST_GRID,
+    count ? LIST_GRID : LIST_GRID_NO_COUNT,
   ]}
 >
   <div class="min-w-0">
@@ -85,9 +86,18 @@ const metaHeading = metaLabel?.replace(/\.$/, "");
     }
   </div>
 
-  <span class="text-ink-faint font-mono text-[0.8125rem] font-medium tabular-nums">{count}</span>
+  {
+    count && (
+      <span class="text-ink-faint font-mono text-[0.8125rem] font-medium tabular-nums">{count}</span>
+    )
+  }
 
-  <span class="text-ink-faint col-start-1 mt-2 font-mono text-[0.8125rem] tabular-nums md:col-start-3 md:mt-0">
+  <span
+    class:list={[
+      "text-ink-faint col-start-1 mt-2 font-mono text-[0.8125rem] tabular-nums md:mt-0",
+      count ? "md:col-start-3" : "md:col-start-2",
+    ]}
+  >
     {/*
      * The column header, brought down to the value.
      *

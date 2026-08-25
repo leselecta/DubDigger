@@ -49,11 +49,11 @@ const shown = ordered.slice(0, limit);
       ) : (
         <>
           {SHOW_SORT && <SortBy basePath="/core-labels" active={sort} />}
-          <ListHeader name="Label" count="Releases" meta="Active" />
+          {/* Count column parked, as on Core Artists. Pass `count` to restore. */}
+          <ListHeader name="Label" meta="Active" />
           <ul>
             {shown.map((label) => (
               <CreditRow
-                count={label.releaseCount.toLocaleString("en-GB")}
                 href={`/label/${label.id}`}
                 name={label.name}
                 meta={years(label.firstYear, label.lastYear)}

@@ -91,7 +91,7 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
   <div
     class:list={[
       "column text-center",
-      searching ? "pt-14 pb-12" : "pt-16 pb-10 md:pt-[130px] md:pb-24",
+      searching ? "pt-14 pb-10 md:pb-12" : "pt-16 pb-10 md:pt-[130px] md:pb-24",
     ]}
   >
     <Eyebrow>The Dub Techno Index</Eyebrow>
@@ -121,7 +121,7 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
        * data". That principle starts here: before any ingest has run, say so
        * plainly rather than rendering a search box that silently returns nothing.
        */
-      <div class="column pb-32">
+      <div class="column pb-20 md:pb-32">
         <div class="border-hairline max-w-[720px] border-t pt-10">
           <h2 class="mono-label">No database yet</h2>
           <p class="text-body text-ink-muted mt-4">
@@ -137,7 +137,7 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
     ) : (
       <>
         {searching && results && (
-          <div class="column pb-24">
+          <div class="column pb-20 md:pb-24">
             {/*
              * The count is the heading, because on a results page it is what
              * the page is: the headline above it has done its job by the time
@@ -151,8 +151,22 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
              * that matters. The headline's two accent stops are not on the page
              * once someone has typed, so this spends the colour that just came
              * free rather than adding to it.
+             *
+             * On a phone it carries a rule above it, because there the field
+             * and its answer are a single column of text and nothing says where
+             * the searching stops and the results start. At `md` the band above
+             * is wide and obviously a header, so the rule would be drawing a
+             * boundary that is already visible. Inside the column, so it insets
+             * to the gutters like the figures band rather than running edge to
+             * edge like the footer, and 40px under it: a figures cell's `py-10`
+             * is what a hairline is followed by everywhere else on a phone.
              */}
-            <h1 class:list={["mono-label mb-6", results.hits.length === 0 && "text-accent"]}>
+            <h1
+              class:list={[
+                "mono-label border-hairline mb-6 border-t pt-10 md:border-t-0 md:pt-0",
+                results.hits.length === 0 && "text-accent",
+              ]}
+            >
               {results.hits.length === 0
                 ? `Nothing found for “${q}”`
                 : results.truncated
@@ -242,7 +256,7 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
           </div>
         )}
 
-        <div class="column pt-6 pb-32">
+        <div class="column pt-6 pb-20 md:pb-32">
           <dl class="border-hairline grid border-t sm:grid-cols-3" data-figures>
             {columns.map(([label, value], i) => (
               <div

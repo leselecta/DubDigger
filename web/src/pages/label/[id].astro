@@ -13,7 +13,7 @@ import OutboundLinks from "@/components/OutboundLinks.astro";
 import CollapsibleText from "@/components/CollapsibleText.astro";
 import { getLabel, getRoster, getProfileNames, getLabelReleases } from "@/lib/queries";
 import { countLine } from "@/lib/seo";
-import { PAGE_SIZE, pageSize, percent, years } from "@/lib/view";
+import { PAGE_SIZE, gradeTitle, pageSize, percent, years } from "@/lib/view";
 
 const label = getLabel(Number(Astro.params.id));
 if (!label) return Astro.rewrite("/404");
@@ -72,7 +72,7 @@ const mainEntity = {
   sameAs: `https://www.discogs.com/label/${label.id}`,
 };
 
-const grade = label.relevance === "none" ? "Very low" : label.relevance;
+const grade = gradeTitle(label.relevance);
 
 const reason = label.isImprint
   ? "artist-run imprint, one artist on every release"
@@ -112,7 +112,7 @@ const reason = label.isImprint
     <dl class="mt-9 max-w-[760px]">
       <FieldRow label="Date active">{years(label.firstYear, label.lastYear) || "—"}</FieldRow>
       <FieldRow label="Relevance" accent={label.relevance !== "none"}>
-        <span class="capitalize">{grade}</span>
+        {grade}
         <span class="text-ink-faint">, {reason}</span>
       </FieldRow>
       <FieldRow label="View on" last>

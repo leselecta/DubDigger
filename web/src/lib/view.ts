@@ -77,3 +77,15 @@ export const GRADE_SHADE: Record<string, string> = {
 export function gradeWord(relevance: string): string {
   return relevance === "none" ? "very low" : relevance;
 }
+
+/**
+ * The same grade with both words capitalised, for the places it opens a line.
+ *
+ * Written out rather than left to a CSS `capitalize`, which only ever ran on
+ * the branches that had the class: the top step read "Very High" and the
+ * ungraded branch printed a literal "Very low", so one scale carried two
+ * casings at its two ends.
+ */
+export function gradeTitle(relevance: string): string {
+  return gradeWord(relevance).replace(/\b\w/g, (c) => c.toUpperCase());
+}

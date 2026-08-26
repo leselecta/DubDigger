@@ -23,7 +23,7 @@ import {
 } from "@/lib/queries";
 import { creditLine } from "@/lib/roles";
 import { countLine } from "@/lib/seo";
-import { PAGE_SIZE, pageSize, years } from "@/lib/view";
+import { PAGE_SIZE, gradeTitle, pageSize, years } from "@/lib/view";
 
 const artist = getArtist(Number(Astro.params.id));
 if (!artist) return Astro.rewrite("/404");
@@ -112,7 +112,7 @@ const LINEAGE_REASON: Record<string, string> = {
 };
 
 const lifted = artist.lineage !== null && artist.relevance !== artist.sceneRelevance;
-const grade = artist.relevance === "none" ? "Very low" : artist.relevance;
+const grade = gradeTitle(artist.relevance);
 
 /**
  * What this page holds, for the description a search result shows.
@@ -197,23 +197,23 @@ const route =
         {
           lifted ? (
             <>
-              <span class="capitalize">{grade}</span>
+              {grade}
               <span class="text-ink-faint">
-                , {SCENE_REASON[artist.sceneRelevance]}, here for lineage: {artist.lineage},{" "}
+                , {SCENE_REASON[artist.sceneRelevance]}, here because linked to {artist.lineage},{" "}
                 {LINEAGE_REASON[artist.lineage!]}
               </span>
             </>
           ) : artist.relevance !== "none" ? (
             <>
-              <span class="capitalize">{grade}</span>
+              {grade}
               <span class="text-ink-faint">
                 , {SCENE_REASON[artist.relevance]}
-                {artist.lineage && `, and part of the ${artist.lineage} tradition`}
+                {artist.lineage && `, and linked to the ${artist.lineage} sound`}
               </span>
             </>
           ) : (
             <>
-              Very low
+              {grade}
               <span class="text-ink-faint">
                 , {SCENE_REASON.none} (here as {route})
               </span>

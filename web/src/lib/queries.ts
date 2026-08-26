@@ -751,19 +751,19 @@ export const SUGGEST_MIN_CHARS = 2;
  * fewer columns, and it never counts releases across every label a prefix
  * matches. That count is what orders a label against an artist, so it cannot
  * be dropped, only deferred — the grade picks the shortlist, and only those
- * few rows are costed. On a two-letter prefix that is 4 subqueries instead of
+ * few rows are costed. On a two-letter prefix that is 3 subqueries instead of
  * 9,438.
  *
- * Four rows, not eight. A dropdown is read at a glance while the hands are
- * still on the keys, and a list long enough to need scanning is one the reader
- * would be faster submitting. Eight also reached far enough down the ranking to
- * put a name nobody typed under one they did. What does not fit belongs on the
- * results page, which is one keystroke away and built for forty of them.
+ * Three rows. A dropdown is read at a glance while the hands are still on the
+ * keys, and a list long enough to need scanning is one the reader would be
+ * faster submitting. Past the third the ranking starts putting a name nobody
+ * typed under one they did. What does not fit belongs on the results page,
+ * which is one keystroke away and built for forty of them.
  *
  * Ordered exactly as the results page orders the same names, because this list
  * is a shortcut into that page and not a second opinion about it.
  */
-export function suggest(query: string, limit = 4): Suggestion[] {
+export function suggest(query: string, limit = 3): Suggestion[] {
   const db = getDb();
   if (!db || query.trim().length < SUGGEST_MIN_CHARS) return [];
 

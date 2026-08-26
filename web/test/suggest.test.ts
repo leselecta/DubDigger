@@ -112,9 +112,9 @@ test("says nothing until there is enough to say it about", () => {
   assert.equal(suggest("ba").length > 0, true);
 });
 
-test("shows four, because a dropdown is read at a glance", () => {
-  assert.equal(suggest("bas").length, 4);
+test("shows three, because a dropdown is read at a glance", () => {
+  assert.equal(suggest("bas").length, 3);
   assert.equal(suggest("bas", 2).length, 2);
-  // Asking for more than there are gives what there is, not four.
+  // Asking for more than there are gives what there is, not three.
   assert.equal(suggest("bas", 8).length, 5);
 });

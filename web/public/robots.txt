@@ -13,6 +13,14 @@ Allow: /
 # crawler from walking every combination to find that out.
 Disallow: /*?
 
+# The dropdown's partial. It answers on a clean URL as well as with a query,
+# and what it returns is a fragment: rows of markup with no <head> on them, so
+# no title, no canonical and nothing saying what it is. The rule above already
+# covers /suggest?q=, which is the only way anything calls it. This covers the
+# bare path, which nothing links to and a crawler should still never file as a
+# page of this site.
+Disallow: /suggest
+
 # Ignored by Google, honoured by Bing, Yandex and Seznam. Five seconds is
 # plenty for a site whose sitemap is two thousand URLs.
 Crawl-delay: 5

@@ -9,7 +9,11 @@
  * the only mono type on the site that heads something rather than captioning
  * it, so they read at one size: an eyebrow naming the page and a band label
  * naming a section are the same job at two altitudes.
+ *
+ * On a phone it steps down to 0.6875rem. At 0.32em of tracking the full size
+ * eats most of a narrow viewport and starts competing with the name below it,
+ * which is the one thing an eyebrow must not do.
  */
 ---
 
-<p class="text-accent font-mono text-[0.8125rem] tracking-[0.32em] uppercase"><slot /></p>
+<p class="text-accent font-mono text-[0.6875rem] md:text-[0.8125rem] tracking-[0.32em] uppercase"><slot /></p>

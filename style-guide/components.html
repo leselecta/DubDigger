@@ -407,6 +407,42 @@ fade → "pointer-events-none absolute right-0 bottom-0 left-0 h-12"
                   </button>
                 </form>
               </div>
+              <p class="sg-sub" style="margin-top: 2rem">SearchField — suggestions</p>
+              <div class="sg-demo">
+                <form class="spec-search is-header" onsubmit="return false">
+                  <input type="search" value="chain" aria-label="Search artists and labels" />
+                  <button type="submit" aria-label="Search">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                      <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.4"></circle>
+                      <line x1="10.25" y1="10.25" x2="14" y2="14" stroke="currentColor" stroke-width="1.4"></line>
+                    </svg>
+                  </button>
+                </form>
+                <div class="spec-suggest">
+                  <a href="#" data-active="true">
+                    <span class="sg-suggest-name">Chain Reaction</span>
+                    <span class="sg-suggest-meta">label</span>
+                    <!-- No shade on the active row: the ground takes the accent, so the
+                         grade reads in bg like the rest of the row. -->
+                    <span class="sg-suggest-grade">very high</span>
+                  </a>
+                  <a href="#">
+                    <span class="sg-suggest-name">Chain Selector</span>
+                    <span class="sg-suggest-meta">artist</span>
+                    <span class="sg-suggest-grade" style="color: var(--color-accent)">very high</span>
+                  </a>
+                  <a href="#">
+                    <span class="sg-suggest-name">chained library</span>
+                    <span class="sg-suggest-meta">label</span>
+                    <span class="sg-suggest-grade" style="color: var(--color-accent)">high</span>
+                  </a>
+                  <a href="#">
+                    <span class="sg-suggest-name">Poly Chain</span>
+                    <span class="sg-suggest-meta">artist</span>
+                    <span class="sg-suggest-grade" style="color: var(--color-ink-muted)">medium</span>
+                  </a>
+                </div>
+              </div>
               <pre class="sg-code"><i>&lt;!-- a plain GET form: search works with no JavaScript, every result is a URL --&gt;</i>
 &lt;form action="/"&gt;&lt;input type="search" name="q" ...&gt;
 
@@ -427,6 +463,19 @@ header → "border-edge-strong transition-colors <b>focus:border-accent</b>
               <p class="sg-rule">
                 <b>The magnifier is the submit button, not decoration.</b> It fills the full height
                 of the field so the target is the whole right end rather than an 18px glyph.
+              </p>
+              <p class="sg-rule">
+                <b>A suggestion row carries its grade</b>, in the same five words and the same shades
+                the results column uses. A shortlist that ranked names and said nothing about why
+                would be ordering by a measure it kept to itself. The grade folds away below
+                <code>md</code> — <code>sr-only</code>, not <code>hidden</code>, so the row is still
+                read out with it.
+              </p>
+              <p class="sg-rule">
+                <b>The highlighted row takes the accent as a ground</b>, like the current nav cell:
+                it is the thing being reached for. The rows come from <code>/suggest</code> as
+                markup, so the script only fetches, assigns and moves that highlight — 1,622 bytes,
+                and the form underneath is the same plain GET with or without JavaScript.
               </p>
             </div>
           </div>

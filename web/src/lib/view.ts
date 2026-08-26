@@ -39,3 +39,41 @@ export function years(from: number | null, to: number | null): string {
   if (from === to) return String(from);
   return `${from ?? "?"} – ${to ?? "?"}`;
 }
+
+/**
+ * The colour a grade reads in, wherever a grade is shown.
+ *
+ * The shade tracks the grade rather than the fact of being graded. Accenting
+ * anything that carried a grade meant an artist reading "low" was highlighted
+ * while a label reading "Low" was not, which is the opposite of what the colour
+ * should say.
+ *
+ * The accent covers the top two grades, not just the top one. This is scanned
+ * rather than read, and what a digger is scanning for is the near half of the
+ * scale. Two of five is where the boundary sits: it was high and medium against
+ * a four-step scale, and the fifth step took the top of medium up into high
+ * rather than adding a colour. Accenting three of five would be over half the
+ * scale, which is the point at which a mark stops marking.
+ *
+ * Below the boundary the three quiet greys do the work, one step each, in the
+ * order the ramp already runs. That is why the scale is five words and not six:
+ * two accented steps plus the ramp is exactly what the tokens have.
+ */
+export const GRADE_SHADE: Record<string, string> = {
+  "very high": "text-accent",
+  high: "text-accent",
+  medium: "text-ink-muted",
+  low: "text-ink-dim",
+  "very low": "text-ink-faint",
+};
+
+/**
+ * A grade as a reader sees it.
+ *
+ * "none" is a grade, not a missing one, and reads as the bottom step: an artist
+ * with no seed work at all is not the same as one with a single record in it,
+ * so they read "very low" rather than being folded into the "low" above them.
+ */
+export function gradeWord(relevance: string): string {
+  return relevance === "none" ? "very low" : relevance;
+}

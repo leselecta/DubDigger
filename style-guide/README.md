@@ -128,7 +128,7 @@ All in `web/src/components/`, all `.astro`.
 | `LoadMore` | `href`, `remaining` | ghost button, `data-hold-scroll` |
 | `OutboundLinks` | `kind`, `id`, `urls[]` | max 5 + Discogs; http/https only |
 | `ProfileText` | `text`, `names?` | renders Discogs bio markup; links `underline underline-offset-2` |
-| `SearchField` | `size` ("hero" \| "header"), `value?` | `h-16`/`h-11`; hero `border-accent` + inset-shadow focus, header `border-edge-strong` + accent focus |
+| `SearchField` | `size` ("hero" \| "header"), `value?` | `h-16`/`h-11`; hero `border-accent` + inset-shadow focus, header `border-edge-strong` + accent focus; combobox, listbox `-mt-px border-edge-strong z-40 max-h-[60vh]`, rows `px-4 py-2.5`, active `bg-accent text-bg` |
 | `SiteFooter` | — | `py-11 font-mono text-xs md:grid-cols-2` |
 | `SiteHeader` | `search?` | 76px row; cells `px-5 py-3 text-[0.6875rem] tracking-[0.14em]`; drawer `w-[min(20rem,82vw)]` |
 | `SortBy` | `basePath`, `active` | hidden by `SHOW_SORT = false` |
@@ -196,10 +196,15 @@ Prefer the server, then a link, then a script.
 | drawer | 1,064 | every page |
 | contact dialog | 961 | every page |
 | scroll hold | 300 | every page |
+| search suggestions | 1,622 | every page |
 | collapsing bio | 1,035 | artist, label |
 | figures count-up | 644 | home |
 
-Heaviest page: **19,435 bytes**. A sixth inline script needs the argument the five made.
+Heaviest page: **21,057 bytes**. A seventh inline script needs the argument the six made.
+
+The suggestions script is the sixth and shows the shape the argument takes: `/suggest` is an Astro
+partial returning the rows as markup, so the script only fetches, assigns and moves a highlight.
+Markup stays in `.astro`, and the field is a plain GET form with or without JavaScript.
 
 - **Bind to `astro:page-load`.** A module `<script>` executes once; a swap replaces the DOM. The
   exception is a listener on `document`, which the swap does not replace.
@@ -210,6 +215,7 @@ Heaviest page: **19,435 bytes**. A sixth inline script needs the argument the fi
 | Timing | Value |
 |---|---|
 | Colour change | 150ms (Tailwind default) |
+| Suggestion debounce | 150ms, from 2 characters |
 | Drawer + scrim | 280ms `cubic-bezier(.4,0,.2,1)` |
 | Bars → cross | 220ms transform, 140ms opacity |
 | Bio open/close | 300ms ease-in-out |
@@ -219,9 +225,13 @@ Heaviest page: **19,435 bytes**. A sixth inline script needs the argument the fi
 Hooks: `data-hold-scroll`, `data-menu`, `data-shown`, `data-drawer`, `data-scrim`,
 `data-contact-open`, `data-contact`, `data-contact-close`, `data-contact-copy`, `data-copied`,
 `data-collapsible`, `data-clamp`, `data-inner`, `data-fade`, `data-toggle`, `data-chevron`,
-`data-figures`, `data-count`.
+`data-figures`, `data-count`, `data-suggest`, `data-suggest-list`, `data-suggest-option`,
+`data-active`.
 
-Two overlays, two mechanisms: the **drawer** is a sheet (page dimmed but readable, focus wrapped by
+Three overlays, three mechanisms. The **suggestion dropdown** is a combobox popup: ARIA 1.2, focus
+stays in the input, `aria-activedescendant` names the highlighted row and only that row carries an
+id. First Escape closes and keeps the query, second lets the browser empty the field. The **drawer**
+is a sheet (page dimmed but readable, focus wrapped by
 our script), the **contact card** is a modal (`<dialog>` + `showModal()`, everything handled by the
 browser). Never give the drawer `inert`.
 

@@ -33,7 +33,24 @@
  * home page exists, so taking the cursor there on arrival is right — but once
  * it carries a query the page is an answer, and grabbing focus jumped a reader
  * straight past the results they came back for, to a box they had already used.
+ *
+ * It is also a combobox, and the script at the bottom is the sixth on the site.
+ * The argument for it is the one the other five made: what someone is typing is
+ * not knowable on the server, in the same way the rendered line count of a bio
+ * is not. Everything that CAN be answered there still is — the rows come back
+ * as markup from `/suggest`, so this only fetches, assigns and moves a
+ * highlight, and the form underneath is the same plain GET it always was. With
+ * no JavaScript, nothing about the field changes.
+ *
+ * The ARIA is the 1.2 combobox pattern, and it is the input that carries it:
+ * focus never leaves the box, `aria-activedescendant` points at the row the
+ * arrows are on, and only that row is given an id. Only one, because two fields
+ * can be on a page at once (the header's and the drawer's) and an id has to be
+ * unique in a document; one row at a time is highlighted across both, so one id
+ * is all the pattern ever needs.
  */
+import { SUGGEST_MIN_CHARS } from "@/lib/queries";
+
 interface Props {
   size: "hero" | "header";
   value?: string;
@@ -42,18 +59,29 @@ interface Props {
 const { size, value } = Astro.props;
 const hero = size === "hero";
 
+/**
+ * Unique per instance, because `aria-controls` has to name one list and the
+ * header and the drawer both render this component on the same page.
+ */
+const listId = `suggest-${Math.random().toString(36).slice(2, 8)}`;
+
 const iconSize = hero ? 18 : 15;
 const r = hero ? 6 : 5;
 const c = hero ? 8 : 6.5;
 const from = c + r * 0.75;
 ---
 
-<form action="/" class="relative w-full">
+<form action="/" class="relative w-full" data-suggest={SUGGEST_MIN_CHARS}>
   <input
     type="search"
     name="q"
     value={value}
     autofocus={hero && !value}
+    role="combobox"
+    aria-expanded="false"
+    aria-controls={listId}
+    aria-autocomplete="list"
+    autocomplete="off"
     placeholder={hero
       ? "Basic Channel, Chain Reaction, Maurizio…"
       : "Basic Channel, Chain Reaction…"}
@@ -79,4 +107,175 @@ const from = c + r * 0.75;
       <line x1={from} y1={from} x2={iconSize - 1} y2={iconSize - 1} stroke="currentColor" stroke-width="1.4"></line>
     </svg>
   </button>
+
+  {/*
+   * The list, empty until something is typed into the box above it.
+   *
+   * It wears `edge-strong` like the field does, and sits a pixel under it so
+   * the two borders overlap and read as one box rather than as a panel that
+   * arrived from somewhere else. `z-40` keeps it over the page and under the
+   * drawer, which is the one thing that should cover it.
+   */}
+  <div
+    id={listId}
+    role="listbox"
+    aria-label="Suggestions"
+    data-suggest-list
+    hidden
+    class="border-edge-strong bg-bg absolute top-full right-0 left-0 z-40 -mt-px max-h-[60vh] overflow-y-auto border"
+  >
+  </div>
 </form>
+
+<script>
+  /**
+   * The dropdown: fetch, assign, and move a highlight.
+   *
+   * Everything it does not do is deliberate. It builds no markup, because
+   * `/suggest` returns rows. It holds no data, because the rows are the data.
+   * It parses nothing, because there is no JSON. What is left is the part a
+   * server genuinely cannot do: react to a keystroke.
+   */
+  const WAIT = 150;
+
+  function setUp(form: HTMLFormElement) {
+    const input = form.querySelector<HTMLInputElement>("input[name='q']");
+    const list = form.querySelector<HTMLElement>("[data-suggest-list]");
+    if (!input || !list) return;
+
+    /** Set by the server from the same constant the query guards on. */
+    const min = Number(form.dataset.suggest);
+
+    let options: HTMLElement[] = [];
+    let at = -1;
+    let timer: ReturnType<typeof setTimeout>;
+    let pending: AbortController | undefined;
+
+    /**
+     * Prefixes already answered. A person typing backs up as often as they go
+     * forward, and the answer to a prefix cannot change while the page is open:
+     * the database behind it is a static file.
+     */
+    const seen = new Map<string, string>();
+
+    /**
+     * Moves the highlight, and with it the only id in the list.
+     *
+     * `aria-activedescendant` needs the row to have one, and nothing else does,
+     * so the id is given to the active row and taken back when it stops being
+     * active. That is what keeps two fields on one page from both claiming it.
+     */
+    function mark(next: number) {
+      const leaving = options[at];
+      if (leaving) {
+        leaving.removeAttribute("id");
+        leaving.dataset.active = "false";
+        leaving.setAttribute("aria-selected", "false");
+      }
+
+      at = next;
+      const option = options[at];
+      if (!option) {
+        input!.removeAttribute("aria-activedescendant");
+        return;
+      }
+
+      option.id = `${list!.id}-active`;
+      option.dataset.active = "true";
+      option.setAttribute("aria-selected", "true");
+      input!.setAttribute("aria-activedescendant", option.id);
+      option.scrollIntoView({ block: "nearest" });
+    }
+
+    function close() {
+      mark(-1);
+      list!.hidden = true;
+      input!.setAttribute("aria-expanded", "false");
+    }
+
+    async function show(term: string) {
+      let html = seen.get(term);
+
+      if (html === undefined) {
+        // A slower answer to an older prefix would overwrite a newer one.
+        pending?.abort();
+        pending = new AbortController();
+        try {
+          const response = await fetch(`/suggest?q=${encodeURIComponent(term)}`, {
+            signal: pending.signal,
+          });
+          html = await response.text();
+        } catch {
+          // Aborted, or the network is gone. Leave whatever is on screen: the
+          // form still works, and an emptied list would look like an answer.
+          return;
+        }
+        seen.set(term, html);
+      }
+
+      // The box moved on while this was in flight.
+      if (input!.value.trim() !== term) return;
+
+      list!.innerHTML = html;
+      options = [...list!.querySelectorAll<HTMLElement>("[data-suggest-option]")];
+      at = -1;
+      input!.removeAttribute("aria-activedescendant");
+      list!.hidden = options.length === 0;
+      input!.setAttribute("aria-expanded", String(options.length > 0));
+    }
+
+    input.addEventListener("input", () => {
+      clearTimeout(timer);
+      const term = input.value.trim();
+      if (term.length < min) return close();
+      timer = setTimeout(() => show(term), WAIT);
+    });
+
+    input.addEventListener("keydown", (event) => {
+      if (list.hidden) {
+        // A shut list has no keys of its own. Escape falls through to the
+        // browser, which empties a search field, and that is the second step
+        // the combobox pattern asks for anyway.
+        return;
+      }
+
+      // The first Escape closes the list and keeps what was typed. Without the
+      // preventDefault the browser empties the field on the same keystroke,
+      // which throws away the query on the way to seeing the full results.
+      if (event.key === "Escape") {
+        event.preventDefault();
+        return close();
+      }
+
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        // Past either end is the box itself, with what was typed still in it.
+        const next = at + (event.key === "ArrowDown" ? 1 : -1);
+        mark(next < -1 ? options.length - 1 : next >= options.length ? -1 : next);
+        return;
+      }
+
+      // Enter on a row goes to that page; Enter on the box submits the search,
+      // which is what it did before there was a list under it.
+      if (event.key === "Enter" && at >= 0) {
+        event.preventDefault();
+        // A real click, so the ClientRouter intercepts it and swaps the page
+        // rather than reloading it.
+        options[at]!.click();
+        return;
+      }
+
+      if (event.key === "Tab") close();
+    });
+
+    // The click has to land before the blur closes the list, and a mousedown
+    // that never takes focus is what keeps the two in that order.
+    list.addEventListener("mousedown", (event) => event.preventDefault());
+    input.addEventListener("blur", close);
+  }
+
+  // Fires on the first load and again after every ClientRouter navigation.
+  document.addEventListener("astro:page-load", () => {
+    document.querySelectorAll<HTMLFormElement>("form[data-suggest]").forEach(setUp);
+  });
+</script>

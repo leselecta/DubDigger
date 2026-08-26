@@ -34,8 +34,8 @@
         <h1 class="sg-title">Prefer the server<span class="dot">.</span></h1>
         <p class="sg-lead">
           Then a link, then a script. Tabs, pagination, sort and search are links and a plain GET
-          form carrying state in the URL. Five inline scripts exist, each one because the answer
-          genuinely is not knowable on the server, and a sixth needs the same argument.
+          form carrying state in the URL. Six inline scripts exist, each one because the answer
+          genuinely is not knowable on the server, and a seventh needs the same argument.
         </p>
       </div>
 
@@ -45,7 +45,7 @@
           <div>
             <div class="sg-scroll">
               <table class="sg-spec">
-                <caption>Measured, and the heaviest page is an artist or label at 19,435 bytes</caption>
+                <caption>Measured, and the heaviest page is an artist or label at 21,057 bytes</caption>
                 <thead>
                   <tr>
                     <th scope="col">Script</th>
@@ -60,7 +60,7 @@
                     <td class="num">16,075</td>
                     <td>every page</td>
                     <td class="note">
-                      82% of the budget, and deliberate: the premise is that a pivot costs one
+                      76% of the budget, and deliberate: the premise is that a pivot costs one
                       click, so the document is swapped rather than reloaded.
                     </td>
                   </tr>
@@ -90,6 +90,16 @@
                     <td class="note">
                       Where the reader was is not something a server response can carry. One script
                       in the layout serving the tab bar, the sort control and "Load more".
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="key">search suggestions</td>
+                    <td class="num">1,622</td>
+                    <td>every page</td>
+                    <td class="note">
+                      A keystroke has not been submitted yet. Everything else still is the server:
+                      <code>/suggest</code> is a partial returning the rows as markup, so this only
+                      fetches, assigns and moves a highlight — no JSON, no templates in the browser.
                     </td>
                   </tr>
                   <tr>
@@ -260,6 +270,7 @@ if (matchMedia("<b>(prefers-reduced-motion: reduce)</b>").matches) return;
                   <tr><td class="key">data-contact-open</td><td>any mailto: link</td><td class="note">Intercepted to open the dialog. Degrades to the real address.</td></tr>
                   <tr><td class="key">data-contact / -close / -copy</td><td>the dialog</td><td class="note">The card, its × and its clipboard button. <code>data-copied</code> swaps the icon from CSS.</td></tr>
                   <tr><td class="key">data-collapsible / -clamp / -inner / -fade / -toggle</td><td>bio, label info</td><td class="note">Measured after paint; a short bio renders as a paragraph with nothing to click.</td></tr>
+                  <tr><td class="key">data-suggest / data-suggest-list / data-suggest-option / data-active</td><td>SearchField</td><td class="note">The form carries the minimum character count, so the guard in the browser and the guard in the query are one constant.</td></tr>
                   <tr><td class="key">data-figures / data-count</td><td>the home band</td><td class="note">The real value, handed to the script only when it is going to animate.</td></tr>
                 </tbody>
               </table>
@@ -273,7 +284,7 @@ if (matchMedia("<b>(prefers-reduced-motion: reduce)</b>").matches) return;
         </section>
 
         <section class="sg-band">
-          <h2 class="mono-label">Two overlays</h2>
+          <h2 class="mono-label">Three overlays</h2>
           <div>
             <div class="sg-scroll">
               <table class="sg-spec">
@@ -282,15 +293,16 @@ if (matchMedia("<b>(prefers-reduced-motion: reduce)</b>").matches) return;
                     <th scope="col"></th>
                     <th scope="col">Drawer (sheet)</th>
                     <th scope="col">Contact (modal)</th>
+                    <th scope="col">Suggestions (combobox popup)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td class="key">Element</td><td>&lt;details&gt;</td><td>&lt;dialog&gt; + showModal()</td></tr>
-                  <tr><td class="key">Page behind</td><td>dimmed, still readable</td><td>inert, hidden from the reader</td></tr>
-                  <tr><td class="key">Focus</td><td>wrapped by our script</td><td>trapped by the browser</td></tr>
-                  <tr><td class="key">Escape</td><td>our keydown handler</td><td>the browser</td></tr>
-                  <tr><td class="key">Focus return</td><td>explicit <code>summary.focus()</code></td><td>the browser</td></tr>
-                  <tr><td class="key">Scroll lock</td><td><code>documentElement.style.overflow</code></td><td>the browser</td></tr>
+                  <tr><td class="key">Element</td><td>&lt;details&gt;</td><td>&lt;dialog&gt; + showModal()</td><td>role="listbox" in the form</td></tr>
+                  <tr><td class="key">Page behind</td><td>dimmed, still readable</td><td>inert, hidden from the reader</td><td>untouched</td></tr>
+                  <tr><td class="key">Focus</td><td>wrapped by our script</td><td>trapped by the browser</td><td>never leaves the input</td></tr>
+                  <tr><td class="key">Escape</td><td>our keydown handler</td><td>the browser</td><td>first ours (close), second the browser (clear)</td></tr>
+                  <tr><td class="key">Focus return</td><td>explicit <code>summary.focus()</code></td><td>the browser</td><td>nothing to return</td></tr>
+                  <tr><td class="key">Scroll lock</td><td><code>documentElement.style.overflow</code></td><td>the browser</td><td>none</td></tr>
                 </tbody>
               </table>
             </div>
@@ -299,6 +311,13 @@ if (matchMedia("<b>(prefers-reduced-motion: reduce)</b>").matches) return;
               screen until it is dismissed.</b> Two overlays, two different claims, two different
               mechanisms. Marking the page inert behind the drawer would hide from a screen reader
               the thing the design is making a point of keeping in view.
+            </p>
+            <p class="sg-rule">
+              <b>The dropdown is neither.</b> It covers nothing it needs to take focus from, so it
+              takes none: the ARIA 1.2 combobox keeps focus in the input and points
+              <code>aria-activedescendant</code> at the highlighted row. Only that row carries an
+              id, given on highlight and taken back on leaving, because the header and the drawer
+              both render the field and an id has to be unique in a document.
             </p>
           </div>
         </section>

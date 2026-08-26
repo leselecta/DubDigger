@@ -1172,3 +1172,61 @@ code {
     animation: none !important;
   }
 }
+
+/* ── Suggestion dropdown ──────────────────────────────────────────────────
+   Copied by hand from SearchField and suggest.astro, like everything else
+   here. The list sits a pixel under the field so the two borders overlap and
+   read as one box. */
+.spec-suggest {
+  border: 1px solid var(--color-edge-strong);
+  background: var(--color-bg);
+  margin-top: -1px;
+  max-width: 420px;
+}
+
+.spec-suggest a {
+  display: grid;
+  grid-template-columns: 1fr 3.5rem 5.5rem;
+  gap: 0 0.75rem;
+  align-items: baseline;
+  padding: 0.625rem 1rem;
+  border-bottom: 1px solid var(--color-hairline-soft);
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.spec-suggest a:last-child {
+  border-bottom: 0;
+}
+
+.spec-suggest .sg-suggest-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.spec-suggest .sg-suggest-meta {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ink-faint);
+}
+
+.spec-suggest .sg-suggest-grade {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.spec-suggest [data-active="true"] {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.spec-suggest [data-active="true"] .sg-suggest-meta,
+.spec-suggest [data-active="true"] .sg-suggest-grade {
+  color: var(--color-bg);
+  opacity: 0.7;
+}

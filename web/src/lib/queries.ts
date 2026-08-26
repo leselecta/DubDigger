@@ -618,13 +618,42 @@ export interface SearchResults {
   truncated: boolean;
 }
 
+/**
+ * What someone typed, as an FTS5 query.
+ *
+ * FTS5 reads bare punctuation as syntax, so the term is quoted, and given a
+ * trailing wildcard to make the box behave like search rather than exact match.
+ * Shared with `suggest`, so the dropdown and the page it submits to are
+ * matching on the same string: a suggestion that does not survive the Enter
+ * key would be worse than no suggestion at all.
+ */
+export function matchTerm(query: string): string {
+  return `"${query.trim().replace(/"/g, '""')}"*`;
+}
+
+/**
+ * How close to the scene, as a sort key. Graded first, so a sceptic searching
+ * "Mozart" sees at a glance that the scene artists are the answer and he is a
+ * footnote.
+ *
+ * Artists and labels sort against each other on the one scale, which they can
+ * now that a label is graded in five steps rather than two. It used to be two
+ * lists interleaved by a rule of thumb, and the rule of thumb was the reason
+ * Ndagga sorted level with a label that has nothing to do with any of this.
+ */
+const RELEVANCE_ORDER: Record<string, number> = {
+  "very high": 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+  none: 4,
+};
+
 export function search(query: string, limit = 40): SearchResults {
   const db = getDb();
   if (!db || query.trim().length === 0) return { hits: [], truncated: false };
 
-  // FTS5 reads bare punctuation as syntax, so the term is quoted, and given a
-  // trailing wildcard to make the box behave like search rather than exact match.
-  const term = `"${query.trim().replace(/"/g, '""')}"*`;
+  const term = matchTerm(query);
 
   const artists = db
     .prepare(
@@ -665,23 +694,6 @@ export function search(query: string, limit = 40): SearchResults {
     return null;
   };
 
-  /**
-   * Graded first, so a sceptic searching "Mozart" sees at a glance that the
-   * scene artists are the answer and he is a footnote.
-   *
-   * Artists and labels sort against each other on the one scale, which they can
-   * now that a label is graded in five steps rather than two. It used to be two
-   * lists interleaved by a rule of thumb, and the rule of thumb was the reason
-   * Ndagga sorted level with a label that has nothing to do with any of this.
-   */
-  const ORDER: Record<string, number> = {
-    "very high": 0,
-    high: 1,
-    medium: 2,
-    low: 3,
-    none: 4,
-  };
-
   const hits: (SearchHit & { rank: number })[] = [
     ...artists.map((r) => ({
       id: r.id,
@@ -690,7 +702,7 @@ export function search(query: string, limit = 40): SearchResults {
       releaseCount: r.release_count,
       relevance: r.relevance ?? "none",
       connection: connection(r),
-      rank: ORDER[r.relevance ?? "none"]!,
+      rank: RELEVANCE_ORDER[r.relevance ?? "none"]!,
     })),
     ...labels.map((r) => ({
       id: r.id,
@@ -699,7 +711,7 @@ export function search(query: string, limit = 40): SearchResults {
       releaseCount: r.release_count,
       relevance: r.relevance ?? "none",
       connection: null,
-      rank: ORDER[r.relevance ?? "none"]!,
+      rank: RELEVANCE_ORDER[r.relevance ?? "none"]!,
     })),
   ];
 
@@ -709,6 +721,99 @@ export function search(query: string, limit = 40): SearchResults {
       .map(({ rank: _, ...hit }) => hit),
     truncated: artists.length === limit || labels.length === limit,
   };
+}
+
+export interface Suggestion {
+  id: number;
+  name: string;
+  kind: "artist" | "label";
+  /**
+   * The same five steps as everywhere else. A dropdown that ranked names and
+   * said nothing about why would be ordering by a measure it keeps to itself,
+   * which is the one thing this interface does not do.
+   */
+  relevance: Relevance;
+}
+
+/**
+ * Below this, the dropdown stays shut.
+ *
+ * A single letter matches 49,018 artists and costs 300 ms to rank, against
+ * 65 ms for two. It is a load rule before it is a design one, but it is both:
+ * "a" is not yet a question.
+ */
+export const SUGGEST_MIN_CHARS = 2;
+
+/**
+ * The shortlist under the search box: what you are probably typing.
+ *
+ * A cut-down `search`, and cut down in the two places that cost: it reads
+ * fewer columns, and it never counts releases across every label a prefix
+ * matches. That count is what orders a label against an artist, so it cannot
+ * be dropped, only deferred — the grade picks the shortlist, and only those
+ * few rows are costed. On a two-letter prefix that is 8 subqueries instead of
+ * 9,438, and 69 ms instead of 88.
+ *
+ * Ordered exactly as the results page orders the same names, because this list
+ * is a shortcut into that page and not a second opinion about it.
+ */
+export function suggest(query: string, limit = 8): Suggestion[] {
+  const db = getDb();
+  if (!db || query.trim().length < SUGGEST_MIN_CHARS) return [];
+
+  const term = matchTerm(query);
+
+  const artists = db
+    .prepare(
+      `SELECT a.id, a.name, coalesce(c.release_count, 0) AS release_count,
+              coalesce(c.relevance, 'none') AS relevance
+         FROM artist_search s
+         JOIN artists a ON a.id = s.rowid
+         LEFT JOIN artist_coverage c ON c.artist_id = a.id
+         LEFT JOIN corpus_artists  m ON m.artist_id = a.id
+        WHERE artist_search MATCH ?
+        ORDER BY coalesce(m.is_seed, 0) DESC, release_count DESC
+        LIMIT ?`,
+    )
+    .all(term, limit) as HitRow[];
+
+  const labels = db
+    .prepare(
+      `SELECT t.id, t.name, t.relevance,
+              (SELECT count(DISTINCT rl.release_id)
+                 FROM release_labels rl WHERE rl.label_id = t.id) AS release_count
+         FROM (SELECT l.id, l.name, coalesce(g.relevance, 'none') AS relevance,
+                      coalesce(g.line_artist_count, 0) AS roster
+                 FROM label_search s
+                 JOIN labels l ON l.id = s.rowid
+                 LEFT JOIN label_coverage g ON g.label_id = l.id
+                WHERE label_search MATCH ?
+                ORDER BY CASE coalesce(g.relevance, 'none')
+                           WHEN 'very high' THEN 0 WHEN 'high' THEN 1
+                           WHEN 'medium'    THEN 2 WHEN 'low'  THEN 3 ELSE 4 END,
+                         roster DESC
+                LIMIT ?) t`,
+    )
+    .all(term, limit) as HitRow[];
+
+  const shortlist = [
+    ...artists.map((r) => ({ ...r, kind: "artist" as const })),
+    ...labels.map((r) => ({ ...r, kind: "label" as const })),
+  ];
+
+  return shortlist
+    .sort(
+      (a, b) =>
+        RELEVANCE_ORDER[a.relevance ?? "none"]! - RELEVANCE_ORDER[b.relevance ?? "none"]! ||
+        b.release_count - a.release_count,
+    )
+    .slice(0, limit)
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      kind: r.kind,
+      relevance: r.relevance ?? "none",
+    }));
 }
 
 /**

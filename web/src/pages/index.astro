@@ -3,7 +3,8 @@ import Base from "@/layouts/Base.astro";
 import SearchField from "@/components/SearchField.astro";
 import Eyebrow from "@/components/Eyebrow.astro";
 import { getCorpusStats, getDbPath } from "@/lib/db";
-import { search, type SearchHit } from "@/lib/queries";
+import { search } from "@/lib/queries";
+import { GRADE_SHADE, gradeWord } from "@/lib/view";
 
 const q = Astro.url.searchParams.get("q") ?? undefined;
 const stats = getCorpusStats();
@@ -35,48 +36,23 @@ const RESULT_GRID = "grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_11rem_5rem]
  * Mozart is genuinely in this corpus, on 85 releases that really do credit
  * someone here, and saying so is honest where hiding him would not be.
  *
- * Four steps, not three. An artist with no seed work at all is not the same as
- * one with a single record in it, so they read "very low" rather than being
- * folded into the "low" above them. Whether they arrived as a collaborator or
- * as a label mate is a different question from how close they are, and the
- * artist page answers it; a column being scanned forty rows at a time wants one
- * scale, not a grade for some rows and a reason for others.
- *
- * The shade tracks the grade rather than the fact of being graded. Accenting
- * anything that carried a grade meant an artist reading "low" was highlighted
- * while a label reading "Low" was not, which is the opposite of what the colour
- * should say.
- *
- * The accent covers the top two grades, not just the top one. This column is
- * scanned rather than read, and what a digger is scanning for is the near half
- * of the scale. Two of five is where the boundary sits now: it was high and
- * medium against a four-step scale, and the fifth step took the top of medium
- * up into high rather than adding a colour. Accenting three of five would be
- * over half the scale, which is the point at which a mark stops marking.
- *
- * Below the boundary the three quiet greys do the work, one step each, in the
- * order the ramp already runs. That is why the scale is five words and not six:
- * two accented steps plus the ramp is exactly what the tokens have.
+ * Whether they arrived as a collaborator or as a label mate is a different
+ * question from how close they are, and the artist page answers it; a column
+ * being scanned forty rows at a time wants one scale, not a grade for some rows
+ * and a reason for others.
  *
  * Labels are graded on the same five words, from a measure of their own: how
  * much of what they released is in the cluster. The underlying test is not the
  * artist one, and it does not need to be. One column asking one question in one
  * vocabulary beats two scales sharing a heading, and until a label had four
  * steps this column had a two-step scale pretending to be a four-step one.
+ *
+ * The words and their shades are in `view.ts`, because the suggestion dropdown
+ * now shows the same grade on the way to this page and the two must not drift.
  */
-const RELEVANCE_SHADE: Record<string, string> = {
-  "very high": "text-accent",
-  high: "text-accent",
-  medium: "text-ink-muted",
-  low: "text-ink-dim",
-  "very low": "text-ink-faint",
-};
-
-/** "none" is a grade, not a missing one, and reads as the bottom step. */
-const gradeOf = (hit: SearchHit): string => (hit.relevance === "none" ? "very low" : hit.relevance);
 
 /** Graded up here, so the row below reads as markup rather than as a function. */
-const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
+const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.relevance) }));
 ---
 
 <Base search={false}>
@@ -256,7 +232,7 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeOf(hit) }));
                        */}
                       <span class="col-start-1 mt-2 font-mono text-xs tracking-[0.1em] uppercase md:col-start-3 md:mt-0">
                         <span class="text-ink-faint md:sr-only">Relevance:</span>
-                        <span class={RELEVANCE_SHADE[grade]}>{grade}</span>
+                        <span class={GRADE_SHADE[grade]}>{grade}</span>
                       </span>
 
                       <span class="text-ink col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:col-start-4">

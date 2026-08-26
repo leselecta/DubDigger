@@ -1,0 +1,80 @@
+---
+import { suggest } from "@/lib/queries";
+import { GRADE_SHADE, gradeWord } from "@/lib/view";
+
+/**
+ * The rows under the search box, rendered by the server.
+ *
+ * A partial rather than a JSON endpoint, which is the same "prefer the server"
+ * rule the rest of the site runs on, one step further in: the client script
+ * fetches this and assigns it, so the markup, the classes and the escaping stay
+ * here in an .astro file instead of being rebuilt as strings in the browser.
+ * It is what keeps the new script to the size it is.
+ *
+ * The listbox itself lives in `SearchField`, so the ARIA relationship between
+ * the input and the list is static markup that exists before any of this
+ * arrives, and this is only ever its contents.
+ *
+ * Nothing found returns nothing, and the dropdown stays shut. A shortcut that
+ * has nowhere to jump to is not an answer, and the answer for a miss is a real
+ * one that this cannot fit: the results page says the corpus is a slice centred
+ * on dub techno and that a legitimate absence is the boundary working. Enter
+ * still goes there.
+ */
+export const partial = true;
+
+const q = Astro.url.searchParams.get("q") ?? "";
+const hits = suggest(q);
+
+/*
+ * Cached at the edge of nothing in particular, but honestly: the database is a
+ * static artifact that only changes when it is republished and the server is
+ * restarted, so a repeated prefix is a repeated answer. Five minutes is enough
+ * to cover a person typing, backspacing and typing again without asking a
+ * one-core VPS to rank the same prefix twice.
+ *
+ * `noindex` because this is a fragment, not a page. robots.txt already
+ * disallows anything carrying a query string, and this says the same thing to
+ * anything that arrives without reading it.
+ */
+Astro.response.headers.set("Cache-Control", "public, max-age=300");
+Astro.response.headers.set("X-Robots-Tag", "noindex");
+---
+
+{
+  hits.map((hit) => (
+    <a
+      role="option"
+      aria-selected="false"
+      href={`/${hit.kind}/${hit.id}`}
+      data-suggest-option
+      class="group/opt border-hairline-soft text-left data-[active=true]:bg-accent data-[active=true]:text-bg grid cursor-pointer grid-cols-[1fr_3.5rem] items-baseline gap-x-3 border-b px-4 py-2.5 last:border-b-0 md:grid-cols-[1fr_3.5rem_5.5rem]"
+    >
+      <span class="truncate text-[0.9375rem] font-bold tracking-[-0.01em]">{hit.name}</span>
+
+      <span class="text-ink-faint group-data-[active=true]/opt:text-bg font-mono text-[0.6875rem] tracking-[0.1em] uppercase group-data-[active=true]/opt:opacity-70">
+        {hit.kind}
+      </span>
+
+      {/*
+       * The grade the results page would show for the same name, in the same
+       * five words and the same shade. A dropdown that ranked names and said
+       * nothing about why would be ordering by a measure it kept to itself.
+       *
+       * It folds away below `md`, where the field is a phone's width and the
+       * name is what a thumb is aiming at. `sr-only` rather than `hidden`, so
+       * the option is still read out with its grade: the row is one control and
+       * cannot say in a heading what its columns are.
+       */}
+      <span
+        class:list={[
+          "font-mono text-[0.6875rem] tracking-[0.1em] uppercase sr-only md:not-sr-only",
+          "group-data-[active=true]/opt:text-bg group-data-[active=true]/opt:opacity-70",
+          GRADE_SHADE[gradeWord(hit.relevance)],
+        ]}
+      >
+        {gradeWord(hit.relevance)}
+      </span>
+    </a>
+  ))
+}

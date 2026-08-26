@@ -132,6 +132,18 @@ function key(role: string): string {
  * A credit arrives either as one role or as several joined by commas, and the
  * bracketed qualifier can hold commas of its own: "Engineer [Sigma Sound, New
  * York]" is one role, not two. So the split only cuts at depth zero.
+ *
+ * The qualifier usually follows the role, which is why the trailing one is cut
+ * by truncating from the first bracket. Sometimes it leads instead, and then
+ * truncating from the first bracket starts at character zero and throws the
+ * role away with it: "[Type &] Layout" is a sleeve credit, and it was the one
+ * string in 281,018 that came out of here as nothing at all. So a leading
+ * qualifier is removed before the trailing one is cut. 47 stored strings have
+ * one, 59 occurrences, and every one of them was losing a real role.
+ *
+ * A part that is ONLY a qualifier still yields nothing, and should: "[mix]" in
+ * "Engineer, [mix]" is a comma split from the role it belonged to, so there is
+ * no work left in it to name.
  */
 function parts(credit: string): string[] {
   const out: string[] = [];
@@ -146,7 +158,15 @@ function parts(credit: string): string[] {
     } else current += char;
   }
   out.push(current);
-  return out.map((part) => part.replace(/\s*[[(].*$/s, "").replace(/\s+/g, " ").trim()).filter(Boolean);
+  return out
+    .map((part) =>
+      part
+        .replace(/^\s*[[(][^\])]*[\])]/, "")
+        .replace(/\s*[[(].*$/s, "")
+        .replace(/\s+/g, " ")
+        .trim(),
+    )
+    .filter(Boolean);
 }
 
 /**

@@ -50,6 +50,24 @@ test("puts authorship first, playing next, and the sleeve last", () => {
   ]);
 });
 
+test("keeps the role when the qualifier comes first", () => {
+  // parts() truncates from the first bracket, which is right for
+  // "Engineer [At Basing Street]" and wrong when the qualifier leads: the role
+  // is what follows it, and truncating from character zero threw the whole
+  // credit away. Found in the dump as "[Type &] Layout", the one stored string
+  // in 281,018 that summarised to nothing at all.
+  assert.deepEqual(summariseRoles(["[Type &] Layout"]), ["Design"]);
+  assert.deepEqual(summariseRoles(["[performer] Guitar"]), ["Guitar"]);
+  assert.deepEqual(summariseRoles(["Bass, [Some] Percussion"]), ["Bass", "Percussion"]);
+});
+
+test("still says nothing for a qualifier with no role attached to it", () => {
+  // The other half of the same shape, and it must stay dropped: a comma split
+  // a qualifier away from its role, so there is no work being named here.
+  assert.deepEqual(summariseRoles(["Engineer, [mix]"]), ["Engineering"]);
+  assert.deepEqual(summariseRoles(["[Pedals]"]), []);
+});
+
 test("keeps a role it has no name for rather than dropping it", () => {
   assert.deepEqual(summariseRoles(["Producer", "Ondes Martenot"]), ["Production", "Ondes Martenot"]);
 });

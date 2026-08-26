@@ -128,7 +128,7 @@ All in `web/src/components/`, all `.astro`.
 | `LoadMore` | `href`, `remaining` | ghost button, `data-hold-scroll` |
 | `OutboundLinks` | `kind`, `id`, `urls[]` | max 5 + Discogs; http/https only |
 | `ProfileText` | `text`, `names?` | renders Discogs bio markup; links `underline underline-offset-2` |
-| `SearchField` | `size` ("hero" \| "header"), `value?` | `h-16`/`h-11`; hero `border-accent` + inset-shadow focus, header `border-edge-strong` + accent focus; combobox, listbox `-mt-px border-edge-strong z-40 max-h-[60vh]`, rows `px-4 py-2.5`, active `bg-accent text-bg` |
+| `SearchField` | `size` ("hero" \| "header"), `value?` | `h-16`/`h-11`; hero `border-accent` + inset-shadow focus, header `border-edge-strong` + accent focus; combobox, listbox `-mt-px border-edge-strong z-40 max-h-[60vh]`, 4 rows `px-4 py-2.5`, active `bg-accent text-bg` |
 | `SiteFooter` | — | `py-11 font-mono text-xs md:grid-cols-2` |
 | `SiteHeader` | `search?` | 76px row; cells `px-5 py-3 text-[0.6875rem] tracking-[0.14em]`; drawer `w-[min(20rem,82vw)]` |
 | `SortBy` | `basePath`, `active` | hidden by `SHOW_SORT = false` |

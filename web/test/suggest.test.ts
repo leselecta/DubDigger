@@ -82,7 +82,7 @@ test("escapes a quote rather than handing FTS5 broken syntax", () => {
 });
 
 test("ranks on the grade first, whatever the output", () => {
-  const names = suggest("bas").map((s) => `${s.name} (${s.kind})`);
+  const names = suggest("bas", 8).map((s) => `${s.name} (${s.kind})`);
   assert.deepEqual(names, [
     // Two very highs, the bigger one first.
     "Basic Channel (artist)",
@@ -112,7 +112,9 @@ test("says nothing until there is enough to say it about", () => {
   assert.equal(suggest("ba").length > 0, true);
 });
 
-test("caps the list, because a dropdown is a shortlist", () => {
+test("shows four, because a dropdown is read at a glance", () => {
+  assert.equal(suggest("bas").length, 4);
   assert.equal(suggest("bas", 2).length, 2);
+  // Asking for more than there are gives what there is, not four.
   assert.equal(suggest("bas", 8).length, 5);
 });

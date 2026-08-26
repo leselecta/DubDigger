@@ -36,7 +36,15 @@ interface Props {
 
 const {
   title = "Dub Digger — the dub techno index",
-  description = "Dig the Extended Scene. Dub Techno First. A map of scenes drawn from Discogs credit data.",
+  /*
+   * A fallback, and it deliberately does not open with the headline any more.
+   * It used to be "Dig the Extended Scene. Dub Techno First." followed by one
+   * clause, which is the h1 verbatim plus a fragment: a description that only
+   * repeats the heading above it is the case where an engine throws it away and
+   * writes its own from whatever prose the page has. On the home page the only
+   * prose was the footer, so the footer is what Google published.
+   */
+  description = "A map of the dub techno scene and its neighbours, built from Discogs credit data: who worked with whom, and the labels they released on.",
   pageType = "WebPage",
   mainEntity,
   breadcrumbs = [],

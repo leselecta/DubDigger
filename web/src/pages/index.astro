@@ -55,7 +55,22 @@ const RESULT_GRID = "grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_11rem_5rem]
 const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.relevance) }));
 ---
 
-<Base search={false}>
+{/*
+ * The one page that had no description of its own, and that is how the footer
+ * became its snippet. Every other page passes one; this one fell back to the
+ * layout's default, which opened with the headline verbatim. The default is
+ * fixed too, but the home page states its own for the same reason the rest do:
+ * a fallback is what a page gets when nobody decided, and this is the page a
+ * search result is most likely to be.
+ *
+ * It leads with the move rather than the slogan. "Dig the Extended Scene" is
+ * the headline's job and is already on screen; what a result has to say is what
+ * the thing does when you type into it.
+ */}
+<Base
+  search={false}
+  description="Type an artist, see who they worked with and what labels they released on. A map of the dub techno scene and its neighbours, built from Discogs credit data."
+>
   {/*
    * Searching drops the tagline and keeps everything else. A headline
    * announcing what the site is has done its job by the time someone has

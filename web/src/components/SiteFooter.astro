@@ -19,7 +19,26 @@
    * London sits in the sentence that says it rather than beside the year, so
    * nothing is stated twice.
    */}
+  {/*
+   * `data-nosnippet` is the direct fix for a thing that went wrong: Google
+   * published the home page with this footer as its snippet, the wordmark and
+   * the year and "I made the tool, not the data" and "handcrafted in London".
+   * A snippet is built from prose, and the footer was the only prose in that
+   * document — the rest of the home page is a headline, a field and three
+   * numbers. The attribute is right on every page rather than only that one:
+   * these five sentences are the same on half a million pages, so they can
+   * never be the answer to what one of them is about.
+   *
+   * It sits on this div rather than on the `<footer>` because Google names
+   * span, div and section as the elements it reads the attribute on, and a
+   * sectioning element it does not name is not the place to find out. This div
+   * holds every word in the footer, so the coverage is the same.
+   *
+   * A snippet rule only. The text is still indexed, the links are still
+   * followed, and nothing changes for a reader.
+   */}
   <div
+    data-nosnippet
     class="column text-ink-faint grid gap-x-10 gap-y-6 py-11 font-mono text-xs leading-[1.5] tracking-wider md:grid-cols-2"
   >
     <div class="space-y-1">

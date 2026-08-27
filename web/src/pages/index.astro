@@ -63,13 +63,15 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
  * a fallback is what a page gets when nobody decided, and this is the page a
  * search result is most likely to be.
  *
- * It leads with the move rather than the slogan. "Dig the Extended Scene" is
- * the headline's job and is already on screen; what a result has to say is what
- * the thing does when you type into it.
+ * It states what the tool is, in one clause, and stops. "Dig the Extended
+ * Scene" is the headline's job and is already on screen, so the description
+ * does not repeat it. An earlier version opened with the move instead ("Type an
+ * artist, see who they worked with..."), which read as an instruction to
+ * somebody who had not yet decided whether to click.
  */}
 <Base
   search={false}
-  description="Type an artist, see who they worked with and what labels they released on. A map of the dub techno scene and its neighbours, built from Discogs credit data."
+  description="A map of the dub techno scene and its neighbours, built from Discogs credit data."
 >
   {/*
    * Searching drops the tagline and keeps everything else. A headline

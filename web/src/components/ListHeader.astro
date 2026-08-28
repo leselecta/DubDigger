@@ -1,5 +1,5 @@
 ---
-import { LIST_GRID, LIST_GRID_NO_COUNT } from "./list-grid";
+import { listGrid } from "./list-grid";
 
 interface Props {
   name: string;
@@ -14,10 +14,10 @@ const { name, count, meta } = Astro.props;
 <div
   class:list={[
     "border-hairline text-ink-faint grid gap-x-[22px] border-b pb-3 font-mono text-[0.6875rem] tracking-[0.2em] uppercase",
-    count ? LIST_GRID : LIST_GRID_NO_COUNT,
+    listGrid(Boolean(count), Boolean(meta)),
   ]}
 >
   <span>{name}</span>
   {count && <span>{count}</span>}
-  <span class="hidden md:block">{meta ?? ""}</span>
+  {meta && <span class="hidden md:block">{meta}</span>}
 </div>

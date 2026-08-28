@@ -1,5 +1,5 @@
 ---
-import { LIST_GRID, LIST_GRID_NO_COUNT } from "./list-grid";
+import { listGrid } from "./list-grid";
 
 interface Props {
   /** Omitted drops the column entirely. Keep it in step with `ListHeader`. */
@@ -40,12 +40,20 @@ const nameClass = "link-rule text-row justify-self-start font-bold tracking-[-0.
  * two from drifting apart.
  */
 const metaHeading = metaLabel?.replace(/\.$/, "");
+
+/*
+ * Whether there is a third column at all. The slot counts: a row can put a link
+ * where the plain string usually goes, and that is still a filled column. When
+ * nothing fills it the cell is not drawn, because an empty `md:col-start-3` in
+ * a two-column grid opens an implicit third track and puts the dead strip back.
+ */
+const hasMeta = Boolean(meta) || Boolean(metaHeading) || Astro.slots.has("meta");
 ---
 
 <li
   class:list={[
     "border-hairline-soft grid items-baseline gap-x-[22px] border-b py-[18px]",
-    count ? LIST_GRID : LIST_GRID_NO_COUNT,
+    listGrid(Boolean(count), hasMeta),
   ]}
 >
   <div class="min-w-0">
@@ -92,39 +100,43 @@ const metaHeading = metaLabel?.replace(/\.$/, "");
     )
   }
 
-  <span
-    class:list={[
-      "text-ink-faint col-start-1 mt-2 font-mono text-[0.8125rem] tabular-nums md:mt-0",
-      count ? "md:col-start-3" : "md:col-start-2",
-    ]}
-  >
-    {/*
-     * The column header, brought down to the value.
-     *
-     * `mt-2` for the row gap the grid does not have. The name above carries
-     * `link-rule`, and with no gap the underline's bottom and this line's top
-     * are the same y. It only shows when the name wraps: short, the rule is as
-     * wide as the word and sits nowhere near this; wrapped, the name fills the
-     * column and a full-width rule lands flat on the meta line. Dropped at `md`,
-     * where this is back in column three of a single row.
-     *
-     * This column drops under the name below `md`, where `ListHeader` has no
-     * room to keep its own heading — so a bare "2002 – 2026" sat under a title
-     * with nothing saying what it counted. It reads "Active: 2002 – 2026" on a
-     * phone and goes back to being a column, unlabelled, from `md` up.
-     *
-     * Unlabelled to the eye, that is. `md:sr-only` takes it out of the flow
-     * without taking it out of the accessible tree, which `md:hidden` did:
-     * `ListHeader` is a sibling `<div>` and cannot tell a screen reader which
-     * column it heads, so above `md` the value was read on its own with nothing
-     * saying what it counted — the same fault the phone layout was fixing.
-     *
-     * The space between the two is the newline below, which HTML renders as
-     * one. Nothing sets it, so nothing can set it twice; out of flow, the
-     * browser drops it at the start of the line and the column does not shift.
-     */}
-    {metaHeading && <span class="md:sr-only">{metaHeading}:</span>}
-    {/* A slot so a row can put a link here, with the plain string as the usual case. */}
-    <slot name="meta">{meta}</slot>
-  </span>
+  {
+    hasMeta && (
+      <span
+        class:list={[
+          "text-ink-faint col-start-1 mt-2 font-mono text-[0.8125rem] tabular-nums md:mt-0",
+          count ? "md:col-start-3" : "md:col-start-2",
+        ]}
+      >
+        {/*
+         * The column header, brought down to the value.
+         *
+         * `mt-2` for the row gap the grid does not have. The name above carries
+         * `link-rule`, and with no gap the underline's bottom and this line's top
+         * are the same y. It only shows when the name wraps: short, the rule is as
+         * wide as the word and sits nowhere near this; wrapped, the name fills the
+         * column and a full-width rule lands flat on the meta line. Dropped at `md`,
+         * where this is back in column three of a single row.
+         *
+         * This column drops under the name below `md`, where `ListHeader` has no
+         * room to keep its own heading — so a bare "2002 – 2026" sat under a title
+         * with nothing saying what it counted. It reads "Active: 2002 – 2026" on a
+         * phone and goes back to being a column, unlabelled, from `md` up.
+         *
+         * Unlabelled to the eye, that is. `md:sr-only` takes it out of the flow
+         * without taking it out of the accessible tree, which `md:hidden` did:
+         * `ListHeader` is a sibling `<div>` and cannot tell a screen reader which
+         * column it heads, so above `md` the value was read on its own with nothing
+         * saying what it counted — the same fault the phone layout was fixing.
+         *
+         * The space between the two is the newline below, which HTML renders as
+         * one. Nothing sets it, so nothing can set it twice; out of flow, the
+         * browser drops it at the start of the line and the column does not shift.
+         */}
+        {metaHeading && <span class="md:sr-only">{metaHeading}:</span>}
+        {/* A slot so a row can put a link here, with the plain string as the usual case. */}
+        <slot name="meta">{meta}</slot>
+      </span>
+    )
+  }
 </li>

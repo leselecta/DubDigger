@@ -2,6 +2,7 @@
 import Base from "@/layouts/Base.astro";
 import SearchField from "@/components/SearchField.astro";
 import Eyebrow from "@/components/Eyebrow.astro";
+import LabelledBand from "@/components/LabelledBand.astro";
 import { getCorpusStats, getDbPath } from "@/lib/db";
 import { search } from "@/lib/queries";
 import { GRADE_SHADE, gradeWord } from "@/lib/view";
@@ -264,7 +265,18 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
           </div>
         )}
 
-        <div class="column pt-6 pb-20 md:pb-32">
+        {/*
+         * The bottom padding is the band's when there is one and the figures'
+         * when there is not: the prose block carries its own air below, so
+         * stacking the page's full bottom padding under it as well left the
+         * sentence marooned above the footer.
+         */}
+        <div
+          class:list={[
+            "column pt-6",
+            searching ? "pb-20 md:pb-32" : "pb-10 md:pb-16",
+          ]}
+        >
           <dl class="border-hairline grid border-t sm:grid-cols-3" data-figures>
             {columns.map(([label, value], i) => (
               <div
@@ -283,6 +295,51 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
               </div>
             ))}
           </dl>
+
+          {/*
+           * The one piece of prose in `<main>`, and it is here for a reason the
+           * rest of the page cannot serve. An AI Overview answers a branded
+           * question by quoting rendered body text and citing the URL it came
+           * from; a meta description is a request an engine may honour on a
+           * result card and is never a passage candidate, and neither is the
+           * JSON-LD. So `/` was not losing that comparison to `/info`, it was
+           * never in it: an eyebrow, a headline, a field, a caption and three
+           * figures hold no sentence to quote.
+           *
+           * It opens with the name and says what the tool is, which is the
+           * shape retrieved for "what is dub digger". Deliberately NOT the
+           * wording of `/info`'s lead: two URLs offering one identical passage
+           * makes them compete, and `/info` has four bands of depth behind the
+           * same claim. Same answer, its own sentences.
+           *
+           * Below the figures, left-aligned, in the band the other prose pages
+           * use. The first screen is the design and stays untouched, which was
+           * the standing decision this had to fit inside rather than reverse;
+           * position on the page is not what makes a passage retrievable, being
+           * real body text in `<main>` is.
+           *
+           * Hidden while searching, like the headline above: a results page is
+           * the answer and nothing else, and this would otherwise sit under
+           * every `?q=` address as well.
+           */}
+          {/*
+           * The band's top gap matches the one above the figures: the hero
+           * band's `pb-10 md:pb-24` plus this wrapper's `pt-6`. Both hairlines
+           * then sit the same distance below the block above them, so the
+           * bottom of the page reads as two bands of one rhythm rather than one
+           * band with a paragraph tacked under it.
+           */}
+          {!searching && (
+            <div class="mt-16 md:mt-30">
+              <LabelledBand label="What this is">
+                <p class="text-body text-ink-muted max-w-[760px]">
+                  Dub Digger is a map of the dub techno scene and its neighbours, drawn from Discogs
+                  credit data. Type an artist, and you see who they worked with and which labels
+                  they released on. Then click any of them and keep digging.
+                </p>
+              </LabelledBand>
+            </div>
+          )}
         </div>
       </>
     )

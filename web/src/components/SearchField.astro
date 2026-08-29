@@ -92,6 +92,28 @@ const from = c + r * 0.75;
         ? "border-accent transition-shadow focus:shadow-[inset_0_0_0_1px_var(--color-accent)]"
         : "border-edge-strong transition-colors focus:border-accent",
       hero ? "h-16 pr-14 pl-6 text-[0.9375rem]" : "h-11 pr-11 pl-4 text-[0.8125rem]",
+
+      /*
+       * 16px on a touch pointer, whatever the design says, because under 16px
+       * iOS Safari zooms the page in the moment the field takes focus and never
+       * zooms back out. The hero's 15px scales by 16/15 and the header's 13px by
+       * 16/13, which leaves a 375px phone showing 352px or 305px of a layout
+       * that is still 375 wide: the page then slides sideways as you scroll it,
+       * and comes back offset on the next load, because Safari keeps the zoom
+       * with the page. Measured on an iPhone X against a 16/15 render, which is
+       * the reported symptom exactly.
+       *
+       * `maximum-scale=1` on the viewport meta is the one-line version and is
+       * not available: the footer claims WCAG AA in public and taking pinch
+       * zoom away fails 1.4.4.
+       *
+       * Keyed on the pointer rather than a width, since this is a property of
+       * the input method and not of the screen. A tablet in landscape zooms too.
+       * A fine pointer keeps the design's sizes, which is every case that can
+       * see the difference: 15 to 16 is a pixel, and the header field only ever
+       * shows this at a size a thumb is aiming at anyway.
+       */
+      "pointer-coarse:text-[1rem]",
     ]}
   />
   <button

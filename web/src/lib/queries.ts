@@ -1,3 +1,5 @@
+import type { Database } from "better-sqlite3";
+
 import { getDb } from "./db";
 import { ALIAS_BAND_FLOOR, CORE_ARTISTS, NAMED_ARTISTS, SCENE_LABELS } from "./scene";
 
@@ -611,9 +613,9 @@ export function getTopLabels(): TopLabel[] {
 export interface SearchResults {
   hits: SearchHit[];
   /**
-   * The limit applies per kind, so a full artist or label list means there are
-   * more matches than these. Reported rather than inferred from the total,
-   * because "80 found" would be stating the cap as if it were a count.
+   * Whether the ranking had more to show than the page asked for. Reported
+   * rather than inferred from the total, because "40 found" would be stating
+   * the cap as if it were a count.
    */
   truncated: boolean;
 }
@@ -632,9 +634,7 @@ export function matchTerm(query: string): string {
 }
 
 /**
- * How close to the scene, as a sort key. Graded first, so a sceptic searching
- * "Mozart" sees at a glance that the scene artists are the answer and he is a
- * footnote.
+ * The five steps as a number, so a grade can be arithmetic rather than a gate.
  *
  * Artists and labels sort against each other on the one scale, which they can
  * now that a label is graded in five steps rather than two. It used to be two
@@ -649,16 +649,95 @@ const RELEVANCE_ORDER: Record<string, number> = {
   none: 4,
 };
 
-export function search(query: string, limit = 40): SearchResults {
-  const db = getDb();
-  if (!db || query.trim().length === 0) return { hits: [], truncated: false };
+/**
+ * How much of this scene a name actually accounts for, as one number for both
+ * kinds: releases the cluster explains, halved for each step down the grade.
+ *
+ * Sorting on the grade alone was a bug, and a bad one, because the grade is a
+ * ratio and a ratio needs work behind it before it describes anything. Label
+ * `very high` has a floor of two seed artists, so a one-record imprint with a
+ * perfect ratio outranked the canonical name: A Ghostly Ghost Productions (1
+ * release) above Ghostly International (508), Simon Shackleton Music (2) above
+ * Shackleton (118), and `moritz` never reaching Moritz von Oswald at all
+ * because four smaller Moritzes graded a step higher. The failures clustered
+ * on exactly the names this tool exists to serve.
+ *
+ * Volume alone overcorrects the other way, so the grade stays in as a discount
+ * rather than a gate: Moritz Illner has 30 seed releases of 184 and should not
+ * sit above the Moritz von Oswald Trio's 28 of 33. Halving per step is the
+ * whole rule, and it is deliberately one rule rather than five hand-set
+ * weights: a step of the scale is worth a doubling of the work.
+ *
+ * Typing a name exactly is worth one step of it. Bounded on purpose, because
+ * name matching is the same trap as the grade when it gates: ranking exact
+ * matches first hands `basic` to five unrelated acts called "Basic (2)". Worth
+ * a step, it lifts PAN over Pandit G on `pan` and moves nothing else.
+ */
+function sceneScore(sceneReleases: number, relevance: Relevance, exactName: boolean): number {
+  const step = RELEVANCE_ORDER[relevance] ?? RELEVANCE_ORDER.none!;
+  return sceneReleases / 2 ** Math.max(0, step - (exactName ? 1 : 0));
+}
 
-  const term = matchTerm(query);
+/**
+ * A name as someone would type it: Discogs' "(3)" disambiguator is how the
+ * database tells five labels called Pan apart, not part of the name anyone
+ * has in mind.
+ */
+function normaliseName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\s*\(\d+\)\s*$/, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
 
-  const artists = db
+/** 0 exact, 1 starts with what was typed, 2 matched somewhere later. */
+function nameRank(query: string, name: string): number {
+  const typed = normaliseName(query);
+  const actual = normaliseName(name);
+  if (actual === typed) return 0;
+  return actual.startsWith(typed) ? 1 : 2;
+}
+
+/**
+ * The pool each query is ranked from, per kind.
+ *
+ * Wider than the number of rows anyone sees, because the SQL used to order by
+ * one thing and the page by another: a row cut here can never be ranked, which
+ * is how Pan (3) came 21st for `pan` and was still the best answer on the
+ * page. The width itself is free, measured at 200 against 40: what a query
+ * costs is settled by the FTS scan and by ordering on a figure every match has
+ * to be costed for, neither of which cares how many rows come back.
+ */
+const RANK_POOL = 200;
+
+interface ScoredRow extends HitRow {
+  kind: "artist" | "label";
+  scene_releases: number;
+}
+
+/** One order for the results page and the dropdown, so one is a shortcut into the other. */
+function rankHits(query: string, rows: ScoredRow[]): ScoredRow[] {
+  const score = (r: ScoredRow) =>
+    sceneScore(r.scene_releases, r.relevance ?? "none", nameRank(query, r.name) === 0);
+  return rows.sort(
+    (a, b) =>
+      score(b) - score(a) ||
+      nameRank(query, a.name) - nameRank(query, b.name) ||
+      b.release_count - a.release_count,
+  );
+}
+
+/**
+ * Every artist matching the term, ranked-pool sized, with the scene work each
+ * one accounts for. `seed_releases` is that figure already: releases of theirs
+ * inside the cluster the seed measured.
+ */
+function artistPool(db: Database, term: string): ScoredRow[] {
+  return db
     .prepare(
       `SELECT a.id, a.name, coalesce(c.release_count, 0) AS release_count,
-              coalesce(m.is_seed, 0) AS is_seed,
+              coalesce(c.seed_releases, 0) AS scene_releases,
               coalesce(m.channel_a, 0) AS channel_a,
               coalesce(m.channel_b, 0) AS channel_b,
               coalesce(c.relevance, 'none') AS relevance
@@ -667,59 +746,70 @@ export function search(query: string, limit = 40): SearchResults {
          LEFT JOIN artist_coverage c ON c.artist_id = a.id
          LEFT JOIN corpus_artists  m ON m.artist_id = a.id
         WHERE artist_search MATCH ?
-        ORDER BY is_seed DESC, release_count DESC
+        ORDER BY scene_releases DESC, release_count DESC
         LIMIT ?`,
     )
-    .all(term, limit) as HitRow[];
+    .all(term, RANK_POOL)
+    .map((r) => ({ ...(r as HitRow & { scene_releases: number }), kind: "artist" as const }));
+}
 
-  const labels = db
+/**
+ * The same for labels, where the scene figure has to be derived: releases on
+ * the label, times the share of its roster that is in the cluster. That is the
+ * one unit an artist and a label can be compared in, and the reason the count
+ * is paid for here rather than deferred.
+ */
+function labelPool(db: Database, term: string): ScoredRow[] {
+  return db
     .prepare(
-      `SELECT l.id, l.name, l.profile, l.urls,
-              (SELECT count(DISTINCT rl.release_id) FROM release_labels rl WHERE rl.label_id = l.id)
-                AS release_count,
-              coalesce(g.relevance, 'none') AS relevance
-         FROM label_search s
-         JOIN labels l ON l.id = s.rowid
-         LEFT JOIN label_coverage g ON g.label_id = l.id
-        WHERE label_search MATCH ?
-        ORDER BY release_count DESC
+      // Wrapped, because the scene figure is built from the release count and
+      // SQLite cannot read one select-list alias from another.
+      `SELECT t.id, t.name, t.release_count, t.relevance,
+              cast(t.release_count * t.seed_ratio AS INTEGER) AS scene_releases
+         FROM (SELECT l.id, l.name,
+                      (SELECT count(DISTINCT rl.release_id)
+                         FROM release_labels rl WHERE rl.label_id = l.id) AS release_count,
+                      coalesce(g.relevance, 'none') AS relevance,
+                      coalesce(g.seed_ratio, 0) AS seed_ratio
+                 FROM label_search s
+                 JOIN labels l ON l.id = s.rowid
+                 LEFT JOIN label_coverage g ON g.label_id = l.id
+                WHERE label_search MATCH ?) t
+        ORDER BY scene_releases DESC, t.release_count DESC
         LIMIT ?`,
     )
-    .all(term, limit) as HitRow[];
+    .all(term, RANK_POOL)
+    .map((r) => ({ ...(r as HitRow & { scene_releases: number }), kind: "label" as const }));
+}
 
-  const connection = (r: HitRow): SearchHit["connection"] => {
+export function search(query: string, limit = 40): SearchResults {
+  const db = getDb();
+  if (!db || query.trim().length === 0) return { hits: [], truncated: false };
+
+  const term = matchTerm(query);
+  const artists = artistPool(db, term);
+  const labels = labelPool(db, term);
+
+  const connection = (r: ScoredRow): SearchHit["connection"] => {
+    if (r.kind === "label") return null;
     if (r.channel_a === 1 && r.channel_b === 1) return "collaborator + label mate";
     if (r.channel_a === 1) return "collaborator";
     if (r.channel_b === 1) return "label mate";
     return null;
   };
 
-  const hits: (SearchHit & { rank: number })[] = [
-    ...artists.map((r) => ({
-      id: r.id,
-      name: r.name,
-      kind: "artist" as const,
-      releaseCount: r.release_count,
-      relevance: r.relevance ?? "none",
-      connection: connection(r),
-      rank: RELEVANCE_ORDER[r.relevance ?? "none"]!,
-    })),
-    ...labels.map((r) => ({
-      id: r.id,
-      name: r.name,
-      kind: "label" as const,
-      releaseCount: r.release_count,
-      relevance: r.relevance ?? "none",
-      connection: null,
-      rank: RELEVANCE_ORDER[r.relevance ?? "none"]!,
-    })),
-  ];
-
   return {
-    hits: hits
-      .sort((a, b) => a.rank - b.rank || b.releaseCount - a.releaseCount)
-      .map(({ rank: _, ...hit }) => hit),
-    truncated: artists.length === limit || labels.length === limit,
+    hits: rankHits(query, [...artists, ...labels])
+      .slice(0, limit)
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        kind: r.kind,
+        releaseCount: r.release_count,
+        relevance: r.relevance ?? "none",
+        connection: connection(r),
+      })),
+    truncated: artists.length + labels.length > limit,
   };
 }
 
@@ -747,18 +837,21 @@ export const SUGGEST_MIN_CHARS = 2;
 /**
  * The shortlist under the search box: what you are probably typing.
  *
- * A cut-down `search`, and cut down in the two places that cost: it reads
- * fewer columns, and it never counts releases across every label a prefix
- * matches. That count is what orders a label against an artist, so it cannot
- * be dropped, only deferred — the grade picks the shortlist, and only those
- * few rows are costed. On a two-letter prefix that is 3 subqueries instead of
- * 9,438.
- *
  * Three rows. A dropdown is read at a glance while the hands are still on the
  * keys, and a list long enough to need scanning is one the reader would be
  * faster submitting. Past the third the ranking starts putting a name nobody
  * typed under one they did. What does not fit belongs on the results page,
  * which is one keystroke away and built for forty of them.
+ *
+ * The same pools and the same ranking as `search`, sliced shorter. It used to
+ * shortlist by grade first and cost the release count on only the three rows
+ * that survived, which was cheap and wrong: the count is what puts a label and
+ * an artist on one scale, so deferring it meant the shortlist was picked by a
+ * measure it could not yet apply. Paying it up front takes the worst two-letter
+ * prefix in the corpus, "re", from 39 ms to 84 ms, and an ordinary one from
+ * about 23 to 30. That is the same budget that set SUGGEST_MIN_CHARS, where a
+ * single letter cost 300 ms and two cost 65, and the answers are cached for
+ * five minutes and per keystroke besides.
  *
  * Ordered exactly as the results page orders the same names, because this list
  * is a shortcut into that page and not a second opinion about it.
@@ -769,50 +862,7 @@ export function suggest(query: string, limit = 3): Suggestion[] {
 
   const term = matchTerm(query);
 
-  const artists = db
-    .prepare(
-      `SELECT a.id, a.name, coalesce(c.release_count, 0) AS release_count,
-              coalesce(c.relevance, 'none') AS relevance
-         FROM artist_search s
-         JOIN artists a ON a.id = s.rowid
-         LEFT JOIN artist_coverage c ON c.artist_id = a.id
-         LEFT JOIN corpus_artists  m ON m.artist_id = a.id
-        WHERE artist_search MATCH ?
-        ORDER BY coalesce(m.is_seed, 0) DESC, release_count DESC
-        LIMIT ?`,
-    )
-    .all(term, limit) as HitRow[];
-
-  const labels = db
-    .prepare(
-      `SELECT t.id, t.name, t.relevance,
-              (SELECT count(DISTINCT rl.release_id)
-                 FROM release_labels rl WHERE rl.label_id = t.id) AS release_count
-         FROM (SELECT l.id, l.name, coalesce(g.relevance, 'none') AS relevance,
-                      coalesce(g.line_artist_count, 0) AS roster
-                 FROM label_search s
-                 JOIN labels l ON l.id = s.rowid
-                 LEFT JOIN label_coverage g ON g.label_id = l.id
-                WHERE label_search MATCH ?
-                ORDER BY CASE coalesce(g.relevance, 'none')
-                           WHEN 'very high' THEN 0 WHEN 'high' THEN 1
-                           WHEN 'medium'    THEN 2 WHEN 'low'  THEN 3 ELSE 4 END,
-                         roster DESC
-                LIMIT ?) t`,
-    )
-    .all(term, limit) as HitRow[];
-
-  const shortlist = [
-    ...artists.map((r) => ({ ...r, kind: "artist" as const })),
-    ...labels.map((r) => ({ ...r, kind: "label" as const })),
-  ];
-
-  return shortlist
-    .sort(
-      (a, b) =>
-        RELEVANCE_ORDER[a.relevance ?? "none"]! - RELEVANCE_ORDER[b.relevance ?? "none"]! ||
-        b.release_count - a.release_count,
-    )
+  return rankHits(query, [...artistPool(db, term), ...labelPool(db, term)])
     .slice(0, limit)
     .map((r) => ({
       id: r.id,

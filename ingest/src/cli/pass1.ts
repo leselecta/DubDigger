@@ -61,7 +61,9 @@ console.log(`  core     ${[...seedStyles.core].join(", ")}`);
 console.log(`  broad    ${[...seedStyles.broad].join(", ")}` + ` (genre: ${[...seedStyles.genres].join("/")})`);
 console.log(`  gated    ${[...seedStyles.needsTechno].join(", ")}` + ` (needs a techno style alongside)`);
 console.log(`  label    >= ${seedLabel.minSeedArtists} seed artists`
-  + ` and >= ${(seedLabel.minSeedArtistRatio * 100).toFixed(1)}% of roster\n`);
+  + ` and >= ${(seedLabel.minSeedArtistRatio * 100).toFixed(1)}% of roster,`
+  + ` or >= ${seedLabel.broad.minSeedArtists}`
+  + ` and >= ${(seedLabel.broad.minSeedArtistRatio * 100).toFixed(1)}%\n`);
 
 if (isFull) console.log(`  Reading the full dump. This takes a while.\n`);
 

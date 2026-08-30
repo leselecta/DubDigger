@@ -26,7 +26,7 @@ export interface Pass1Options {
   isSeed?: (styles: string[], genres: string[]) => boolean;
   /** Share of an artist's output that must sit in the seed. null disables. */
   minSeedRatio?: number | null;
-  seedLabel?: { minSeedArtists: number; minSeedArtistRatio: number };
+  seedLabel?: SeedLabelThresholds;
   sourceFile?: string;
   onProgress?: (scanned: number) => void;
 }
@@ -311,10 +311,21 @@ function keepRelease(
 /**
  * Derives seed labels from the pairs table. Returns how many labels had any
  * seed artist at all, which is the useful denominator when tuning the dials.
+ *
+ * Two gates, either of which admits. See `seedLabel.broad` in config for why a
+ * single ratio could not be both right for a four-act imprint and right for a
+ * label with a hundred names on it.
  */
+export interface SeedLabelThresholds {
+  minSeedArtists: number;
+  minSeedArtistRatio: number;
+  /** The second gate: a lower ratio, paid for with roster size. */
+  broad: { minSeedArtists: number; minSeedArtistRatio: number };
+}
+
 export function computeSeedLabels(
   db: Database.Database,
-  thresholds: { minSeedArtists: number; minSeedArtistRatio: number },
+  thresholds: SeedLabelThresholds,
 ): number {
   const candidates = db
     .prepare(
@@ -336,9 +347,16 @@ export function computeSeedLabels(
      FROM label_artist_pairs p
      LEFT JOIN seed_artists s ON s.artist_id = p.artist_id
      GROUP BY p.label_id
-     HAVING count(s.artist_id) >= ?
-        AND CAST(count(s.artist_id) AS REAL) / count(*) >= ?`,
-  ).run(thresholds.minSeedArtists, thresholds.minSeedArtistRatio);
+     HAVING (count(s.artist_id) >= ?
+             AND CAST(count(s.artist_id) AS REAL) / count(*) >= ?)
+         OR (count(s.artist_id) >= ?
+             AND CAST(count(s.artist_id) AS REAL) / count(*) >= ?)`,
+  ).run(
+    thresholds.minSeedArtists,
+    thresholds.minSeedArtistRatio,
+    thresholds.broad.minSeedArtists,
+    thresholds.broad.minSeedArtistRatio,
+  );
 
   return candidates;
 }

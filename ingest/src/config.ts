@@ -191,9 +191,10 @@ export function isAuthorshipRole(role: string): boolean {
 }
 
 /**
- * A label becomes a seed label only if BOTH hold. Flat counts alone don't work:
- * a 500-artist label clearing "2+ seed artists" is noise, not signal, so the bar
- * has to scale with roster size.
+ * A label becomes a seed label if EITHER gate opens, and each gate needs both of
+ * its own numbers. Flat counts alone don't work: a 500-artist label clearing
+ * "2+ seed artists" is noise, not signal, so the bar has to scale with roster
+ * size. One gate alone did not work either, for the reason under `broad`.
  */
 export const seedLabel = {
   /** Floor: guards against a tiny label qualifying on one coincidence. */
@@ -217,6 +218,37 @@ export const seedLabel = {
    * `labelRelevance` below now fixes.
    */
   minSeedArtistRatio: 0.5,
+
+  /**
+   * The second gate, added 2026-08-30: a lower ratio, paid for with roster size.
+   *
+   * 50% is the right bar for a small imprint and the wrong one for a label with
+   * a hundred acts on it, where a third of the roster is a far stronger claim
+   * than two names out of four. Ghostly International sits at 48.7% and PAN at
+   * 41.9%, so channel B never opened on either, and Whatever The Weather has no
+   * page because of it: Loraine James is at 1.75% and cannot bridge from the
+   * other side, so nothing on Ghostly was ever kept.
+   *
+   * 20 seed artists is what makes 35% mean something. The two dials together
+   * admit 501 labels, and the separation holds: every major is an order of
+   * magnitude below, Virgin closest at 7.4%, and the nearest genuine near-miss
+   * is Warp at 31.1%. What comes in is Beat Records, Planet Rhythm, R & S,
+   * Bureau B, Opal Tapes, Tronic and Compost, alongside Ghostly 48.7%,
+   * Tectonic 49.2%, Hyperdub 45.7% and PAN 41.9%.
+   *
+   * Two things it does NOT reach, both accepted. Metroplex is 18 seed artists
+   * of 45 at 40%, two short of the floor, and lowering the floor to catch one
+   * named label is fitting the dial to the answer. Ndagga is 3 of 7, which no
+   * ratio rule reaches and which is a small-roster problem rather than a
+   * threshold one.
+   *
+   * A flat drop to 0.45 was rejected: it admits 772 labels, the number measures
+   * nothing, and it loses the same "more than half" sentence anyway. An alias
+   * channel is philosophically stronger, since Whatever The Weather IS Loraine
+   * James and Discogs states it, but its blast radius is 96,699 out-of-corpus
+   * alias targets and it needs two streams of the dump.
+   */
+  broad: { minSeedArtists: 20, minSeedArtistRatio: 0.35 },
 };
 
 /**

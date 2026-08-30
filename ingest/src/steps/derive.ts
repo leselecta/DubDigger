@@ -367,9 +367,11 @@ export async function runDerive(
            CASE WHEN p.total > 0 THEN 1.0 * p.seeds / p.total END,
            CASE
              WHEN coalesce(p.seeds, 0) = 0                       THEN 'none'
-             WHEN p.seeds >= ${seedLabel.minSeedArtists}
-              AND 1.0 * p.seeds / p.total
-                  >= ${seedLabel.minSeedArtistRatio}                      THEN 'very high'
+             WHEN (p.seeds >= ${seedLabel.minSeedArtists}
+               AND 1.0 * p.seeds / p.total >= ${seedLabel.minSeedArtistRatio})
+               OR (p.seeds >= ${seedLabel.broad.minSeedArtists}
+               AND 1.0 * p.seeds / p.total
+                   >= ${seedLabel.broad.minSeedArtistRatio})              THEN 'very high'
              WHEN p.seeds >= ${labelRelevance.high.minSeedArtists}
               AND 1.0 * p.seeds / p.total
                   >= ${labelRelevance.high.minSeedArtistRatio}            THEN 'high'

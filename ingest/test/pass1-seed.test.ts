@@ -4,6 +4,7 @@ import type Database from "better-sqlite3";
 
 import { openDb } from "../src/db/open.ts";
 import { runPass1, type Pass1Options } from "../src/steps/pass1-seed.ts";
+import { seedLabel } from "../src/config.ts";
 import type { ParsedRelease } from "../src/lib/release-stream.ts";
 
 /** A release with only the fields a test cares about. */
@@ -168,7 +169,7 @@ function labelWith(seedArtists: number[], fillerArtists: number[]): ParsedReleas
 test("a label with enough seed artists, densely enough, becomes a seed label", async () => {
   const { db, stats } = await pass1(labelWith([1, 2], [3]), {
     isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)),
-    seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.05 },
+    seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.05, broad: seedLabel.broad },
   });
 
   assert.equal(stats.seedLabels, 1);
@@ -187,7 +188,7 @@ test("one seed artist fails the floor, however concentrated", async () => {
   // stops a tiny label qualifying on a single coincidence.
   const { db, stats } = await pass1(labelWith([1], [2]), {
     isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)),
-    seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.05 },
+    seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.05, broad: seedLabel.broad },
   });
 
   assert.equal(stats.seedLabels, 0);
@@ -199,7 +200,34 @@ test("two seed artists on a huge roster fail the ratio", async () => {
   const filler = Array.from({ length: 98 }, (_, i) => 100 + i);
   const { stats } = await pass1(labelWith([1, 2], filler), {
     isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)),
-    seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.05 },
+    seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.05, broad: seedLabel.broad },
+  });
+
+  assert.equal(stats.seedLabels, 0);
+});
+
+test("a big roster at a third clears the second gate the first one shuts", async () => {
+  // 25 seed artists of 60 is 41.7%: under the 50% the first gate wants, over
+  // the 35% the second one accepts once there are 20 names behind it. This is
+  // Ghostly at 48.7% and PAN at 41.9%, which is why the gate exists.
+  const seeds = Array.from({ length: 25 }, (_, i) => i + 1);
+  const filler = Array.from({ length: 35 }, (_, i) => 100 + i);
+  const { stats } = await pass1(labelWith(seeds, filler), {
+    isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)),
+    seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.5, broad: seedLabel.broad },
+  });
+
+  assert.equal(stats.seedLabels, 1);
+});
+
+test("a third of the roster is not enough on its own", async () => {
+  // Same 41.7%, on 5 seed artists of 12. The floor of 20 is what makes 35%
+  // mean something: without it the second gate would just be a lower ratio.
+  const seeds = [1, 2, 3, 4, 5];
+  const filler = Array.from({ length: 7 }, (_, i) => 100 + i);
+  const { stats } = await pass1(labelWith(seeds, filler), {
+    isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)),
+    seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.5, broad: seedLabel.broad },
   });
 
   assert.equal(stats.seedLabels, 0);
@@ -214,7 +242,7 @@ test("counts each artist once per label, however many releases they made", async
   ];
   const { db } = await pass1(releases, {
     isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)),
-    seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.05 },
+    seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.05, broad: seedLabel.broad },
   });
 
   const row = db.prepare("SELECT * FROM seed_labels WHERE label_id = 500").get() as {
@@ -231,7 +259,7 @@ test("the roster spans the whole dump, not just the seed releases", async () => 
   const filler = Array.from({ length: 20 }, (_, i) => 100 + i);
   const { stats } = await pass1(labelWith([1, 2], filler), {
     isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)),
-    seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.5 },
+    seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.5, broad: seedLabel.broad },
   });
 
   assert.equal(stats.seedLabels, 0, "roster was measured over seed releases only");
@@ -250,7 +278,7 @@ test("placeholder artists do not pad a label roster", async () => {
   ];
   const { db } = await pass1(releases, {
     isSeed: (s: string[]) => ["Dub"].some((x) => s.includes(x)),
-    seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.05 },
+    seedLabel: { minSeedArtists: 2, minSeedArtistRatio: 0.05, broad: seedLabel.broad },
   });
 
   assert.equal(

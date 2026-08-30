@@ -4,6 +4,7 @@
  *
  *   npm run seed-labels --workspace ingest
  *   npm run seed-labels --workspace ingest -- --min-artists 3 --min-ratio 0.10
+ *   npm run seed-labels --workspace ingest -- --broad-artists 25 --broad-ratio 0.40
  *   npm run seed-labels --workspace ingest -- --drop-pairs   # reclaim the space
  */
 import { paths, seedLabel } from "../config.ts";
@@ -34,6 +35,10 @@ if (argv.includes("--drop-pairs")) {
 const thresholds = {
   minSeedArtists: num("min-artists", seedLabel.minSeedArtists),
   minSeedArtistRatio: num("min-ratio", seedLabel.minSeedArtistRatio),
+  broad: {
+    minSeedArtists: num("broad-artists", seedLabel.broad.minSeedArtists),
+    minSeedArtistRatio: num("broad-ratio", seedLabel.broad.minSeedArtistRatio),
+  },
 };
 
 db.exec("DELETE FROM seed_labels");
@@ -43,8 +48,10 @@ const seedLabels = db.prepare("SELECT count(*) FROM seed_labels").pluck().get() 
 
 const n = (v: number) => v.toLocaleString("en-GB");
 console.log(`
-  floor              >= ${thresholds.minSeedArtists} seed artists
-  ratio              >= ${(thresholds.minSeedArtistRatio * 100).toFixed(1)}% of roster
+  gate 1             >= ${thresholds.minSeedArtists} seed artists`
+  + ` and >= ${(thresholds.minSeedArtistRatio * 100).toFixed(1)}% of roster
+  gate 2             >= ${thresholds.broad.minSeedArtists} seed artists`
+  + ` and >= ${(thresholds.broad.minSeedArtistRatio * 100).toFixed(1)}% of roster
 
   candidate labels   ${n(candidates)}
   seed labels        ${n(seedLabels)}

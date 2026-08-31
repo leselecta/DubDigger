@@ -34,12 +34,12 @@ const relations = getRelations(artist.id);
 const base = `/artist/${artist.id}`;
 
 const tabs = [
-  { key: "collaborators", label: "Collaborators", count: artist.collaboratorCount },
   { key: "labels", label: "Labels", count: artist.labelCount },
+  { key: "collaborators", label: "Collaborators", count: artist.collaboratorCount },
   { key: "releases", label: "Releases", count: artist.releaseCount },
 ];
-const asked = params.get("tab") ?? "collaborators";
-const active = tabs.some((t) => t.key === asked) ? asked : "collaborators";
+const asked = params.get("tab") ?? "labels";
+const active = tabs.some((t) => t.key === asked) ? asked : "labels";
 const total = tabs.find((t) => t.key === active)!.count;
 
 const groups: [string, Relation["kind"]][] = [

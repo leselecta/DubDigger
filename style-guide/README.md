@@ -198,12 +198,12 @@ Prefer the server, then a link, then a script.
 | ClientRouter | 16,075 | every page |
 | drawer | 1,064 | every page |
 | contact dialog | 961 | every page |
-| scroll hold | 300 | every page |
-| search suggestions | 1,622 | every page |
+| scroll hold and active tab | 613 | every page |
+| search suggestions | 1,641 | every page |
 | collapsing bio | 1,035 | artist, label |
 | figures count-up | 644 | home |
 
-Heaviest page: **21,057 bytes**. A seventh inline script needs the argument the six made.
+Heaviest page: **21,389 bytes**. A seventh inline script needs the argument the six made.
 
 The suggestions script is the sixth and shows the shape the argument takes: `/suggest` is an Astro
 partial returning the rows as markup, so the script only fetches, assigns and moves a highlight.
@@ -225,7 +225,7 @@ Markup stays in `.astro`, and the field is a plain GET form with or without Java
 | Chevron | 200ms |
 | Figures count-up | 1400ms ease-out cubic, once, `rootMargin: "0px 0px -12% 0px"` |
 
-Hooks: `data-hold-scroll`, `data-menu`, `data-shown`, `data-drawer`, `data-scrim`,
+Hooks: `data-hold-scroll`, `data-tab-row`, `data-menu`, `data-shown`, `data-drawer`, `data-scrim`,
 `data-contact-open`, `data-contact`, `data-contact-close`, `data-contact-copy`, `data-copied`,
 `data-collapsible`, `data-clamp`, `data-inner`, `data-fade`, `data-toggle`, `data-chevron`,
 `data-figures`, `data-count`, `data-suggest`, `data-suggest-list`, `data-suggest-option`,

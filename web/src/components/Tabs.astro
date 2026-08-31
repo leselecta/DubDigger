@@ -51,7 +51,7 @@ const { tabs, active, basePath } = Astro.props;
    * "Sections", and a reader listing the landmarks needs the two told apart.
    * "Lists" is what this one switches, in the words the page already uses.
    */}
-  <nav class="flex gap-6 overflow-x-auto sm:gap-[34px]" aria-label="Lists">
+  <nav class="flex gap-6 overflow-x-auto sm:gap-[34px]" aria-label="Lists" data-tab-row>
     {
       tabs.map((tab) => {
         const isActive = tab.key === active;

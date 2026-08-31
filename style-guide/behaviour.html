@@ -45,7 +45,7 @@
           <div>
             <div class="sg-scroll">
               <table class="sg-spec">
-                <caption>Measured, and the heaviest page is an artist or label at 21,057 bytes</caption>
+                <caption>Measured, and the heaviest page is an artist or label at 21,389 bytes</caption>
                 <thead>
                   <tr>
                     <th scope="col">Script</th>
@@ -84,17 +84,19 @@
                     </td>
                   </tr>
                   <tr>
-                    <td class="key">scroll hold</td>
-                    <td class="num">300</td>
+                    <td class="key">scroll hold and active tab</td>
+                    <td class="num">613</td>
                     <td>every page</td>
                     <td class="note">
-                      Where the reader was is not something a server response can carry. One script
-                      in the layout serving the tab bar, the sort control and "Load more".
+                      Where the reader was is not something a server response can carry, and neither
+                      is a scroll offset. One script in the layout serving the tab bar, the sort
+                      control and "Load more", holding the page's y across a swap and putting the
+                      active tab back in view on a row too narrow to show them all.
                     </td>
                   </tr>
                   <tr>
                     <td class="key">search suggestions</td>
-                    <td class="num">1,622</td>
+                    <td class="num">1,641</td>
                     <td>every page</td>
                     <td class="note">
                       A keystroke has not been submitted yet. Everything else still is the server:
@@ -264,6 +266,7 @@ if (matchMedia("<b>(prefers-reduced-motion: reduce)</b>").matches) return;
                 </thead>
                 <tbody>
                   <tr><td class="key">data-hold-scroll</td><td>Tabs, SortBy, LoadMore</td><td class="note">Keeps the viewport where it was across the swap. Records the destination too, so a click that never navigates cannot strand a position.</td></tr>
+                  <tr><td class="key">data-tab-row</td><td>Tabs</td><td class="note">The scrolling row. After a swap, and at parse time for a cold deep link, the active tab is scrolled back into view, 48px clear of the scroll hint.</td></tr>
                   <tr><td class="key">data-menu</td><td>the drawer's &lt;details&gt;</td><td class="note">Marks it for the slide script.</td></tr>
                   <tr><td class="key">data-shown</td><td>same element</td><td class="note">Intent, not state: a details sliding shut is still <code>open</code>. The CSS reads this for the way out.</td></tr>
                   <tr><td class="key">data-drawer / data-scrim</td><td>the sheet and the dim</td><td class="note">The two transitioned elements.</td></tr>

@@ -253,6 +253,47 @@ const jsonLd = JSON.stringify({ "@context": "https://schema.org", "@graph": grap
         }
         held = null;
       });
+
+      /**
+       * Keep the active tab in view, on a row too narrow to show them all.
+       *
+       * The vertical hold above is only half the promise. A swapped document
+       * arrives with its tab row scrolled to the start, so tapping Releases on
+       * a phone answered the question and then hid the answer: the row snapped
+       * back to Labels and the tab you were on sat off the right edge, with
+       * nothing marked in the viewport at all.
+       *
+       * A scroll offset is the one piece of state that cannot be expressed in
+       * markup, which is what puts this in a script rather than on the server.
+       * It is bytes on the hold script rather than a seventh one, because it is
+       * the same promise: a swap leaves the reader looking at what they asked
+       * for.
+       *
+       * Rects rather than `offsetLeft`, which is measured from the offset
+       * parent and would be the page here, since nothing between the tab and
+       * the body is positioned. And the row is nudged 48px further than it
+       * strictly needs, the width of the scroll hint, so an active tab landing
+       * at the right edge is not left sitting under the gradient.
+       *
+       * Called at parse time as well as after a swap, so it also catches a tab
+       * opened cold from a shared URL, where there is no swap to listen for.
+       * Both run before paint, so the row is never seen moving.
+       */
+      const showActiveTab = () => {
+        const tab = document.querySelector("[data-tab-row] [aria-current=page]");
+        const row = tab?.parentElement;
+        if (!tab || !row) return;
+
+        const seen = row.getBoundingClientRect();
+        const here = tab.getBoundingClientRect();
+        const past = here.right + 48 - seen.right;
+
+        if (past > 0) row.scrollLeft += past;
+        else if (here.left < seen.left) row.scrollLeft -= seen.left - here.left;
+      };
+
+      showActiveTab();
+      document.addEventListener("astro:after-swap", showActiveTab);
     </script>
   </body>
 </html>

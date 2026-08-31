@@ -33,6 +33,52 @@ interface Props {
 }
 
 const { tabs, active, basePath } = Astro.props;
+
+/**
+ * How wide this row wants to be, and therefore whether it needs a scroll hint
+ * at all.
+ *
+ * The row is mono, so its width is arithmetic rather than a guess: IBM Plex
+ * Mono advances 0.6em, which at 13px with 0.14em of tracking is 9.62px for
+ * every character whatever it is. Add a 24px gap between tabs and the column's
+ * 48px of gutter and the answer is exact. Measured against the real page it is,
+ * too: the widest artist row in the corpus computes to 481px and renders at 482.
+ *
+ * The label page is why this is computed rather than fixed. It carries two tabs
+ * where an artist carries three, so it wants about 300px and cannot scroll on
+ * any phone, and a hint there was an arrow pointing at nothing.
+ */
+const CHARACTER = 9.62;
+const GAP = 24;
+const GUTTERS = 48;
+
+const wants = tabs.reduce(
+  (width, tab) => width + `${tab.label} ${tab.count.toLocaleString("en-GB")}`.length * CHARACTER,
+  GAP * (tabs.length - 1) + GUTTERS,
+);
+
+/**
+ * The width the hint disappears at, this row's own rather than one number for
+ * every page.
+ *
+ * Written out as whole class names because Tailwind reads the source rather
+ * than the render, so a composed `min-[${n}px]` would generate nothing. The
+ * ladder is coarse on purpose: a step every 40px keeps an arrow from lingering
+ * on a row that fits, without pretending to a precision the reader can see.
+ *
+ * 390 is the narrowest viewport in scope, the iPhone and the common Android
+ * width, so a row that fits there is never hinted. A row wanting more than the
+ * top step keeps its hint at every width, which is right for as long as the
+ * step above it is a phone held sideways.
+ */
+const STEPS: [number, string][] = [
+  [440, "min-[440px]:hidden"],
+  [480, "min-[480px]:hidden"],
+  [520, "min-[520px]:hidden"],
+  [560, "min-[560px]:hidden"],
+];
+
+const hint = wants <= 390 ? null : (STEPS.find(([width]) => width >= wants)?.[1] ?? "");
 ---
 
 {/*
@@ -79,15 +125,7 @@ const { tabs, active, basePath } = Astro.props;
     }
 
     {/*
-     * The scroll hint, and it only exists where the row can actually overflow.
-     *
-     * 560px, measured rather than reached for: the widest row the corpus can
-     * produce is Andreas Kauffelt's, 45 characters of mono at 13px and 0.14em
-     * of tracking plus two 24px gaps, which comes to 482px inside a column
-     * that spends 48px on gutters. So a row needs 530px of viewport at the
-     * outside and most need about 480. Above that there is nothing to scroll
-     * and an arrow would be pointing at nothing. `sm` was the obvious hook and
-     * is 640px, which is that lie on every phone held sideways.
+     * The scroll hint, on the rows that scroll and nowhere else.
      *
      * `sticky` is what pins it to the right edge of the scrollport while the
      * row is scrolled left, and it is a real 48px flex item rather than an
@@ -100,21 +138,29 @@ const { tabs, active, basePath } = Astro.props;
      * or reaching for, and this is neither: it is a note about the shape of the
      * row.
      */}
-    <span
-      class="scroll-hint pointer-events-none sticky right-0 flex w-12 shrink-0 items-center justify-end pb-4 min-[560px]:hidden"
-      style="background: linear-gradient(to right, transparent, var(--color-bg) 65%)"
-      aria-hidden="true"
-    >
-      <svg width="12" height="12" viewBox="0 0 12 12" class="text-ink-dim">
-        <path
-          d="M4 2l4 4-4 4"
-          stroke="currentColor"
-          stroke-width="1.5"
-          fill="none"
-          stroke-linecap="round"
-          stroke-linejoin="round"></path>
-      </svg>
-    </span>
+    {
+      hint !== null && (
+        <span
+          class:list={[
+            "scroll-hint pointer-events-none sticky right-0 flex w-12 shrink-0 items-center justify-end pb-4",
+            hint,
+          ]}
+          style="background: linear-gradient(to right, transparent, var(--color-bg) 65%)"
+          aria-hidden="true"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" class="text-ink-dim">
+            <path
+              d="M4 2l4 4-4 4"
+              stroke="currentColor"
+              stroke-width="1.5"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </span>
+      )
+    }
   </nav>
 </div>
 

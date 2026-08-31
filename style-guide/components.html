@@ -163,8 +163,9 @@ class="border-hairline-soft grid items-baseline gap-x-[22px] border-b <b>py-[18p
               <i>active:</i> text-ink-strong border-b-[1.5px] border-ink-strong
               <i>resting:</i> text-ink-dim"&gt;
     <i>&lt;!-- the scroll hint, last item, pinned by sticky --&gt;</i>
+    <i>&lt;!-- only when the row wants more than 390px --&gt;</i>
     &lt;span class="<b>scroll-hint</b> pointer-events-none <b>sticky right-0</b> flex w-12 shrink-0
-                 items-center justify-end pb-4 <b>min-[560px]:hidden</b>"&gt;</pre>
+                 items-center justify-end pb-4 <b>{hint}</b>"&gt;</pre>
               <p class="sg-rule">
                 <b>Tabs are links carrying a search param, never client state.</b> The lists stay
                 server rendered so a 556-row roster is never serialised into the page as JSON, every
@@ -176,13 +177,18 @@ class="border-hairline-soft grid items-baseline gap-x-[22px] border-b <b>py-[18p
                 before the list starts: two hairlines close together read as one thick rule.
               </p>
               <p class="sg-rule">
-                <b>The row says when it scrolls, below 560px.</b> That is the width the widest row
-                in the corpus needs: 45 characters of mono at 13px and 0.14em of tracking, two 24px
-                gaps, inside a column spending 48px on gutters. A gradient and an arrow, held at the
-                right edge by <code>sticky</code>, faded out over the last 40% of the travel by the
-                <code>scroll-hint</code> utility. Scroll-driven CSS, so it costs no client budget,
-                and it is a real flex item rather than an overlay so that where it stops it sits
-                past the last tab rather than on top of it.
+                <b>The row says when it scrolls, on the rows that scroll.</b> A gradient and an
+                arrow, held at the right edge by <code>sticky</code>, faded out over the last 40% of
+                the travel by the <code>scroll-hint</code> utility. Scroll-driven CSS, so it costs no
+                client budget, and it is a real flex item rather than an overlay so that where it
+                stops it sits past the last tab rather than on top of it.
+              </p>
+              <p class="sg-rule">
+                <b>Which rows get one is arithmetic.</b> A mono row's width is exact: 9.62px a
+                character at 13px and 0.14em of tracking, a 24px gap between tabs, 48px of gutter.
+                Fits 390 and there is no hint; otherwise it hides at the first 40px step above the
+                row's own width. Three artist tabs want up to 530px, two label tabs 322px at the
+                most, which is why the label page has no arrow at all.
               </p>
               <p class="sg-rule">
                 <b>The count stays one grey in both states.</b> It used to take a dimmer shade when

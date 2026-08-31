@@ -132,7 +132,7 @@ All in `web/src/components/`, all `.astro`.
 | `SiteFooter` | — | `py-11 font-mono text-xs md:grid-cols-2` |
 | `SiteHeader` | `search?` | 76px row; cells `px-5 py-3 text-[0.6875rem] tracking-[0.14em]`; drawer `w-[min(20rem,82vw)]` |
 | `SortBy` | `basePath`, `active` | hidden by `SHOW_SORT = false` |
-| `Tabs` | `tabs[]`, `active`, `basePath` | `mb-10`, active `border-b-[1.5px] border-ink-strong`; scroll hint `w-12` sticky, below 560px |
+| `Tabs` | `tabs[]`, `active`, `basePath` | `mb-10`, active `border-b-[1.5px] border-ink-strong`; scroll hint `w-12` sticky, only on rows that overflow |
 | `list-grid.ts` | — | `LIST_GRID = "grid-cols-[1fr_5rem] md:grid-cols-[1fr_6rem_10rem]"` |
 
 Component rules worth not rediscovering:
@@ -144,9 +144,13 @@ Component rules worth not rediscovering:
 - **`FieldRow last` is a prop**, not a wrapper: a `<dl>`'s grouping `<div>` is the component itself.
 - **A grade never appears as a bare word** except in the results column, which is a known cost.
 - **Tabs and pagination are links**, `data-hold-scroll`, state in the URL.
-- **The tab row hints that it scrolls**, below 560px, which is the width the widest row needs.
-  A gradient and an arrow held at the right edge by `sticky`, faded out over the last 40% of the
-  travel by the `scroll-hint` utility. Scroll-driven CSS, no script, no client budget.
+- **The tab row hints that it scrolls**, on the rows that scroll and nowhere else. A gradient and
+  an arrow held at the right edge by `sticky`, faded out over the last 40% of the travel by the
+  `scroll-hint` utility. Scroll-driven CSS, no script, no client budget.
+- **Which rows get one is computed**, since a mono row's width is exact: 9.62px a character, a 24px
+  gap, 48px of gutter. Fits 390 and there is no hint; otherwise it hides at the first 40px step
+  above the row's own width (440/480/520/560, written out whole so Tailwind can see them). Three
+  artist tabs want up to 530px; two label tabs want 322px at the most, so the label page has none.
 
 ---
 

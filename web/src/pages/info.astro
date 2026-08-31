@@ -176,5 +176,23 @@ const body = "text-body text-ink-muted max-w-[760px] space-y-5";
         </p>
       </div>
     </LabelledBand>
+
+    {/*
+     * The sign-off, and it deliberately does not become another band.
+     *
+     * A band is a section with a mono label down its left, and this is the end
+     * of the writing rather than a section of it, so it takes neither a label
+     * nor the hairline that would draw one. What it does keep is the alignment:
+     * 204px is the band's 180px label column plus the grid's 24px gap, so the
+     * line starts where every paragraph above it starts instead of stepping out
+     * to the page edge on its own.
+     *
+     * The name sits a step up the ramp from the line above it, which is the
+     * same `ink` against `ink-muted` step the band headings use. A signature is
+     * the one place on the page where the person is the point.
+     */}
+    <p class="text-body text-ink-muted md:ml-[204px]">
+      Happy digging.<br /><span class="text-ink">Simone</span>
+    </p>
   </div>
 </Base>

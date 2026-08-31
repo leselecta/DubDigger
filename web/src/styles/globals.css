@@ -261,3 +261,43 @@
   font-size: 0.75rem;
   color: var(--color-ink-muted);
 }
+
+/*
+ * The fade that stops the tab row's scroll hint from lying.
+ *
+ * On a phone the three tabs do not fit, so the row scrolls and the last one is
+ * cut off mid-word with nothing saying it is there. The hint is a gradient and
+ * an arrow pinned to the right edge, and it is built in Tabs.astro, where the
+ * width it appears below is measured.
+ *
+ * A hint that never leaves would recreate the complaint it fixes, pointing
+ * right at a row already scrolled to its end. So it fades out over the last
+ * 40% of the travel, driven by the scroll position itself rather than by a
+ * script. That is the whole reason it is here rather than in a seventh inline
+ * script: the state is knowable without one, and this costs no client budget.
+ *
+ * Guarded, because an unsupported `animation-timeline` would leave a 0s
+ * animation filling both ways, which is the hint hidden at every scroll
+ * position. Without the guard's support it simply stays put, which is why it
+ * is a real flex item with width rather than an overlay pulled back over the
+ * row: at the end of the travel it comes to rest past the last tab instead of
+ * sitting on top of the tab it was pointing at.
+ *
+ * No `prefers-reduced-motion` check: nothing moves, and the opacity tracks a
+ * position the reader chose rather than a clock.
+ */
+@keyframes scroll-hint-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@utility scroll-hint {
+  @supports (animation-timeline: scroll()) {
+    animation-name: scroll-hint-out;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: scroll(nearest inline);
+    animation-range: 60% 100%;
+  }
+}

@@ -149,8 +149,8 @@ class="border-hairline-soft grid items-baseline gap-x-[22px] border-b <b>py-[18p
               <div class="sg-demo">
                 <div class="spec-tabs">
                   <nav aria-label="Lists">
-                    <a href="#tabs" aria-current="page">Collaborators <em>1,412</em></a>
-                    <a href="#tabs">Labels <em>38</em></a>
+                    <a href="#tabs" aria-current="page">Labels <em>38</em></a>
+                    <a href="#tabs">Collaborators <em>1,412</em></a>
                     <a href="#tabs">Releases <em>116</em></a>
                   </nav>
                 </div>
@@ -161,7 +161,10 @@ class="border-hairline-soft grid items-baseline gap-x-[22px] border-b <b>py-[18p
     &lt;a href={...} <b>data-hold-scroll</b> aria-current={isActive ? "page" : undefined}
        class="shrink-0 pb-4 font-mono text-[0.8125rem] tracking-[0.14em] uppercase
               <i>active:</i> text-ink-strong border-b-[1.5px] border-ink-strong
-              <i>resting:</i> text-ink-dim"&gt;</pre>
+              <i>resting:</i> text-ink-dim"&gt;
+    <i>&lt;!-- the scroll hint, last item, pinned by sticky --&gt;</i>
+    &lt;span class="<b>scroll-hint</b> pointer-events-none <b>sticky right-0</b> flex w-12 shrink-0
+                 items-center justify-end pb-4 <b>min-[560px]:hidden</b>"&gt;</pre>
               <p class="sg-rule">
                 <b>Tabs are links carrying a search param, never client state.</b> The lists stay
                 server rendered so a 556-row roster is never serialised into the page as JSON, every
@@ -171,6 +174,15 @@ class="border-hairline-soft grid items-baseline gap-x-[22px] border-b <b>py-[18p
                 <b>A tab must not move the page.</b> <code>data-hold-scroll</code> asks for that;
                 the script that honours it lives in the layout. The <code>mb-10</code> is the gap
                 before the list starts: two hairlines close together read as one thick rule.
+              </p>
+              <p class="sg-rule">
+                <b>The row says when it scrolls, below 560px.</b> That is the width the widest row
+                in the corpus needs: 45 characters of mono at 13px and 0.14em of tracking, two 24px
+                gaps, inside a column spending 48px on gutters. A gradient and an arrow, held at the
+                right edge by <code>sticky</code>, faded out over the last 40% of the travel by the
+                <code>scroll-hint</code> utility. Scroll-driven CSS, so it costs no client budget,
+                and it is a real flex item rather than an overlay so that where it stops it sits
+                past the last tab rather than on top of it.
               </p>
               <p class="sg-rule">
                 <b>The count stays one grey in both states.</b> It used to take a dimmer shade when

@@ -77,6 +77,44 @@ const { tabs, active, basePath } = Astro.props;
         );
       })
     }
+
+    {/*
+     * The scroll hint, and it only exists where the row can actually overflow.
+     *
+     * 560px, measured rather than reached for: the widest row the corpus can
+     * produce is Andreas Kauffelt's, 45 characters of mono at 13px and 0.14em
+     * of tracking plus two 24px gaps, which comes to 482px inside a column
+     * that spends 48px on gutters. So a row needs 530px of viewport at the
+     * outside and most need about 480. Above that there is nothing to scroll
+     * and an arrow would be pointing at nothing. `sm` was the obvious hook and
+     * is 640px, which is that lie on every phone held sideways.
+     *
+     * `sticky` is what pins it to the right edge of the scrollport while the
+     * row is scrolled left, and it is a real 48px flex item rather than an
+     * overlay hung off the wrapper: at the end of the travel it comes to rest
+     * past the last tab instead of sitting on top of the tab it was pointing
+     * at. The fade that takes it away there is `scroll-hint` in globals.css,
+     * where the reasoning is.
+     *
+     * The arrow is a grey rather than the accent. Accent marks what you are on
+     * or reaching for, and this is neither: it is a note about the shape of the
+     * row.
+     */}
+    <span
+      class="scroll-hint pointer-events-none sticky right-0 flex w-12 shrink-0 items-center justify-end pb-4 min-[560px]:hidden"
+      style="background: linear-gradient(to right, transparent, var(--color-bg) 65%)"
+      aria-hidden="true"
+    >
+      <svg width="12" height="12" viewBox="0 0 12 12" class="text-ink-dim">
+        <path
+          d="M4 2l4 4-4 4"
+          stroke="currentColor"
+          stroke-width="1.5"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+      </svg>
+    </span>
   </nav>
 </div>
 

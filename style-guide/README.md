@@ -132,7 +132,7 @@ All in `web/src/components/`, all `.astro`.
 | `SiteFooter` | — | `py-11 font-mono text-xs md:grid-cols-2` |
 | `SiteHeader` | `search?` | 76px row; cells `px-5 py-3 text-[0.6875rem] tracking-[0.14em]`; drawer `w-[min(20rem,82vw)]` |
 | `SortBy` | `basePath`, `active` | hidden by `SHOW_SORT = false` |
-| `Tabs` | `tabs[]`, `active`, `basePath` | `mb-10`, active `border-b-[1.5px] border-ink-strong` |
+| `Tabs` | `tabs[]`, `active`, `basePath` | `mb-10`, active `border-b-[1.5px] border-ink-strong`; scroll hint `w-12` sticky, below 560px |
 | `list-grid.ts` | — | `LIST_GRID = "grid-cols-[1fr_5rem] md:grid-cols-[1fr_6rem_10rem]"` |
 
 Component rules worth not rediscovering:
@@ -144,6 +144,9 @@ Component rules worth not rediscovering:
 - **`FieldRow last` is a prop**, not a wrapper: a `<dl>`'s grouping `<div>` is the component itself.
 - **A grade never appears as a bare word** except in the results column, which is a known cost.
 - **Tabs and pagination are links**, `data-hold-scroll`, state in the URL.
+- **The tab row hints that it scrolls**, below 560px, which is the width the widest row needs.
+  A gradient and an arrow held at the right edge by `sticky`, faded out over the last 40% of the
+  travel by the `scroll-hint` utility. Scroll-driven CSS, no script, no client budget.
 
 ---
 

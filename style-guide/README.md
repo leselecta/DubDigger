@@ -132,7 +132,7 @@ All in `web/src/components/`, all `.astro`.
 | `SiteFooter` | — | `py-11 font-mono text-xs md:grid-cols-2` |
 | `SiteHeader` | `search?` | 76px row; cells `px-5 py-3 text-[0.6875rem] tracking-[0.14em]`; drawer `w-[min(20rem,82vw)]` |
 | `SortBy` | `basePath`, `active` | hidden by `SHOW_SORT = false` |
-| `Tabs` | `tabs[]`, `active`, `basePath` | `mb-10`, active `border-b-[1.5px] border-ink-strong`; scroll hint `w-12` sticky, only on rows that overflow |
+| `Tabs` | `tabs[]`, `active`, `basePath` | `mb-10`, active `border-b-[1.5px] border-ink-strong`; scroll hint `w-16` sticky, only on rows that overflow |
 | `list-grid.ts` | — | `LIST_GRID = "grid-cols-[1fr_5rem] md:grid-cols-[1fr_6rem_10rem]"` |
 
 Component rules worth not rediscovering:
@@ -202,12 +202,12 @@ Prefer the server, then a link, then a script.
 | ClientRouter | 16,075 | every page |
 | drawer | 1,064 | every page |
 | contact dialog | 961 | every page |
-| scroll hold and active tab | 613 | every page |
+| scroll hold and active tab | 662 | every page |
 | search suggestions | 1,641 | every page |
 | collapsing bio | 1,035 | artist, label |
 | figures count-up | 644 | home |
 
-Heaviest page: **21,389 bytes**. A seventh inline script needs the argument the six made.
+Heaviest page: **21,438 bytes**. A seventh inline script needs the argument the six made.
 
 The suggestions script is the sixth and shows the shape the argument takes: `/suggest` is an Astro
 partial returning the rows as markup, so the script only fetches, assigns and moves a highlight.

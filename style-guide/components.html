@@ -164,8 +164,9 @@ class="border-hairline-soft grid items-baseline gap-x-[22px] border-b <b>py-[18p
               <i>resting:</i> text-ink-dim"&gt;
     <i>&lt;!-- the scroll hint, last item, pinned by sticky --&gt;</i>
     <i>&lt;!-- only when the row wants more than 390px --&gt;</i>
-    &lt;span class="<b>scroll-hint</b> pointer-events-none <b>sticky right-0</b> flex w-12 shrink-0
-                 items-center justify-end pb-4 <b>{hint}</b>"&gt;</pre>
+    &lt;span class="<b>scroll-hint</b> pointer-events-none <b>sticky right-0</b> flex w-16 shrink-0
+                 items-center justify-end pb-4 <b>{hint}</b>"
+          style="background: linear-gradient(to right, transparent, var(--color-bg) <b>70%</b>)"&gt;</pre>
               <p class="sg-rule">
                 <b>Tabs are links carrying a search param, never client state.</b> The lists stay
                 server rendered so a 556-row roster is never serialised into the page as JSON, every

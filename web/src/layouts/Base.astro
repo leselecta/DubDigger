@@ -271,9 +271,11 @@ const jsonLd = JSON.stringify({ "@context": "https://schema.org", "@graph": grap
        *
        * Rects rather than `offsetLeft`, which is measured from the offset
        * parent and would be the page here, since nothing between the tab and
-       * the body is positioned. And the row is nudged 48px further than it
-       * strictly needs, the width of the scroll hint, so an active tab landing
-       * at the right edge is not left sitting under the gradient.
+       * the body is positioned. And the row is nudged the width of the scroll
+       * hint further than it strictly needs, so an active tab landing at the
+       * right edge is not left sitting under the gradient. Measured off the
+       * hint rather than written down twice: it is a design decision that has
+       * already changed once, and a copy here would have gone stale silently.
        *
        * Called at parse time as well as after a swap, so it also catches a tab
        * opened cold from a shared URL, where there is no swap to listen for.
@@ -286,7 +288,8 @@ const jsonLd = JSON.stringify({ "@context": "https://schema.org", "@graph": grap
 
         const seen = row.getBoundingClientRect();
         const here = tab.getBoundingClientRect();
-        const past = here.right + 48 - seen.right;
+        const clear = row.querySelector(".scroll-hint")?.clientWidth ?? 0;
+        const past = here.right + clear - seen.right;
 
         if (past > 0) row.scrollLeft += past;
         else if (here.left < seen.left) row.scrollLeft -= seen.left - here.left;

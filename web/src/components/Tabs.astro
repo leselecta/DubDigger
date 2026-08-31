@@ -128,11 +128,16 @@ const hint = wants <= 390 ? null : (STEPS.find(([width]) => width >= wants)?.[1]
      * The scroll hint, on the rows that scroll and nowhere else.
      *
      * `sticky` is what pins it to the right edge of the scrollport while the
-     * row is scrolled left, and it is a real 48px flex item rather than an
+     * row is scrolled left, and it is a real 64px flex item rather than an
      * overlay hung off the wrapper: at the end of the travel it comes to rest
      * past the last tab instead of sitting on top of the tab it was pointing
      * at. The fade that takes it away there is `scroll-hint` in globals.css,
      * where the reasoning is.
+     *
+     * 64px with the ground reached at 70% leaves 45px of gradient and 19px
+     * solid behind the arrow. The fade was 31px and read as an edge rather than
+     * a dissolve, which is the one thing it must not look like on a row whose
+     * whole point is that it continues.
      *
      * The arrow is a grey rather than the accent. Accent marks what you are on
      * or reaching for, and this is neither: it is a note about the shape of the
@@ -142,10 +147,10 @@ const hint = wants <= 390 ? null : (STEPS.find(([width]) => width >= wants)?.[1]
       hint !== null && (
         <span
           class:list={[
-            "scroll-hint pointer-events-none sticky right-0 flex w-12 shrink-0 items-center justify-end pb-4",
+            "scroll-hint pointer-events-none sticky right-0 flex w-16 shrink-0 items-center justify-end pb-4",
             hint,
           ]}
-          style="background: linear-gradient(to right, transparent, var(--color-bg) 65%)"
+          style="background: linear-gradient(to right, transparent, var(--color-bg) 70%)"
           aria-hidden="true"
         >
           <svg width="12" height="12" viewBox="0 0 12 12" class="text-ink-dim">

@@ -39,6 +39,7 @@ Deliberately small, per Gall's Law: a working simple system first.
 - Graph / force-directed visualisation in v1 (potential v2, see "Future considerations: Graph view" in the case study)
 - Images of any kind in v1 (see licensing note below). **Named as v1.1, not a same-week addition.**
 - NTS or any second data source
+- `<companies>` as entities: distributors, record shops, pressing plants, studios. Discarded at parse time, so Hard Wax, EFA and every mastering room have no page by construction rather than by a threshold. Parked for v2 on 2026-09-01 with the four constraints that any design has to satisfy, in `V2.md`. Read that before re-investigating: the short version is that grading such an entity on the label scale opens channel B on a warehouse.
 
 Each is a later evolution of a working core. If a task seems to need one, stop and flag it rather than building it.
 

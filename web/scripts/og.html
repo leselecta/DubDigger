@@ -57,9 +57,29 @@
     color: var(--color-accent);
   }
 
+  /*
+   * 104px, not the 118px this was drawn at, and the number is a crop
+   * constraint rather than a typographic one.
+   *
+   * Google Search does not render an Open Graph card. It picks a thumbnail on
+   * its own heuristics and drops it into a square slot, which on a 1200x630
+   * source means cropping away 47% of the width; observed in the wild it took
+   * the left 630 rather than the centre, following the ink, since everything
+   * here is left-aligned. At 118px the wordmark ran to x=675 and the result
+   * read "dub.digge". The block starts at x=96, so anything past ~615 is lost.
+   *
+   * There is no Open Graph field that can decline a crop: og:image:width and
+   * og:image:height describe the file to OGP consumers and say nothing to
+   * Google. So the fix is in the drawing, not the markup.
+   *
+   * One file cannot serve both aspects well. Content narrow enough to survive
+   * ANY square crop would sit in the 345px where the left and centre squares
+   * overlap, and look lost in the 1.91:1 view that Slack, X and LinkedIn
+   * actually use. This buys the square back for 12% of the wordmark instead.
+   */
   .wordmark {
     margin: 44px 0 0;
-    font-size: 118px;
+    font-size: 104px;
     font-weight: 700;
     letter-spacing: -0.03em;
     line-height: 1;

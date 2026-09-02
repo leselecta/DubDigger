@@ -14,7 +14,7 @@ The user is a music nerd who reads Discogs pages for fun, not a casual listener.
 
 ## Where it stands
 
-Beta, and the footer says so. The corpus is built, the app is written, the VPS is ordered and unconfigured. What ships today:
+Beta, and the footer says so. The corpus is built, the app is written, and the VPS has served it at dubdigger.com since 2026-08-12. What ships today:
 
 | | |
 |---|---|

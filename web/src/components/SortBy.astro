@@ -1,16 +1,14 @@
 ---
-import { listHref, type ListSort } from "@/lib/view";
+import { LIST_SORTS, listHref, type ListSort } from "@/lib/view";
 
 interface Props {
   /** The page's own path. The default sort is the bare URL, not a parameter. */
   basePath: string;
-  /** What this list can be ordered by, in the order the row draws them. */
-  options: { key: ListSort; label: string }[];
   active: ListSort;
 }
 
 /**
- * How the list is ordered, on the ranked pages.
+ * How the list is ordered, on the two Core pages.
  *
  * Links carrying a search param, for the same reasons the tab bar is: the sort
  * stays server side so a 1,000 row list is never handed to the browser to
@@ -29,18 +27,15 @@ interface Props {
  * search result and an artist page both show, and this sorts by the scene
  * weighting instead, which is a different measure. One question, one vocabulary.
  *
- * Ranking is an option in the row rather than an implied state, which is what
- * makes every other one a toggle: whatever you sorted by, the way back to the
- * list as the page built it is the cell next to the one you clicked.
+ * Ranking is a cell in the row rather than an implied state, which is what
+ * makes A–Z a toggle: the way back to the list as the page built it is the cell
+ * next to the one you clicked.
  *
- * It wraps, and at four options it has to. The row is mono at 0.6875rem with
- * 0.2em of tracking, so its width is exact: "Sort by · Ranking · A–Z ·
- * Releases · Active" is 31 characters, 273px of type, which clears a 390px
- * phone's content column by four pixels at `gap-x-4` and not at `gap-x-5`.
- * Four pixels is not a margin, so it is allowed to fall onto a second line
- * rather than made to fit by shrinking the type.
+ * The cells come from `LIST_SORTS` rather than from a prop, because both pages
+ * offer the same two and a list that could differ per page is a second design
+ * nobody asked for.
  */
-const { basePath, options, active } = Astro.props;
+const { basePath, active } = Astro.props;
 
 const item = "font-mono text-[0.6875rem] tracking-[0.2em] uppercase transition-colors";
 const on = "text-ink-strong border-b border-ink-strong pb-1";
@@ -49,10 +44,10 @@ const off = "text-ink-faint hover:text-ink pb-1";
 
 {/* A div rather than a third landmark: the audit settled on two navs, and the
     "Sort by" text is read out ahead of the links either way. */}
-<div class="mb-10 flex flex-wrap items-baseline justify-end gap-x-4 gap-y-3 md:gap-x-5">
+<div class="mb-10 flex items-baseline justify-end gap-5">
   <span class={`${item} text-ink-faint`}>Sort by</span>
   {
-    options.map((option) => (
+    LIST_SORTS.map((option) => (
       <a
         href={listHref(basePath, option.key)}
         data-hold-scroll

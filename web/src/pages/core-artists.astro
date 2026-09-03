@@ -7,11 +7,11 @@ import Absence from "@/components/Absence.astro";
 import LoadMore from "@/components/LoadMore.astro";
 import SortBy from "@/components/SortBy.astro";
 import { getTopArtists, TOP_LIST_SIZE } from "@/lib/queries";
-import { LIST_SORTS, PAGE_SIZE, SHOW_SORT, listHref, pageSize, years } from "@/lib/view";
+import { PAGE_SIZE, listHref, listSort, pageSize, sortList, years } from "@/lib/view";
 
 const params = Astro.url.searchParams;
 const limit = pageSize(params.get("show") ?? undefined);
-const sort = params.get("sort") === "name" ? "name" : "ranking";
+const sort = listSort(params.get("sort"));
 
 /*
  * Sorted after the ranking, never instead of it: the list is the top
@@ -19,9 +19,7 @@ const sort = params.get("sort") === "name" ? "name" : "ranking";
  * reaching alphabetically into the whole corpus.
  */
 const artists = getTopArtists();
-const ordered =
-  sort === "name" ? [...artists].sort((a, b) => a.name.localeCompare(b.name)) : artists;
-const shown = ordered.slice(0, limit);
+const shown = sortList(artists, sort).slice(0, limit);
 ---
 
 <Base
@@ -50,15 +48,7 @@ const shown = ordered.slice(0, limit);
         <Absence>No artists graded. Nothing has been ingested yet.</Absence>
       ) : (
         <>
-          {/* Still the old pair and still behind the flag: the three orderings
-              Core Labels took on 2026-09-03 are the next step, not this one. */}
-          {SHOW_SORT && (
-            <SortBy
-              basePath="/core-artists"
-              options={LIST_SORTS.filter((s) => s.key === "ranking" || s.key === "name")}
-              active={sort}
-            />
-          )}
+          <SortBy basePath="/core-artists" active={sort} />
           {/*
            * "Releases", and it counts every release on their artist line.
            *

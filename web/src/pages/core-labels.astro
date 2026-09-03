@@ -7,7 +7,7 @@ import Absence from "@/components/Absence.astro";
 import LoadMore from "@/components/LoadMore.astro";
 import SortBy from "@/components/SortBy.astro";
 import { getTopLabels, TOP_LIST_SIZE } from "@/lib/queries";
-import { LIST_SORTS, PAGE_SIZE, listHref, listSort, pageSize, sortLabels, years } from "@/lib/view";
+import { PAGE_SIZE, listHref, listSort, pageSize, sortList, years } from "@/lib/view";
 
 const params = Astro.url.searchParams;
 const limit = pageSize(params.get("show") ?? undefined);
@@ -19,7 +19,7 @@ const sort = listSort(params.get("sort"));
  * set rather than reaching into the whole corpus alphabetically or by date.
  */
 const labels = getTopLabels();
-const shown = sortLabels(labels, sort).slice(0, limit);
+const shown = sortList(labels, sort).slice(0, limit);
 ---
 
 <Base
@@ -49,7 +49,7 @@ const shown = sortLabels(labels, sort).slice(0, limit);
         <Absence>No labels recorded. Nothing has been ingested yet.</Absence>
       ) : (
         <>
-          <SortBy basePath="/core-labels" options={LIST_SORTS} active={sort} />
+          <SortBy basePath="/core-labels" active={sort} />
           {/* "Releases" is the whole catalogue, the same figure the label's own
               page reports. Core Artists reads the same way. */}
           <ListHeader name="Label" count="Releases" meta="Active" />

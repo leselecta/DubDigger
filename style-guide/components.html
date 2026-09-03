@@ -217,36 +217,34 @@ class="border-hairline-soft grid items-baseline gap-x-[22px] border-b <b>py-[18p
             <div class="sg-block">
               <p class="sg-sub">SortBy</p>
               <div class="sg-demo">
-                <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 0.75rem 1.25rem; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.2em; text-transform: uppercase">
+                <div style="display: flex; align-items: baseline; justify-content: flex-end; gap: 1.25rem; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.2em; text-transform: uppercase">
                   <span style="color: var(--color-ink-faint)">Sort by</span>
                   <a href="#sort" style="color: var(--color-ink-strong); border-bottom: 1px solid var(--color-ink-strong); padding-bottom: 0.25rem">Ranking</a>
                   <a href="#sort" style="color: var(--color-ink-faint); padding-bottom: 0.25rem">A–Z</a>
-                  <a href="#sort" style="color: var(--color-ink-faint); padding-bottom: 0.25rem">Releases</a>
-                  <a href="#sort" style="color: var(--color-ink-faint); padding-bottom: 0.25rem">Active</a>
                 </div>
               </div>
               <pre class="sg-code">basePath  <i>// the default sort is the bare URL, not a parameter</i>
-options   <i>// LIST_SORTS: ranking · name · releases · active</i>
-active    <i>// which of them the page is showing</i>
-<b>SHOW_SORT = false</b>  <i>// lib/view.ts — Core Artists only now, still the old pair</i></pre>
+active    <i>// "ranking" | "name"</i>
+<b>LIST_SORTS</b>  <i>// lib/view.ts — the cells, not a prop: both Core pages offer the same two</i></pre>
               <p class="sg-rule">
                 <b>"Ranking", not "Relevance".</b> Relevance is spoken for: it is the five-step
                 grade a search result and an artist page both show. This sorts by scene weighting,
                 which is a different measure. One question, one vocabulary.
               </p>
               <p class="sg-rule">
-                <b>Ranking is a cell in the row, not an implied state</b>, which is what makes every
-                other one a toggle: whatever you sorted by, the way back to the list as the page
-                built it is the cell next to the one you clicked. The other three take the column
-                names verbatim — a control that renamed "Releases" or "Active" would be a second
-                vocabulary for one question.
+                <b>Ranking is a cell in the row, not an implied state</b>, which is what makes A–Z
+                a toggle: the way back to the list as the page built it is the cell next to the one
+                you clicked. Live on both Core pages since 2026-09-03; the <code>SHOW_SORT</code>
+                flag that used to hide them is gone.
               </p>
               <p class="sg-rule">
-                <b>It wraps, and at four options it has to.</b> The row is mono at 0.6875rem with
-                0.2em of tracking, so its width is exact: 31 characters, 273px of type, which clears
-                a 390px phone's content column by four pixels at <code>gap-x-4</code> and not at
-                <code>gap-x-5</code>. Below that it falls onto a second line rather than being made
-                to fit by shrinking the type. Measured: two lines at 320 and 360, one from 390 up.
+                <b>Two cells, and it was four for a day.</b> Releases and Active shipped alongside
+                them, taking the column headings verbatim, and were dropped the same day: the page's
+                whole claim is that it ranks by scene weight, and sorting Core Labels by raw
+                catalogue size put Virgin, Warp and Mute on top of it. True of those rows, and
+                misleading about the page they are on. A–Z earns its place by being a way of
+                <em>finding</em> a name in a ranked list rather than a second opinion about the
+                ranking.
               </p>
             </div>
           </div>

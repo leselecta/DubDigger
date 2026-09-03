@@ -97,6 +97,21 @@ Astro.response.headers.set("X-Robots-Tag", "noindex");
    *
    * The chevron is the tab row's, at the size the tab row draws it. One arrow
    * on the site, pointing the one direction it ever points.
+   *
+   * It wears the accent as a ground rather than as a grey row of type, which
+   * is the one place on the site a link is louder than the names above it.
+   * That is what it is for: the three names are the answer if one of them is
+   * the answer, and this is the offer if none of them is, so it has to be
+   * visible without being read. The accent's own rule allows it, since a
+   * ground marks the thing being reached for and nothing on the site is more
+   * literally that.
+   *
+   * Which means the highlight had to move. A row that is already accent cannot
+   * say "the arrows are on me" by turning accent, so it inverts to the ink
+   * ground that "Load more" and the nav cells take on hover: same vocabulary,
+   * one step louder still, and the two states cannot be mistaken for each
+   * other. Hover takes it too, because a pointer is reaching for the same
+   * thing the arrows are.
    */
   hits.length > 0 && (
     <a
@@ -104,9 +119,9 @@ Astro.response.headers.set("X-Robots-Tag", "noindex");
       aria-selected="false"
       href={`/?q=${encodeURIComponent(q)}`}
       data-suggest-option
-      class="group/all data-[active=true]:bg-accent data-[active=true]:text-bg flex cursor-pointer items-center justify-between gap-3 px-4 py-3"
+      class="bg-accent text-bg hover:bg-ink hover:text-bg data-[active=true]:bg-ink data-[active=true]:text-bg flex cursor-pointer items-center justify-between gap-3 px-4 py-3 transition-colors"
     >
-      <span class="text-ink-muted group-hover/all:text-accent group-data-[active=true]/all:text-bg font-mono text-[0.6875rem] tracking-[0.1em] uppercase">
+      <span class="font-mono text-[0.6875rem] font-medium tracking-[0.1em] uppercase">
         View all results
       </span>
 
@@ -114,7 +129,6 @@ Astro.response.headers.set("X-Robots-Tag", "noindex");
         width="12"
         height="12"
         viewBox="0 0 12 12"
-        class="text-ink-faint group-hover/all:text-accent group-data-[active=true]/all:text-bg"
         aria-hidden="true"
       >
         <path

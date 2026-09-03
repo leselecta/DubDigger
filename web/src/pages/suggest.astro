@@ -78,3 +78,54 @@ Astro.response.headers.set("X-Robots-Tag", "noindex");
     </a>
   ))
 }
+
+{
+  /*
+   * The way out of the shortlist, and the only row that is not a name.
+   *
+   * Three rows is a glance, not an answer, so the list has always ended one
+   * keystroke from the full results without ever saying so: Enter on the box
+   * goes there, and nobody who reached for the arrow keys was told. This is
+   * that keystroke written down.
+   *
+   * It is a real option in the listbox rather than a footer under it, so
+   * arrowing past the third name lands on it and Enter follows it, and the
+   * script needs no line for any of that. Only rendered when there are names
+   * above it: a miss still returns nothing and the dropdown still stays shut,
+   * because "view all" of nothing is the shortlist offering to show its own
+   * emptiness at greater length.
+   *
+   * The chevron is the tab row's, at the size the tab row draws it. One arrow
+   * on the site, pointing the one direction it ever points.
+   */
+  hits.length > 0 && (
+    <a
+      role="option"
+      aria-selected="false"
+      href={`/?q=${encodeURIComponent(q)}`}
+      data-suggest-option
+      class="group/all data-[active=true]:bg-accent data-[active=true]:text-bg flex cursor-pointer items-center justify-between gap-3 px-4 py-3"
+    >
+      <span class="text-ink-muted group-hover/all:text-accent group-data-[active=true]/all:text-bg font-mono text-[0.6875rem] tracking-[0.1em] uppercase">
+        View all results
+      </span>
+
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 12 12"
+        class="text-ink-faint group-hover/all:text-accent group-data-[active=true]/all:text-bg"
+        aria-hidden="true"
+      >
+        <path
+          d="M4 2l4 4-4 4"
+          stroke="currentColor"
+          stroke-width="1.5"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </a>
+  )
+}

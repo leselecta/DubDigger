@@ -455,6 +455,14 @@ fade → "pointer-events-none absolute right-0 bottom-0 left-0 h-12"
                     <span class="sg-suggest-meta">label</span>
                     <span class="sg-suggest-grade" style="color: var(--color-accent)">high</span>
                   </a>
+                  <!-- The last row is the way out of the shortlist, and the only one
+                       that is not a name. It is a real option, so the arrows reach it. -->
+                  <a href="#" class="sg-suggest-all">
+                    <span>View all results</span>
+                    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                      <path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                  </a>
                 </div>
               </div>
               <pre class="sg-code"><i>&lt;!-- a plain GET form: search works with no JavaScript, every result is a URL --&gt;</i>
@@ -479,10 +487,18 @@ header → "border-edge-strong transition-colors <b>focus:border-accent</b>
                 of the field so the target is the whole right end rather than an 18px glyph.
               </p>
               <p class="sg-rule">
-                <b>Three rows.</b> A dropdown is read at a glance while the hands are still on the
-                keys, and past the third the ranking starts putting a name nobody typed under one
-                they did. What does not fit belongs on the results page, which is one keystroke away
-                and built for forty of them.
+                <b>Three rows, then the way out.</b> A dropdown is read at a glance while the hands
+                are still on the keys, and past the third the ranking starts putting a name nobody
+                typed under one they did. What does not fit belongs on the results page, which is
+                one keystroke away and built for forty of them.
+              </p>
+              <p class="sg-rule">
+                <b>“View all results” is that keystroke written down.</b> It is a real option in the
+                listbox rather than a footer under it, so arrowing past the third name lands on it
+                and Enter follows it, and the script needs no line for any of that. It only appears
+                under names: a miss returns nothing and the dropdown stays shut, because
+                “view all” of nothing offers to show emptiness at greater length. The chevron is the
+                tab row’s, at the size the tab row draws it.
               </p>
               <p class="sg-rule">
                 <b>A suggestion row carries its grade</b>, in the same five words and the same shades

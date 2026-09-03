@@ -128,7 +128,7 @@ All in `web/src/components/`, all `.astro`.
 | `LoadMore` | `href`, `remaining` | ghost button, `data-hold-scroll` |
 | `OutboundLinks` | `kind`, `id`, `urls[]` | max 5 + Discogs; http/https only |
 | `ProfileText` | `text`, `names?` | renders Discogs bio markup; links `underline underline-offset-2` |
-| `SearchField` | `size` ("hero" \| "header"), `value?` | `h-16`/`h-11`; hero `border-accent` + inset-shadow focus, header `border-edge-strong` + accent focus; combobox, listbox `-mt-px border-edge-strong z-40 max-h-[60vh]`, 3 rows `px-4 py-2.5`, active `bg-accent text-bg` |
+| `SearchField` | `size` ("hero" \| "header"), `value?` | `h-16`/`h-11`; hero `border-accent` + inset-shadow focus, header `border-edge-strong` + accent focus; combobox, listbox `-mt-px border-edge-strong z-40 max-h-[60vh]`, 3 rows `px-4 py-2.5` then a "View all results" row `px-4 py-3`, active `bg-accent text-bg` |
 | `SiteFooter` | — | `py-11 font-mono text-xs md:grid-cols-2` |
 | `SiteHeader` | `search?` | 76px row; cells `px-5 py-3 text-[0.6875rem] tracking-[0.14em]`; drawer `w-[min(20rem,82vw)]` |
 | `SortBy` | `basePath`, `active` | hidden by `SHOW_SORT = false` |
@@ -143,6 +143,9 @@ Component rules worth not rediscovering:
 - **Absence is three different sentences**: no releases / no credits entered / genuinely solo.
 - **`FieldRow last` is a prop**, not a wrapper: a `<dl>`'s grouping `<div>` is the component itself.
 - **A grade never appears as a bare word** except in the results column, which is a known cost.
+- **The dropdown's last row is the way out**, "View all results" pointing at `/?q=`. A real option,
+  so the arrows reach it and the script needs no line for it, and only rendered under names: a miss
+  returns nothing and the list stays shut.
 - **Tabs and pagination are links**, `data-hold-scroll`, state in the URL.
 - **The tab row hints that it scrolls**, on the rows that scroll and nowhere else. A gradient and
   an arrow held at the right edge by `sticky`, faded out over the last 40% of the travel by the

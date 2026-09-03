@@ -2,16 +2,99 @@
 export const PAGE_SIZE = 40;
 
 /**
- * Whether the ranked lists show their sort control. Off for now.
+ * Whether Core Artists shows its sort control. Off for now.
  *
- * Hidden rather than removed, and hidden in one place rather than commented out
- * in two: `SortBy` is untouched, both Core pages still read `?sort=name` and
- * still answer it, so the ordering is one flag away from being back and a
- * hand-typed URL keeps working in the meantime. Typed as `boolean` rather than
- * left to infer `false`, or the pages that read it become unreachable branches
- * and the component reads as dead code.
+ * It used to gate both Core pages. Core Labels took its control back on
+ * 2026-09-03 with three orderings rather than one, so the flag is down to the
+ * page that still has the old pair, and the artists list keeps answering
+ * `?sort=name` from a hand-typed URL in the meantime. Typed as `boolean` rather
+ * than left to infer `false`, or the page that reads it becomes an unreachable
+ * branch and the component reads as dead code.
  */
 export const SHOW_SORT: boolean = false;
+
+/**
+ * How a ranked list can be ordered.
+ *
+ * `ranking` is the list itself: the top TOP_LIST_SIZE by scene weight, which is
+ * what the page is for. Every other key reorders that same set rather than
+ * reaching into the corpus alphabetically or by date, so a sort is a different
+ * view of one list and never a different list. That is why the default is the
+ * bare URL and the others are parameters on it.
+ */
+export type ListSort = "ranking" | "name" | "releases" | "active";
+
+/** The control's options, in the order it draws them. */
+export const LIST_SORTS: { key: ListSort; label: string }[] = [
+  { key: "ranking", label: "Ranking" },
+  { key: "name", label: "A–Z" },
+  /*
+   * The two column names verbatim, because the row they reorder is headed
+   * "Releases" and "Active" and a control that renamed them would be a second
+   * vocabulary for one question. What each does is left to the ordering: an
+   * "Earliest" would say the direction and stop matching the column.
+   */
+  { key: "releases", label: "Releases" },
+  { key: "active", label: "Active" },
+];
+
+/** Reads the `sort` search param. Anything unrecognised is the default. */
+export function listSort(sort: string | null): ListSort {
+  return LIST_SORTS.some((s) => s.key === sort) ? (sort as ListSort) : "ranking";
+}
+
+/** A list URL. The default sort is the bare path, so one ordering has one address. */
+export function listHref(basePath: string, sort: ListSort, show?: number): string {
+  const params = new URLSearchParams();
+  if (sort !== "ranking") params.set("sort", sort);
+  if (show) params.set("show", String(show));
+  const query = params.toString();
+  return query ? `${basePath}?${query}` : basePath;
+}
+
+/**
+ * One ranked list, in the order asked for.
+ *
+ * Structural rather than typed to `TopLabel`, so the ordering can be tested
+ * without a database behind it, and so Core Artists can take the same three
+ * when its turn comes.
+ *
+ * Every sort falls back to the name, never to the order the rows arrived in:
+ * 47 releases against 47 releases has an answer a reader can predict, and
+ * "whatever the ranking said" is not it.
+ */
+interface Sortable {
+  name: string;
+  releaseCount: number;
+  firstYear: number | null;
+  lastYear: number | null;
+}
+
+export function sortLabels<T extends Sortable>(labels: readonly T[], sort: ListSort): readonly T[] {
+  /* The ranking is the list as built, so it is handed back rather than re-sorted. */
+  if (sort === "ranking") return labels;
+
+  const byName = (a: T, b: T) => a.name.localeCompare(b.name);
+
+  if (sort === "name") return [...labels].sort(byName);
+
+  if (sort === "releases") {
+    return [...labels].sort((a, b) => b.releaseCount - a.releaseCount || byName(a, b));
+  }
+
+  /*
+   * Chronological, oldest first, and a label with no years at all goes to the
+   * end rather than to 1970. The corpus records a span for a label that has one
+   * dated release and nothing for a label that has none, and an empty "Active"
+   * cell sorted to the front would read as the oldest label on the site.
+   */
+  return [...labels].sort((a, b) => {
+    if (a.firstYear === null || b.firstYear === null) {
+      return (a.firstYear === null ? 1 : 0) - (b.firstYear === null ? 1 : 0) || byName(a, b);
+    }
+    return a.firstYear - b.firstYear || (a.lastYear ?? 0) - (b.lastYear ?? 0) || byName(a, b);
+  });
+}
 
 /** Reads the `show` search param, clamped so a hand-typed URL cannot ask for everything. */
 export function pageSize(show: string | undefined): number {

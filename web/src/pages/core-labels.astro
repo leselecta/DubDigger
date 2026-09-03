@@ -7,21 +7,19 @@ import Absence from "@/components/Absence.astro";
 import LoadMore from "@/components/LoadMore.astro";
 import SortBy from "@/components/SortBy.astro";
 import { getTopLabels, TOP_LIST_SIZE } from "@/lib/queries";
-import { PAGE_SIZE, SHOW_SORT, pageSize, years } from "@/lib/view";
+import { LIST_SORTS, PAGE_SIZE, listHref, listSort, pageSize, sortLabels, years } from "@/lib/view";
 
 const params = Astro.url.searchParams;
 const limit = pageSize(params.get("show") ?? undefined);
-const sort = params.get("sort") === "name" ? "name" : "ranking";
+const sort = listSort(params.get("sort"));
 
 /*
  * Sorted after the ranking, never instead of it: the list is the top
- * TOP_LIST_SIZE by scene weight, and A–Z reorders that same set rather than
- * reaching alphabetically into the whole corpus.
+ * TOP_LIST_SIZE by scene weight, and every other ordering reorders that same
+ * set rather than reaching into the whole corpus alphabetically or by date.
  */
 const labels = getTopLabels();
-const ordered =
-  sort === "name" ? [...labels].sort((a, b) => a.name.localeCompare(b.name)) : labels;
-const shown = ordered.slice(0, limit);
+const shown = sortLabels(labels, sort).slice(0, limit);
 ---
 
 <Base
@@ -51,7 +49,7 @@ const shown = ordered.slice(0, limit);
         <Absence>No labels recorded. Nothing has been ingested yet.</Absence>
       ) : (
         <>
-          {SHOW_SORT && <SortBy basePath="/core-labels" active={sort} />}
+          <SortBy basePath="/core-labels" options={LIST_SORTS} active={sort} />
           {/* "Releases" is the whole catalogue, the same figure the label's own
               page reports. Core Artists reads the same way. */}
           <ListHeader name="Label" count="Releases" meta="Active" />
@@ -73,7 +71,7 @@ const shown = ordered.slice(0, limit);
     {
       limit < labels.length && (
         <LoadMore
-          href={`/core-labels?sort=${sort}&show=${limit + PAGE_SIZE}`}
+          href={listHref("/core-labels", sort, limit + PAGE_SIZE)}
           remaining={labels.length - limit}
         />
       )

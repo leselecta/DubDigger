@@ -131,7 +131,7 @@ All in `web/src/components/`, all `.astro`.
 | `SearchField` | `size` ("hero" \| "header"), `value?` | `h-16`/`h-11`; hero `border-accent` + inset-shadow focus, header `border-edge-strong` + accent focus; combobox, listbox `-mt-px border-edge-strong z-40 max-h-[60vh]`, 3 rows `px-4 py-2.5` then a "View all results" row `px-4 py-3 bg-accent text-bg`, active `bg-accent text-bg` (that row inverts to `bg-ink`) |
 | `SiteFooter` | — | `py-11 font-mono text-xs md:grid-cols-2` |
 | `SiteHeader` | `search?` | 76px row; cells `px-5 py-3 text-[0.6875rem] tracking-[0.14em]`; drawer `w-[min(20rem,82vw)]` |
-| `SortBy` | `basePath`, `active` | hidden by `SHOW_SORT = false` |
+| `SortBy` | `basePath`, `options`, `active` | `flex-wrap justify-end gap-x-4 gap-y-3 md:gap-x-5`; live on Core Labels with `LIST_SORTS` (ranking · A–Z · releases · active), Core Artists still hidden by `SHOW_SORT = false` |
 | `Tabs` | `tabs[]`, `active`, `basePath` | `mb-10`, active `border-b-[1.5px] border-ink-strong`; scroll hint `w-16` sticky, only on rows that overflow |
 | `list-grid.ts` | — | `LIST_GRID = "grid-cols-[1fr_5rem] md:grid-cols-[1fr_6rem_10rem]"` |
 

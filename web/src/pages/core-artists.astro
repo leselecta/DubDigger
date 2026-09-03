@@ -7,7 +7,7 @@ import Absence from "@/components/Absence.astro";
 import LoadMore from "@/components/LoadMore.astro";
 import SortBy from "@/components/SortBy.astro";
 import { getTopArtists, TOP_LIST_SIZE } from "@/lib/queries";
-import { PAGE_SIZE, SHOW_SORT, pageSize, years } from "@/lib/view";
+import { LIST_SORTS, PAGE_SIZE, SHOW_SORT, listHref, pageSize, years } from "@/lib/view";
 
 const params = Astro.url.searchParams;
 const limit = pageSize(params.get("show") ?? undefined);
@@ -50,7 +50,15 @@ const shown = ordered.slice(0, limit);
         <Absence>No artists graded. Nothing has been ingested yet.</Absence>
       ) : (
         <>
-          {SHOW_SORT && <SortBy basePath="/core-artists" active={sort} />}
+          {/* Still the old pair and still behind the flag: the three orderings
+              Core Labels took on 2026-09-03 are the next step, not this one. */}
+          {SHOW_SORT && (
+            <SortBy
+              basePath="/core-artists"
+              options={LIST_SORTS.filter((s) => s.key === "ranking" || s.key === "name")}
+              active={sort}
+            />
+          )}
           {/*
            * "Releases", and it counts every release on their artist line.
            *
@@ -86,7 +94,7 @@ const shown = ordered.slice(0, limit);
     {
       limit < artists.length && (
         <LoadMore
-          href={`/core-artists?sort=${sort}&show=${limit + PAGE_SIZE}`}
+          href={listHref("/core-artists", sort, limit + PAGE_SIZE)}
           remaining={artists.length - limit}
         />
       )

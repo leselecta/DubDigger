@@ -46,16 +46,17 @@ const body = "text-body text-ink-muted max-w-[760px] space-y-5";
     <LabelledBand label="The idea">
       <div class={body}>
         <p>
-          Every record is connected to another. A producer, a mixing engineer, a bassist who turns
-          up on four other records you already enjoy. An iconic, minor label you discover by picking
-          up an obscure release you love gives you access to a goldmine of amazing titles. That web
-          of credits is how crate diggers actually find music, and it all sits in Discogs. It just
+          Every record is connected to another. A producer, a mixing engineer who turns up on four
+          other records you already enjoy. An iconic, minor label you discover by picking up an
+          obscure release you love gives you access to a goldmine of tunes. That network of
+          information is how crate diggers actually find music, and it all sits in Discogs. It just
           isn't optimised for digging this way.
         </p>
         <p>
           Dub Digger reshapes it. Type an artist, see who they worked with and what labels they
           released on. Type a label, see the roster and what came out on it. Then click any artist
-          or label and keep going. A map of scenes, drawn from credits. No unwanted noise.
+          or label and keep going. A map of the extended scene, drawn from credits. No unwanted
+          noise.
         </p>
       </div>
     </LabelledBand>
@@ -119,9 +120,9 @@ const body = "text-body text-ink-muted max-w-[760px] space-y-5";
           counts everything in advance. Two passes over 19 million releases.
         </p>
         <p>
-          The result is one small database file. The website only reads it. No live API, no database
-          server, nothing fetched while you browse. It is also why there are no images: the dumps
-          are free to use, the pictures are not. They are in the pipeline for a later version.
+          The result is one lightweight database file. The website only reads it. No live API, no
+          database server, nothing fetched while you browse. It is also why there are no images: the
+          dumps are free to use, the pictures are not. They are in the pipeline for a later version.
         </p>
       </div>
     </LabelledBand>
@@ -143,13 +144,12 @@ const body = "text-body text-ink-muted max-w-[760px] space-y-5";
         <p>
           Inspirations and cultural factors are a matter of history, and style tags cannot express
           them. So it is written down by hand instead. As a starting point I added seven
-          "traditions" in the config, among them roots dub, reggae, Detroit techno, afrobeat,
-          dubstep and UK garage.
+          "traditions/influence" in the config, among them roots dub, reggae, Detroit techno,
+          afrobeat, dubstep and UK garage.
         </p>
         <p>
           Belonging to one of them raises an artist to a fixed grade and no higher, and the page
-          always says the grade was raised and which "tradition" did it. The measured number stays
-          underneath, so the site never claims scene work that is not in the data. This curation is
+          always says the grade was raised and which "tradition/influence" did it. This curation is
           my own editorial choice rather than a data-driven line of descent, and it is the fluid,
           human aspect of the tool.
         </p>
@@ -159,13 +159,22 @@ const body = "text-body text-ink-muted max-w-[760px] space-y-5";
     <LabelledBand label="What to expect">
       <div class={body}>
         <p>
+          I applied the Gall's Law as the founding principle of this project.
+        </p>
+        <p>
+          Gall's Law is a rule of thumb stating that all working complex systems evolve from simple
+          systems that worked, while complex systems designed from scratch inevitably fail.
+        </p>
+        <p>
+          That's why I decided to start with the bare minimum functionalities so that the system can
+          scale up easily if I ever decide to expand it.
+        </p>
+        <p>
           Discogs calls everyone credited on a record an artist, so engineers, designers and
           photographers have pages here too.
         </p>
         <p>
-          Credits on Discogs are entered by volunteers, so they are uneven and patchy. When
-          something is missing the page says "no credits recorded" rather than showing an empty list
-          that looks like an answer.
+          Credits on Discogs are entered by volunteers, so they may be uneven and patchy.
         </p>
         <p>
           This is a beta, and the ranked lists are the most experimental part of it. If a page looks

@@ -63,12 +63,13 @@ function nameFor(url: string): string | null {
 }
 
 interface Props {
-  kind: "artist" | "label";
+  kind: "artist" | "label" | "release";
   id: number;
-  urls: string[];
+  /** A release has none: the dump carries urls on artists and labels only. */
+  urls?: string[];
 }
 
-const { kind, id, urls } = Astro.props;
+const { kind, id, urls = [] } = Astro.props;
 
 const seen = new Set<string>();
 const links: { href: string; name: string }[] = [];

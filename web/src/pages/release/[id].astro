@@ -1,0 +1,209 @@
+---
+import Base from "@/layouts/Base.astro";
+import Eyebrow from "@/components/Eyebrow.astro";
+import FieldRow from "@/components/FieldRow.astro";
+import ListHeader from "@/components/ListHeader.astro";
+import CreditRow from "@/components/CreditRow.astro";
+import Absence from "@/components/Absence.astro";
+import LoadMore from "@/components/LoadMore.astro";
+import OutboundLinks from "@/components/OutboundLinks.astro";
+import { getRelease, getReleaseCredits } from "@/lib/queries";
+import { creditLine } from "@/lib/roles";
+import { PAGE_SIZE, artistLine, pageSize } from "@/lib/view";
+
+const release = getRelease(Number(Astro.params.id));
+if (!release) return Astro.rewrite("/404");
+
+const params = Astro.url.searchParams;
+const limit = pageSize(params.get("show") ?? undefined);
+const base = `/release/${release.id}`;
+
+const credits = getReleaseCredits(release.id);
+const shown = credits.slice(0, limit);
+const line = artistLine(release.artists);
+
+/* The same line as plain text, for the places markup cannot go. */
+const by = line.map((a) => `${a.name}${a.separator}`).join("");
+
+/*
+ * How this record got in, and it is deliberately not a grade.
+ *
+ * The five steps measure an artist's or a label's distance from the cluster,
+ * which is a ratio over a body of work. One record has no body of work behind
+ * it, so it carries no step and reads as a route instead — the same thing the
+ * artist page says about someone the seed cannot measure.
+ *
+ * "Cluster" and not "scene", because these three flags are exactly what the
+ * seed measures: its own styles, a credit reaching one of its artists, or a
+ * label already inside it.
+ */
+const route = release.isSeed
+  ? "here for its own styles, one of the records the dub techno cluster is measured on"
+  : release.channelA && release.channelB
+    ? "here because it credits an artist from the dub techno cluster, and came out on one of its labels"
+    : release.channelA
+      ? "here because it credits an artist from the dub techno cluster"
+      : release.channelB
+        ? "here because it came out on a label in the dub techno cluster"
+        : "here as a neighbour of the dub techno cluster";
+
+const count = credits.length;
+const counted = `${count.toLocaleString("en-GB")} credit${count === 1 ? "" : "s"}`;
+
+const description = count
+  ? `${release.title}${by ? ` by ${by}` : ""}${release.year ? `, ${release.year}` : ""} on Dub Digger: ${counted}, from the Discogs credit dumps.`
+  : `${release.title}${by ? ` by ${by}` : ""} is in this corpus, but no credits are recorded for it.`;
+
+/*
+ * MusicRelease rather than MusicAlbum: this is one pressing with a catalogue
+ * number, which is the thing Discogs ids and the thing the page is about.
+ * `creditedTo` takes the artist line as the record prints it, join phrases and
+ * all, because that string is what the sleeve says and splitting it into
+ * separate acts would assert a reading of "Presents" the dump does not make.
+ */
+const mainEntity = {
+  "@type": "MusicRelease",
+  name: release.title,
+  url: `${Astro.site}release/${release.id}`,
+  sameAs: `https://www.discogs.com/release/${release.id}`,
+  ...(by ? { creditedTo: by } : {}),
+  ...(release.year ? { datePublished: String(release.year) } : {}),
+  ...(release.labels[0] ? { recordLabel: release.labels[0].name } : {}),
+  ...(release.labels[0]?.catno ? { catalogNumber: release.labels[0].catno } : {}),
+};
+---
+
+<Base
+  title={`${release.title} — Dub Digger`}
+  description={description}
+  pageType="ItemPage"
+  mainEntity={mainEntity}
+  breadcrumbs={[{ name: release.title, href: base }]}
+>
+  <div class="column pt-16 pb-16 md:pt-24">
+    <Eyebrow>Release</Eyebrow>
+    <h1 class="text-name-label text-ink-strong mt-6 leading-[0.9] font-bold tracking-[-0.045em]">
+      {release.title}
+    </h1>
+
+    {/*
+     * The by-line, and the reason this page exists in one row: the record is
+     * where an artist and a label met, and every name on it is a pivot. A name
+     * with no page stays plain text, the same rule the chips follow.
+     */}
+    {
+      line.length > 0 && (
+        <p class="text-lead text-ink-muted mt-6 max-w-[760px]">
+          {line.map((a) => (
+            <>
+              {/*
+               * The name and what follows it are closed up on purpose, and it
+               * is the same rule the list rows keep: `compressHTML` is off, so
+               * the source indentation survives into the document and a newline
+               * between these two collapses to a space. That space lands in
+               * front of the join phrase, and 41,335 of them are a comma —
+               * "Karl O'Connor , Peter Sutton". The name sits tight inside its
+               * own anchor for the other half of it, or `link-rule` underlines
+               * a trailing space.
+               */}
+              {a.inCorpus ? (
+                <a href={`/artist/${a.id}`} class="link-rule text-ink">{a.name}</a>
+              ) : (
+                <span class="text-ink-dim">{a.name}</span>
+              )}{a.separator}
+            </>
+          ))}
+        </p>
+      )
+    }
+
+    {/*
+     * The sibling pages' stat line, with the figures a single record has.
+     *
+     * A missing year is said rather than dashed, because "—" beside a count
+     * reads as a broken figure where the words read as the answer. A count of
+     * zero drops out entirely: the list below says "no credits recorded" in a
+     * full sentence, and the accent is for what a thing is rather than for what
+     * it turns out not to have.
+     */}
+    <p class="text-accent mt-10 font-mono text-[0.8125rem] tracking-[0.06em] uppercase">
+      {release.year ?? "Year unknown"}{
+        count > 0 && (
+          <>
+            <span class="text-ink-strong">&nbsp;·&nbsp;</span>
+            {counted}
+          </>
+        )
+      }
+    </p>
+
+    <dl class="mt-9 max-w-[760px]">
+      <FieldRow label={release.labels.length > 1 ? "Labels" : "Label"}>
+        {
+          release.labels.length === 0 ? (
+            /*
+             * Never a reason, because the corpus cannot tell them apart: every
+             * label id on a corpus release has a page, so an empty list means
+             * the dump named no label at all or named the "Not On Label"
+             * placeholder, which is filtered at ingest.
+             */
+            <span class="text-ink-faint">None recorded</span>
+          ) : (
+            <span class="flex flex-wrap gap-x-4 gap-y-1">
+              {release.labels.map((l) => (
+                <span>
+                  <a href={`/label/${l.id}`} class="link-rule">
+                    {l.name}
+                  </a>
+                  {l.catno && <span class="text-ink-faint">&nbsp;{l.catno}</span>}
+                </span>
+              ))}
+            </span>
+          )
+        }
+      </FieldRow>
+      <FieldRow label="In corpus">
+        <span class="text-ink-faint">{route}</span>
+      </FieldRow>
+      <FieldRow label="View on" last>
+        <OutboundLinks kind="release" id={release.id} />
+      </FieldRow>
+    </dl>
+  </div>
+
+  <div class="column pt-14 pb-20 md:pb-32">
+    <ListHeader name="Credits" />
+    {
+      shown.length === 0 ? (
+        /*
+         * 443,005 of 1,095,302 releases carry no credits at all, so this is the
+         * page for two in five of them and it has to be honest about which
+         * absence it is. It cannot say "worked alone": a record with one name on
+         * the line and nobody in the credits is either a solo record or a record
+         * nobody has finished entering, and the dump does not say which.
+         */
+        <Absence>
+          No credits recorded. The corpus holds{" "}
+          {line.length > 0 ? "the artist line above" : "the title above"} and nothing else for this
+          release, which is the case for two in five records in it.
+        </Absence>
+      ) : (
+        <ul>
+          {shown.map((c) => (
+            <CreditRow
+              href={c.inCorpus ? `/artist/${c.id}` : undefined}
+              name={c.name}
+              detail={creditLine(c.roles)}
+            />
+          ))}
+        </ul>
+      )
+    }
+
+    {
+      limit < count && (
+        <LoadMore href={`${base}?show=${limit + PAGE_SIZE}`} remaining={count - limit} />
+      )
+    }
+  </div>
+</Base>

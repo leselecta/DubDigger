@@ -7,6 +7,7 @@
   "scripts": {
     "check-corpus": "tsx src/cli/check-corpus.ts",
     "derive": "tsx src/cli/derive.ts",
+    "enrich": "tsx src/cli/enrich.ts",
     "entities": "tsx src/cli/entities.ts",
     "fetch-dumps": "tsx src/cli/fetch-dumps.ts",
     "make-sample": "tsx src/cli/make-sample.ts",

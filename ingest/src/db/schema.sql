@@ -6,6 +6,11 @@ CREATE TABLE IF NOT EXISTS releases (
   id            INTEGER PRIMARY KEY,
   title         TEXT NOT NULL,
   year          INTEGER,
+  -- The date as the dump writes it: "1994-03-00", "1996", "1997-09-22". year is
+  -- derived from it and is what the corpus is graded on; this is what a sleeve
+  -- prints. Filled by the enrich step, not by the passes.
+  released      TEXT,
+  country       TEXT,
   -- How this release entered the corpus. A collaborator is not the same as a
   -- label-mate, and the UI must be able to show that distinction.
   is_seed       INTEGER NOT NULL DEFAULT 0,
@@ -33,6 +38,34 @@ CREATE TABLE IF NOT EXISTS release_credits (
   artist_id     INTEGER NOT NULL,
   name          TEXT NOT NULL,
   role          TEXT NOT NULL,
+  PRIMARY KEY (release_id, position)
+) WITHOUT ROWID;
+
+-- The tracklist, read for what it prints and nothing more. Tracks are NOT an
+-- entity: no ids, no credits, no pages. The track level's own <artists> and
+-- <extraartists> are still dropped at parse time, which is the whole reason the
+-- subtree was skipped before this table existed.
+CREATE TABLE IF NOT EXISTS release_tracks (
+  release_id    INTEGER NOT NULL,
+  -- Order in the list. position is a printed label ("A1", "B2") and is missing
+  -- on heading rows, so it cannot be the key.
+  seq           INTEGER NOT NULL,
+  position      TEXT,
+  title         TEXT NOT NULL,
+  duration      TEXT,
+  PRIMARY KEY (release_id, seq)
+) WITHOUT ROWID;
+
+-- The carrier. Parts, never a sentence: "Vinyl" + qty 2 + ["12\"", "45 RPM"] is
+-- assembled at display time, the same rule the raw role strings follow.
+CREATE TABLE IF NOT EXISTS release_formats (
+  release_id    INTEGER NOT NULL,
+  position      INTEGER NOT NULL,
+  name          TEXT NOT NULL,
+  qty           INTEGER NOT NULL DEFAULT 1,
+  text          TEXT,
+  -- Newline joined, the way artists.urls is.
+  descriptions  TEXT,
   PRIMARY KEY (release_id, position)
 ) WITHOUT ROWID;
 

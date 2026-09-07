@@ -175,3 +175,63 @@ export function artistLine<T extends LineArtist>(artists: readonly T[]): (T & { 
     separator: i === artists.length - 1 ? "" : separator(artist.joinPhrase),
   }));
 }
+
+export interface ReleaseFormat {
+  name: string;
+  qty: number;
+  text: string | null;
+  descriptions: string[];
+}
+
+/**
+ * The carrier as a line: "2× Vinyl, 12\", 45 RPM + CD, Album".
+ *
+ * Ingest stores the parts and this writes the sentence, so the wording is a
+ * code change rather than a re-ingest — the same split the role vocabulary
+ * runs on. The order is Discogs' own and it is also the order a digger reads
+ * in: what it is, how big and how fast, then anything odd about the pressing.
+ *
+ * A record issued on two carriers at once is one release with two formats, so
+ * the two are joined rather than one of them being picked.
+ */
+export function formatLine(formats: readonly ReleaseFormat[]): string | null {
+  const lines = formats
+    .map((f) => {
+      const head = f.name.trim();
+      if (!head) return "";
+      const parts = [f.qty > 1 ? `${f.qty}× ${head}` : head, ...f.descriptions];
+      if (f.text) parts.push(f.text);
+      return parts.filter(Boolean).join(", ");
+    })
+    .filter(Boolean);
+
+  return lines.length > 0 ? lines.join(" + ") : null;
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/**
+ * As much of the release date as the dump actually has.
+ *
+ * Discogs writes "2019-01-25", "1994-03-00" and "1996", and on the sample only
+ * 31% of dated records carry a full date. So each shape prints as itself and
+ * nothing is padded: a record dated 1996 must never read "1 Jan 1996", which
+ * would be the interface inventing a day nobody entered.
+ *
+ * The month and day are checked rather than trusted. The field is
+ * contributor-entered and "2019-13-01" is in there; falling back to the part
+ * that is still true says less and says nothing wrong.
+ */
+export function releasedOn(raw: string | null): string | null {
+  const value = (raw ?? "").trim();
+  const match = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?/.exec(value);
+  if (!match) return null;
+
+  const year = match[1]!;
+  const month = Number(match[2] ?? 0);
+  const day = Number(match[3] ?? 0);
+
+  if (month < 1 || month > 12) return year;
+  if (day < 1 || day > 31) return `${MONTHS[month - 1]} ${year}`;
+  return `${day} ${MONTHS[month - 1]} ${year}`;
+}

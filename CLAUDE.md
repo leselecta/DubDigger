@@ -60,8 +60,14 @@ npm workspaces, `ingest` and `web`. The ingest commands, in the order they run:
 
 ```
 fetch-dumps  make-sample  pass1  measure-seed  seed-labels
-pass2  entities  derive  check-corpus  publish
+pass2  entities  derive  enrich  check-corpus  publish
 ```
+
+`enrich` is the odd one and is deliberately outside the selection. It reads the
+dump once more to backfill what the release page prints (the date as written,
+the country, the carrier, the tracklist) onto releases the corpus already holds.
+It inserts no release, touches no style and never writes `year`, so running it
+cannot move the corpus boundary under a change that is about what a page shows.
 
 `publish` is the boundary: it writes a standalone read-only copy into `web/data/`, carrying the derived tables and the FTS indexes and leaving the ingest bookkeeping behind.
 
@@ -156,7 +162,9 @@ Four monthly gzipped XML files: `artists`, `labels`, `masters`, `releases`. We u
 
 ## Data model
 
-**Raw:** `releases`, `release_artists`, `release_credits`, `release_labels`, `release_styles`, `release_genres`, `artists`, `labels`, `artist_relations`.
+**Raw:** `releases`, `release_artists`, `release_credits`, `release_labels`, `release_formats`, `release_tracks`, `release_styles`, `release_genres`, `artists`, `labels`, `artist_relations`.
+
+`releases.released` and `releases.country`, and both of the tables above them, are written by `enrich` rather than by a pass. `released` is the date as the dump wrote it and `year` is still what everything is graded on: on the sample 98.5% of records carry a date and only 31% of those are a full one, so a bare year is the common case and nothing pads it into a day.
 
 **Ingest bookkeeping, not published:** `seed_artists`, `seed_artist_totals`, `label_artist_pairs`, `seed_labels`, `roles_seen`, `ingest_runs`. Measure role coverage against the ingest database, not the web copy. `label_artist_pairs` is the biggest table in there and `derive` needs it, so `seed-labels --drop-pairs` costs a full pass 1 to undo: derive throws rather than grading every label `none` in silence.
 

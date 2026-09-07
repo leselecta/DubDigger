@@ -16,7 +16,9 @@ The user is a music nerd who reads Discogs pages for fun, not a casual listener.
 
 **This is the `v2` branch.** Production is `main`, checked out beside it at `../DubDigger`, and the two are worked on side by side: a fix for the live site is made and deployed from there, and nothing here reaches the VPS until it is merged. The two copies of this file will drift, which is correct, and what gets carried back to `main` is a deliberate decision rather than a merge nobody read.
 
-**`npm run dev` here is not the same command as it is on `main`.** It serves on **4322** rather than 4321, so both sites can run at once, and it points `DUBDIGGER_DB` at production's published file, `../DubDigger/web/data/dubdigger.sqlite`, because this worktree has no `web/data/` of its own: the database is gitignored, and a fresh checkout gets the code without it. The path is relative to `$PWD`, so it assumes only that the two worktrees are siblings. **It must never become a symlink at `web/data/dubdigger.sqlite`**, which is the one arrangement that lets `publish` write through onto the live file. The day the v2 schema diverges, this worktree gets its own published copy and the variable points at that instead.
+**`npm run dev` here serves on 4322 rather than 4321**, so both sites can run at once.
+
+**And since 2026-09-07 this worktree has its own database**, `web/data/dubdigger.sqlite`, 1.21 GB against production's 931 MB. It borrowed production's file for a few hours, read-only through `DUBDIGGER_DB`, and stopped the moment `enrich` added columns the old file does not have. The extra 307 MB is 7,975,876 tracks and 1,127,193 formats. **It must never be a symlink to the live file**, which is the one arrangement that lets `publish` write through onto production. Rebuilding it is `enrich --full` then `publish`, both from this worktree, against the 20260801 dump in `ingest/data/dumps`.
 
 Beta, and the footer says so. The corpus is built, the app is written, and the VPS has served it at dubdigger.com since 2026-08-12. What ships today:
 

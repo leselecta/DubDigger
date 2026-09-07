@@ -982,8 +982,17 @@ export interface ArtistRelease {
   roles: string[];
 }
 
-/** An artist's releases, newest first, with what they did on each. */
-export function getArtistReleases(artistId: number, limit = 300): ArtistRelease[] {
+/**
+ * An artist's releases, newest first, with what they did on each.
+ *
+ * `exclude` is for the release page's "more from" list, where the record you
+ * are already on is not more of anything.
+ */
+export function getArtistReleases(
+  artistId: number,
+  limit = 300,
+  exclude: number | null = null,
+): ArtistRelease[] {
   const db = getDb();
   if (!db) return [];
 
@@ -999,11 +1008,12 @@ export function getArtistReleases(artistId: number, limit = 300): ArtistRelease[
                UNION SELECT release_id FROM release_credits WHERE artist_id = ?) mine
            ON mine.release_id = r.id
          LEFT JOIN release_credits c ON c.release_id = r.id AND c.artist_id = ?
+        WHERE r.id <> ?
         GROUP BY r.id
         ORDER BY r.year IS NULL, r.year DESC, r.title
         LIMIT ?`,
     )
-    .all(artistId, artistId, artistId, limit) as {
+    .all(artistId, artistId, artistId, exclude ?? -1, limit) as {
     id: number;
     title: string;
     year: number | null;
@@ -1028,8 +1038,12 @@ export function getArtistReleases(artistId: number, limit = 300): ArtistRelease[
   }));
 }
 
-/** A label's releases, newest first. */
-export function getLabelReleases(labelId: number, limit = 300): ArtistRelease[] {
+/** A label's releases, newest first. `exclude` as above. */
+export function getLabelReleases(
+  labelId: number,
+  limit = 300,
+  exclude: number | null = null,
+): ArtistRelease[] {
   const db = getDb();
   if (!db) return [];
 
@@ -1047,12 +1061,12 @@ export function getLabelReleases(labelId: number, limit = 300): ArtistRelease[] 
                 WHERE ra.release_id = r.id) AS by_line
          FROM release_labels rl
          JOIN releases r ON r.id = rl.release_id
-        WHERE rl.label_id = ?
+        WHERE rl.label_id = ? AND r.id <> ?
         GROUP BY r.id
         ORDER BY r.year IS NULL, r.year DESC, r.title
         LIMIT ?`,
     )
-    .all(labelId, limit) as {
+    .all(labelId, exclude ?? -1, limit) as {
     id: number;
     title: string;
     year: number | null;
@@ -1084,6 +1098,21 @@ export interface ReleaseLabel {
   catno: string | null;
 }
 
+/** The carrier, in parts. `formatLine` writes the sentence. */
+export interface ReleaseFormatRow {
+  name: string;
+  qty: number;
+  text: string | null;
+  descriptions: string[];
+}
+
+export interface ReleaseTrack {
+  /** "A1", or null on a heading row, which the dump writes as a track. */
+  position: string | null;
+  title: string;
+  duration: string | null;
+}
+
 export interface ReleaseCredit {
   id: number;
   name: string;
@@ -1096,8 +1125,17 @@ export interface Release {
   id: number;
   title: string;
   year: number | null;
+  /** The date as the dump wrote it. Often just a year: see `releasedOn`. */
+  released: string | null;
+  country: string | null;
   artists: ReleaseArtist[];
   labels: ReleaseLabel[];
+  formats: ReleaseFormatRow[];
+  /**
+   * Titles and positions, and nothing else. A track is not an entity: it has no
+   * id here, no credits and no page, which is the scope line holding.
+   */
+  tracks: ReleaseTrack[];
   /**
    * How this record entered the corpus. A fact about the boundary, not a
    * grade: a single release has no body of work behind it to measure.
@@ -1128,9 +1166,21 @@ export function getRelease(id: number): Release | null {
   if (!db) return null;
 
   const row = db
-    .prepare(`SELECT id, title, year, is_seed, channel_a, channel_b FROM releases WHERE id = ?`)
+    .prepare(
+      `SELECT id, title, year, released, country, is_seed, channel_a, channel_b
+         FROM releases WHERE id = ?`,
+    )
     .get(id) as
-    | { id: number; title: string; year: number | null; is_seed: number; channel_a: number; channel_b: number }
+    | {
+        id: number;
+        title: string;
+        year: number | null;
+        released: string | null;
+        country: string | null;
+        is_seed: number;
+        channel_a: number;
+        channel_b: number;
+      }
     | undefined;
 
   if (!row) return null;
@@ -1160,10 +1210,26 @@ export function getRelease(id: number): Release | null {
     )
     .all(id) as { id: number; name: string; catno: string | null; pos: number }[];
 
+  const formats = db
+    .prepare(
+      `SELECT name, qty, text, descriptions FROM release_formats
+        WHERE release_id = ? ORDER BY position`,
+    )
+    .all(id) as { name: string; qty: number; text: string | null; descriptions: string | null }[];
+
+  const tracks = db
+    .prepare(
+      `SELECT position, title, duration FROM release_tracks
+        WHERE release_id = ? ORDER BY seq`,
+    )
+    .all(id) as ReleaseTrack[];
+
   return {
     id: row.id,
     title: row.title,
     year: row.year,
+    released: row.released,
+    country: row.country,
     artists: artists.map((a) => ({
       id: a.id,
       name: a.name,
@@ -1171,6 +1237,13 @@ export function getRelease(id: number): Release | null {
       inCorpus: a.in_corpus === 1,
     })),
     labels: labels.map((l) => ({ id: l.id, name: l.name, catno: l.catno })),
+    formats: formats.map((f) => ({
+      name: f.name,
+      qty: f.qty,
+      text: f.text,
+      descriptions: f.descriptions ? f.descriptions.split("\n").filter(Boolean) : [],
+    })),
+    tracks,
     isSeed: row.is_seed === 1,
     channelA: row.channel_a === 1,
     channelB: row.channel_b === 1,
@@ -1219,4 +1292,43 @@ export function getReleaseCredits(releaseId: number): ReleaseCredit[] {
       roles: r.roles ? [r.roles] : [],
     })),
   );
+}
+
+/**
+ * The carriers for a page of releases, in one query rather than one per row.
+ *
+ * The "more from" lists print a format column, and a correlated subquery per
+ * row would assemble the sentence in SQL — which is where it must not be, since
+ * the parts are stored precisely so the wording can change without a re-ingest.
+ */
+export function getFormats(releaseIds: readonly number[]): Map<number, ReleaseFormatRow[]> {
+  const db = getDb();
+  const out = new Map<number, ReleaseFormatRow[]>();
+  if (!db || releaseIds.length === 0) return out;
+
+  const rows = db
+    .prepare(
+      `SELECT release_id, name, qty, text, descriptions FROM release_formats
+        WHERE release_id IN (${releaseIds.map(() => "?").join(",")})
+        ORDER BY release_id, position`,
+    )
+    .all(...releaseIds) as {
+    release_id: number;
+    name: string;
+    qty: number;
+    text: string | null;
+    descriptions: string | null;
+  }[];
+
+  for (const row of rows) {
+    const list = out.get(row.release_id) ?? [];
+    list.push({
+      name: row.name,
+      qty: row.qty,
+      text: row.text,
+      descriptions: row.descriptions ? row.descriptions.split("\n").filter(Boolean) : [],
+    });
+    out.set(row.release_id, list);
+  }
+  return out;
 }

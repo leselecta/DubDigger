@@ -16,6 +16,8 @@ The user is a music nerd who reads Discogs pages for fun, not a casual listener.
 
 **This is the `v2` branch.** Production is `main`, checked out beside it at `../DubDigger`, and the two are worked on side by side: a fix for the live site is made and deployed from there, and nothing here reaches the VPS until it is merged. The two copies of this file will drift, which is correct, and what gets carried back to `main` is a deliberate decision rather than a merge nobody read.
 
+**`npm run dev` here is not the same command as it is on `main`.** It serves on **4322** rather than 4321, so both sites can run at once, and it points `DUBDIGGER_DB` at production's published file, `../DubDigger/web/data/dubdigger.sqlite`, because this worktree has no `web/data/` of its own: the database is gitignored, and a fresh checkout gets the code without it. The path is relative to `$PWD`, so it assumes only that the two worktrees are siblings. **It must never become a symlink at `web/data/dubdigger.sqlite`**, which is the one arrangement that lets `publish` write through onto the live file. The day the v2 schema diverges, this worktree gets its own published copy and the variable points at that instead.
+
 Beta, and the footer says so. The corpus is built, the app is written, and the VPS has served it at dubdigger.com since 2026-08-12. What ships today:
 
 | | |

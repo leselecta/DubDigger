@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "build": "npm run build --workspace web",
-    "dev": "npm run dev --workspace web",
+    "dev": "DUBDIGGER_DB=\"$PWD/../DubDigger/web/data/dubdigger.sqlite\" npm run dev --workspace web -- --port 4322",
     "ingest": "npm run --workspace ingest",
     "preview": "npm run preview --workspace web",
     "start": "npm run start --workspace web",

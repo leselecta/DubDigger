@@ -193,3 +193,27 @@ export function summariseRoles(credits: string[]): string[] {
 export function creditLine(credits: string[]): string {
   return summariseRoles(credits).join(" · ");
 }
+
+/**
+ * The order a release lists its credits in: how much of the record each person
+ * touched, most first.
+ *
+ * There is no authorial order to preserve here. The dump hands credits back
+ * sorted by role string, so 800% Ndagga opens on two bass players and reaches
+ * Mark Ernestus, who produced, engineered and mixed it, at six of twenty-one.
+ * Ranking by weight is what the rest of the site does, and the row carries the
+ * reason with it, since the roles it sorts on are the roles it prints.
+ *
+ * It counts named roles rather than stored strings, for the same reason: a row
+ * showing two roles must not sit under a row showing one, and the collapsing
+ * means those two figures are not the same number.
+ *
+ * Ties keep the order they came in, by index rather than by trusting the sort
+ * to be stable, so the dump's own order is what breaks them.
+ */
+export function rankCredits<T extends { roles: string[] }>(rows: readonly T[]): T[] {
+  return rows
+    .map((row, i) => ({ row, i, held: summariseRoles(row.roles).length }))
+    .sort((a, b) => b.held - a.held || a.i - b.i)
+    .map((entry) => entry.row);
+}

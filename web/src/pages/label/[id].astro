@@ -164,12 +164,18 @@ const reason = label.isImprint
         <>
           <ListHeader name="Release" count="Year" meta="Cat no." />
           <ul>
+            {/*
+             * The title opens the record rather than leaving for Discogs. On
+             * this page it is the only pivot in the row: the catalogue number
+             * belongs to the label you are already on, and the artists under
+             * the title are a line of text rather than links until you are on
+             * the record itself.
+             */}
             {releases.map((r) => (
               <CreditRow
                 count={r.year ?? "—"}
-                href={`https://www.discogs.com/release/${r.id}`}
+                href={`/release/${r.id}`}
                 name={r.title}
-                external
                 detail={r.roles.join(" · ")}
                 meta={r.label}
                 metaLabel="Cat no."

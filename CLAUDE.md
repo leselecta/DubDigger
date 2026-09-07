@@ -14,23 +14,25 @@ The user is a music nerd who reads Discogs pages for fun, not a casual listener.
 
 ## Where it stands
 
+**This is the `v2` branch.** Production is `main`, checked out beside it at `../DubDigger`, and the two are worked on side by side: a fix for the live site is made and deployed from there, and nothing here reaches the VPS until it is merged. The two copies of this file will drift, which is correct, and what gets carried back to `main` is a deliberate decision rather than a merge nobody read.
+
 Beta, and the footer says so. The corpus is built, the app is written, and the VPS has served it at dubdigger.com since 2026-08-12. What ships today:
 
 | | |
 |---|---|
 | Corpus | 1,095,302 releases · 444,723 artists · 114,226 labels · 4,110,875 credits |
 | Seed | 132,571 artists · 18,999 labels |
-| Pages | home and search, artist, label, Core Artists, Core Labels, Info, 404 |
+| Pages | home and search, artist, label, release, Core Artists, Core Labels, Info, 404 |
 | Ingest database | 5.3 GB, `ingest/data/dubdigger.sqlite` |
 | Published database | 931 MB, `web/data/dubdigger.sqlite` |
 
-## Scope (v1) — hold this line
+## Scope — hold this line
 
-Deliberately small, per Gall's Law: a working simple system first.
+Deliberately small, per Gall's Law: a working simple system first. The list below was written for v1 and every line of it still holds on this branch, except the entity count, which was raised on purpose and is marked as such.
 
-- **One data source:** Discogs monthly XML dumps (CC0 licensed). No live API in v1.
-- **Two entities:** Artist and Label.
-- **Edges:** collaboration (two artists co-credited on a release) and label (a release's label). Tracks are NOT a top-level entity; they surface *through* collaborations and labels.
+- **One data source:** Discogs monthly XML dumps (CC0 licensed). No live API, and the release page did not get one either: that argument is recorded where it was made.
+- **Three entities:** Artist, Label and Release. It was two until the release page shipped, and that line was edited rather than quietly outgrown: a release is the object a collaboration is actually made of, and it was the one thing in the corpus with nowhere to live. **Tracks are still NOT an entity** and nothing about this changes that; they are not parsed at all.
+- **Edges:** collaboration (two artists co-credited on a release) and label (a release's label). Tracks surface *through* collaborations and labels, and now through the record itself.
 - **Corpus:** a dub-techno-centred slice, selected by the two-pass, two-channel strategy below, NOT the whole Discogs catalogue.
 
 ### Explicitly OUT of scope for v1 — do not add these unprompted
@@ -253,6 +255,74 @@ In scope since 2026-08-08, and deliberately at one end only. Discogs role string
 - **A merge is a claim, so only merge what means the same work.** Instruments group up (`Violin`/`Cello`/`Harp` into Strings) because a digger wants the section, not the chair. `Executive Producer` stays out of Production because it is a business credit, not a studio one. `Direct Metal Mastering By` is deliberately unmapped at 1,173 occurrences: it is neither mastering nor a lacquer cut, and a near-enough name would be wrong.
 - **Measure after changing the table.** Coverage is **97.4% of 4,429,673 credit occurrences**, across 281,018 distinct role strings, of which 35,180 stay unnamed. Measure against `ingest/data/dubdigger.sqlite`, since `roles_seen` is not published.
 
+## The release page
+
+Shipped on the v2 branch. The third entity, and the cheapest one: a route and a
+query against tables the published file already carried.
+
+**It needed no ingest change at all.** `releases`, `release_artists` (1,261,347
+rows), `release_credits` (4,110,875) and `release_labels` (1,144,364) are all
+published, and `creditLine()` already names the role strings. So this is the
+first page that reads the raw tables rather than the derived ones, which is
+worth knowing before assuming the app only ever touches precomputed output.
+
+**A live API top-up was rejected, and stays rejected.** It is the second path
+from the deferred-images section arriving early under another name: a live
+external dependency, a rate ceiling, mandatory attribution, and the on-ramp for
+"while we are calling anyway". The server reads one static file and nothing
+else. Local only, or not at all.
+
+**It carries no grade, and the field says how it got in instead.** The five
+steps are a ratio over a body of work, and one record is not one. `is_seed`,
+`channel_a` and `channel_b` are facts about the corpus boundary, so the row
+reads "here because it credits an artist from the dub techno cluster" and never
+a step of the scale. Cluster rather than scene throughout, because those three
+flags are exactly what the seed measures.
+
+**Most credited names are not links, and that is the honesty rule in its most
+literal form.** 379,447 of the ids in `release_credits` never became corpus
+artists, because `channelAMaxPeopleToAdmit` stops a crowded record admitting
+anyone new. 800% Ndagga is the case that matters: nineteen people, one page.
+`CreditRow` takes an optional `href` and renders plain text without it, the same
+treatment `Chip` gives a relation the corpus never admitted. Artist 355,
+Discogs' `UNKNOWN ARTIST` placeholder, is excluded by hand: it does have a row,
+so the join alone would offer a link to a page about nobody.
+
+**Credits are ranked, not listed in the dump's order.** The dump hands them back
+sorted by role string, which put Mark Ernestus, who produced, engineered and
+mixed 800% Ndagga, sixth of twenty-one. `rankCredits` orders by how many named
+roles a person holds, so the row shows the reason it is where it is. It counts
+named roles rather than stored strings, because the collapsing means those are
+two different numbers, and that is why the ranking cannot be done in SQL and why
+the credits are fetched whole rather than paged.
+
+**Thin pages are accepted, with the numbers behind them.** 443,005 of 1,095,302
+releases carry no credits at all, 69,907 have no label and 32,832 have no year.
+Every corpus release gets a page anyway: minting them only where there is
+something to say would put two different link behaviours on one list. The
+absence has to say which absence it is and must not say "worked alone", because
+a record with one name on the line and nothing else is either solo work or an
+unfinished entry and the dump does not say which.
+
+**The by-line's whitespace is load-bearing.** `compressHTML` is off, so source
+indentation survives into the document and a newline between two elements
+collapses to a rendered space. 41,335 join phrases are a comma, so a newline
+between the name and the phrase prints "Karl O'Connor , Peter Sutton", and a
+newline inside the anchor makes `link-rule` underline a trailing space. Both are
+closed up on purpose in `release/[id].astro` and in `CreditRow`. Do not let a
+formatter open them.
+
+**What is still missing, and what each would cost:** the tracklist is never
+parsed, so recovering it means the 10.4 GB re-download and a full pass 2; styles
+and genres are in the ingest database and dropped at publish, so republishing
+them is an edit to `publish.ts` and a larger web file; format, country and notes
+are discarded at projection; images are Restricted Data and stay out.
+
+**Release titles on the artist and label pages now open the record** rather than
+leaving for Discogs, which was 1,095,302 links out of a tool whose whole premise
+is that a pivot costs one click. The Discogs link moved onto the release page
+itself, as the `OutboundLinks` row every entity page carries.
+
 ## UI principles
 
 These are load-bearing and hold regardless of how the interface looks:
@@ -378,7 +448,7 @@ Set up on 2026-08-11. The metadata itself is ordinary; several decisions in it a
 - **A description is a request, not an instruction, and the home page had not made one.** Every other page passes its own; the home page fell back to the layout's default, which opened with the headline verbatim. That is the case where Google discards the tag and writes a snippet from the page's prose instead, and there was none to write from: `<main>` holds 25 words and not one full sentence, an eyebrow, a headline, a field and three figures. The footer was the only prose in the document, so Google published the footer as the home page's snippet, wordmark and MMXXVI and handcrafted in London. Fixed three ways on 2026-08-26. The home page states its own description, and since 2026-08-28 it is one clause: `A map of the dub techno scene and its neighbours, built from Discogs credit data.` For two days it opened with the move instead (`Type an artist, see who they worked with...`), which is an instruction aimed at somebody who has not yet decided whether to click. The layout's default no longer repeats the headline. And the footer carries `data-nosnippet`, which is right on every page rather than only that one, since those five sentences are identical across 534,527 of them. It sits on the inner `div` rather than the `<footer>` because Google names `span`, `div` and `section` as the elements it reads the attribute on, and a sectioning element it does not name is not the place to find out. Snippet suppression only: the text is still indexed and the links are still followed.
 - **No prose was added to the hero, and that is still the decision.** A paragraph in `<main>` was the durable fix, since it gives an engine something better than the description to fall back on, and it shipped on 2026-08-29 as the band below. What was ruled out is the hero: a visible change to the one page whose spareness is the design. Simone chose the description as the whole of the answer on 2026-08-26 and did not reopen that half when he took the band. Do not quietly add an intro paragraph above the figures for SEO reasons: that argument has been had, and the prose it wanted is already on the page further down.
 - **The AI Overview cited `/info` rather than the home page, and it was the same absence one layer up.** Noticed 2026-08-27, fixed 2026-08-29. An Overview grounds its answer in retrieved passages and cites the URL each passage came from, and it quotes rendered body text: a description is a request an engine can honour for a result card and is never a candidate for a passage, and neither is the JSON-LD. So the fix that solved the snippet could not reach this one. `/info` won because it opens `Dub Digger is a tool for digging`, a definition starting with the name, which is the shape retrieved for a branded question. The home page was not losing that comparison, it was never a candidate. **What ships is a `LabelledBand` labelled "What this is" after the figures, hidden when `searching`**, so the first screen is untouched and no `?q=` address carries it. Position on the page is not what makes a passage retrievable; being real body text in `<main>` is. **Its wording is deliberately not `/info`'s lead**, because two URLs offering one identical passage makes them compete and `/info` has four bands of depth behind the same claim. Its top gap matches the one above the figures (`mt-16 md:mt-30`, the hero's `pb-10 md:pb-24` plus `pt-6`), so the two hairlines share a rhythm. It makes `/` eligible, not guaranteed. Weakening `/info` to help `/` win was considered and rejected: that trades a good page for a citation.
-- **The sitemap lists the core, not the corpus.** 1,808 URLs: five static pages plus the top 1,000 artists and 803 labels the Core pages already rank, generated per request in `web/src/pages/sitemap.xml.ts` because `/artist/[id]` has no static paths to enumerate. The other half million pages stay reachable by link. Nothing invites a bot to walk 534,527 SQLite queries on a one-core VPS: this is discovery, not exhaustiveness.
+- **The sitemap lists the core, not the corpus.** 1,808 URLs: five static pages plus the top 1,000 artists and 803 labels the Core pages already rank, generated per request in `web/src/pages/sitemap.xml.ts` because `/artist/[id]` has no static paths to enumerate. The other 1.6 million pages stay reachable by link. Nothing invites a bot to walk that many SQLite queries on a one-core VPS: this is discovery, not exhaustiveness. **Release pages are the largest part of that number and are deliberately in it**, 1,095,302 URLs against the 534,527 the rule was written for. They are crawlable, since they are real pages and a link reaches every one of them; they are simply not advertised.
 - **`lastmod` is the database's mtime, for every URL.** Every page is derived from that one file, so it is the honest answer for all of them. Nothing in the corpus records when a credit was entered, and a date that moves when it should not teaches an engine to distrust the file.
 - **The JSON-LD graph credits the tool, never the data.** A `WebSite` node and a per-page node, cross-referenced by `@id`, plus `BreadcrumbList` on inner pages. `creator` is a `Person` on the `WebSite` and appears nowhere else, because the split is the whole claim: the tool is Simone's, the credits are typed in by Discogs contributors. An `author` on a page node would take thousands of people's work and put one name on it, so there is deliberately none. There is no `Organization` and no `publisher` either, since there is no company and inventing one to fill a recommended field would assert something the pages do not. The footer states the same split in words, and the markup is only that sentence again. The one soft claim is `MusicGroup` on artist pages, which is wrong for the engineers and sleeve designers who hold Discogs artist ids, and is still the least wrong type available.
 - **IndexNow is a manual step after deploy**, `npm run indexnow --workspace web`. It reads the URL list off the deployed sitemap, so it cannot ping ahead of the upload that proves ownership.

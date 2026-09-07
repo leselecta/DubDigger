@@ -120,13 +120,13 @@ All in `web/src/components/`, all `.astro`.
 | `Chip` | `href?`, `name`, `count?` | `border border-edge px-[14px] py-2 font-mono text-[0.8125rem]`; no href → `<span>` with `border-hairline text-ink-dim` |
 | `CollapsibleText` | slot | `CLAMP_PX = 145`; fade `h-12`, `linear-gradient(transparent, var(--color-bg))` |
 | `ContactDialog` | — | `<dialog>` + `showModal()`, `w-[min(26rem,calc(100vw-3rem))]`, `backdrop:bg-black/70` |
-| `CreditRow` | `count`, `href`, `name`, `detail?`, `meta?`, `metaLabel?`, `external?`, `slot="meta"` | `LIST_GRID`, `py-[18px]`, `gap-x-[22px]` |
+| `CreditRow` | `count?`, `href?`, `name`, `detail?`, `meta?`, `metaLabel?`, `external?`, `slot="meta"` | `LIST_GRID`, `py-[18px]`, `gap-x-[22px]`; no `href` → plain `text-ink-dim` name, no rule, no hover |
 | `Eyebrow` | slot | `text-accent font-mono text-[0.6875rem] md:text-[0.8125rem] tracking-[0.32em] uppercase` |
 | `FieldRow` | `label`, `accent?`, `last?` | `grid-cols-[7rem_1fr] sm:grid-cols-[180px_1fr] py-2` |
 | `LabelledBand` | `label` | `border-t py-14 md:grid-cols-[180px_1fr]`, h2 `mono-label text-ink text-[0.8125rem] md:mt-1` |
 | `ListHeader` | `name`, `count`, `meta?` | `LIST_GRID`, `text-[0.6875rem] tracking-[0.2em]`, `border-b pb-3` |
 | `LoadMore` | `href`, `remaining` | ghost button, `data-hold-scroll` |
-| `OutboundLinks` | `kind`, `id`, `urls[]` | max 5 + Discogs; http/https only |
+| `OutboundLinks` | `kind` (artist \| label \| release), `id`, `urls?[]` | max 5 + Discogs; http/https only; a release has no urls |
 | `ProfileText` | `text`, `names?` | renders Discogs bio markup; links `underline underline-offset-2` |
 | `SearchField` | `size` ("hero" \| "header"), `value?` | `h-16`/`h-11`; hero `border-accent` + inset-shadow focus, header `border-edge-strong` + accent focus; combobox, listbox `-mt-px border-edge-strong z-40 max-h-[60vh]`, 3 rows `px-4 py-2.5` then a "View all results" row `px-4 py-3 bg-accent text-bg`, active `bg-accent text-bg` (that row inverts to `bg-ink`) |
 | `SiteFooter` | — | `py-11 font-mono text-xs md:grid-cols-2` |
@@ -172,6 +172,7 @@ skip link → SiteHeader → <main id="content"> page bands </main> → SiteFoot
 | Identity block | `<dl class="mt-9 max-w-[760px]">` of `FieldRow`, last one with `last` |
 | Labelled band | `border-hairline grid gap-6 border-t py-14 md:grid-cols-[180px_1fr]` |
 | List band | `column pt-14 pb-32` → Tabs, ListHeader, rows or Absence, LoadMore |
+| Release by-line | `text-lead text-ink-muted mt-6 max-w-[760px]`, names closed up against their join phrase |
 | Figures | `border-t grid sm:grid-cols-3`, cells `px-0 py-10 sm:px-10 sm:py-14` |
 
 | Measurement | Value |
@@ -190,6 +191,10 @@ skip link → SiteHeader → <main id="content"> page bands </main> → SiteFoot
 | sm 640 | Figures → 3 columns; header field appears and the drawer's own field hides; FieldRow labels 7rem → 180px |
 | md 768 | Nav cells replace the drawer; third list column unfolds; gutter 1.5→3rem; LabelledBand and footer → 2 columns |
 | 1200 | Column stops growing (a max-width, not a breakpoint) |
+
+**Closed-up markup:** `compressHTML` is off, so an indentation newline between two elements
+renders as a space. The release by-line and `CreditRow`'s name sit tight against what follows them
+on purpose: a newline there prints "Karl O'Connor , Peter Sutton" and underlines a trailing space.
 
 **Folding columns:** a value that drops under the name carries its own heading with `md:sr-only` —
 **never `md:hidden`**, which removes it from the accessible tree and leaves a row read aloud as
@@ -255,7 +260,7 @@ browser). Never give the drawer `inert`.
 3. Content bands: `LabelledBand` for prose, the list band for data.
 4. Lists: `ListHeader` + `CreditRow` + `LIST_GRID`; `Absence` when empty; `LoadMore` past 40.
 5. Any state (tab, sort, page, query) goes in the URL.
-6. Any pivot gets `link-rule`; anything with no page gets a `Chip` with no `href`.
+6. Any pivot gets `link-rule`; anything with no page loses the href and reads `text-ink-dim` — a `Chip`, a `CreditRow`, or a name in a release by-line.
 7. Grades read in the five steps, with the reason beside them in `ink-faint`.
 8. New grey? 4.5:1. New control border? `edge-strong`, 3:1.
 9. New script? `astro:page-load`, motion guard, argue the bytes.

@@ -345,17 +345,18 @@ const route =
               {releases.map((r) => (
                 <CreditRow
                   count={r.year ?? "—"}
-                  href={`https://www.discogs.com/release/${r.id}`}
+                  href={`/release/${r.id}`}
                   name={r.title}
-                  external
                   detail={creditLine(r.roles)}
                   meta={r.label}
                   metaLabel="Label"
                 >
                   {/*
-                   * The release title leaves for Discogs, so without this the
-                   * only outbound link on the row is one that ends the dig. The
-                   * label is the pivot that keeps it going.
+                   * Two pivots on one row, and they answer different questions:
+                   * the title opens the record and everyone else on it, the
+                   * label opens the room it came out of. The title used to
+                   * leave for Discogs, which made the label cell the only way
+                   * to keep digging from here.
                    */}
                   {r.labelId && (
                     <a slot="meta" href={`/label/${r.labelId}`} class="link-rule">

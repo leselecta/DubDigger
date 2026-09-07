@@ -128,3 +128,78 @@ test("decodes entities and multi-byte characters split across chunks", async () 
   assert.equal(out[3]!.artists[0]!.name, "Björk");
   assert.equal(out[0]!.artists[0]!.joinPhrase, "&");
 });
+
+/**
+ * The fields the release page asks for, added on the v2 branch.
+ *
+ * All four come off elements the stream was already walking past. `released`
+ * was the sharpest loss: the raw string was read and then thrown away by
+ * `parseYear`, which keeps four digits of a date the sleeve prints in full.
+ */
+test("keeps the release date as the dump wrote it, and still derives the year", async () => {
+  const releases = await parseFixture();
+  assert.equal(releases[0]!.released, "1994-03-00");
+  assert.equal(releases[0]!.year, 1994);
+  assert.equal(releases[3]!.released, "1997-09-22");
+  assert.equal(releases[3]!.year, 1997);
+  assert.equal(releases[2]!.released, null);
+});
+
+test("captures the country", async () => {
+  const releases = await parseFixture();
+  assert.equal(releases[0]!.country, "Germany");
+  assert.equal(releases[1]!.country, "UK");
+  assert.equal(releases[2]!.country, null);
+});
+
+test("captures each format with its descriptions, unassembled", async () => {
+  // The parts are stored, never the sentence: what a row prints is a display
+  // decision, the same rule the raw role strings follow.
+  const releases = await parseFixture();
+  assert.deepEqual(releases[0]!.formats, [
+    { name: "Vinyl", qty: 1, text: "Clear Vinyl", descriptions: ['12"', "45 RPM"] },
+  ]);
+});
+
+test("keeps every format on a record that has more than one", async () => {
+  const releases = await parseFixture();
+  assert.deepEqual(releases[1]!.formats, [
+    { name: "Vinyl", qty: 2, text: null, descriptions: ['12"', "Compilation"] },
+    { name: "CD", qty: 1, text: null, descriptions: ["Album"] },
+  ]);
+});
+
+test("captures the tracklist, positions and durations included", async () => {
+  const releases = await parseFixture();
+  assert.deepEqual(releases[0]!.tracks, [
+    { position: "A", title: "Quadrant Dub I", duration: "7:12" },
+    { position: null, title: "Side B", duration: null },
+    { position: "B", title: "Quadrant Dub II", duration: null },
+  ]);
+});
+
+test("a sub_tracks entry is not a track of its own", async () => {
+  // Indexed sub-tracks sit two levels deeper and would otherwise arrive as
+  // siblings of the track that contains them, which reads as a longer record.
+  const releases = await parseFixture();
+  assert.ok(
+    !releases[0]!.tracks.some((t) => t.title === "Part One"),
+    "a sub-track leaked into the tracklist",
+  );
+});
+
+test("reading the tracklist still keeps track-level people out of the credits", async () => {
+  // The guard this replaces was "skip the whole subtree". Now that the subtree
+  // is read, the original trap is live again: <artists> and <extraartists>
+  // appear inside <track> with exactly the shape they have on the release.
+  const [first] = await parseFixture();
+  const ids = [...first!.artists, ...first!.credits].map((a) => a.id);
+  assert.ok(!ids.includes(999), "track-level artist leaked into release artists");
+  assert.ok(!ids.includes(998), "track-level credit leaked into release credits");
+});
+
+test("a release with no tracklist reports none rather than failing", async () => {
+  const releases = await parseFixture();
+  assert.deepEqual(releases[2]!.tracks, []);
+  assert.deepEqual(releases[2]!.formats, []);
+});

@@ -1,6 +1,7 @@
 import type { Database } from "better-sqlite3";
 
 import { getDb } from "./db";
+import { rankCredits } from "./roles";
 import { ALIAS_BAND_FLOOR, CORE_ARTISTS, NAMED_ARTISTS, SCENE_LABELS } from "./scene";
 
 /**
@@ -1068,4 +1069,154 @@ export function getLabelReleases(labelId: number, limit = 300): ArtistRelease[] 
     labelId: null,
     roles: r.by_line ? [r.by_line] : [],
   }));
+}
+
+export interface ReleaseArtist {
+  id: number;
+  name: string;
+  joinPhrase: string | null;
+  inCorpus: boolean;
+}
+
+export interface ReleaseLabel {
+  id: number;
+  name: string;
+  catno: string | null;
+}
+
+export interface ReleaseCredit {
+  id: number;
+  name: string;
+  inCorpus: boolean;
+  /** Raw stored strings. `creditLine` names them at display time. */
+  roles: string[];
+}
+
+export interface Release {
+  id: number;
+  title: string;
+  year: number | null;
+  artists: ReleaseArtist[];
+  labels: ReleaseLabel[];
+  /**
+   * How this record entered the corpus. A fact about the boundary, not a
+   * grade: a single release has no body of work behind it to measure.
+   */
+  isSeed: boolean;
+  channelA: boolean;
+  channelB: boolean;
+}
+
+/**
+ * Whether a credited name has a page to pivot to.
+ *
+ * Most do not: 379,447 of the ids in `release_credits` never became corpus
+ * artists, because `channelAMaxPeopleToAdmit` stops a crowded record admitting
+ * anyone new. The eight Senegalese players on 800% Ndagga are the case that
+ * matters, and a chip that answers with a 404 is the interface claiming a page
+ * it does not hold.
+ *
+ * Artist 355 is excluded by hand. It is Discogs' "UNKNOWN ARTIST" placeholder
+ * and it does have a row, so the join alone would offer a link to a page about
+ * nobody; the corpus already refuses to treat it as a person elsewhere.
+ */
+const HAS_PAGE = `(a.id IS NOT NULL AND a.id <> 355)`;
+
+/** One release: what it is called, who is on the line, and where it came out. */
+export function getRelease(id: number): Release | null {
+  const db = getDb();
+  if (!db) return null;
+
+  const row = db
+    .prepare(`SELECT id, title, year, is_seed, channel_a, channel_b FROM releases WHERE id = ?`)
+    .get(id) as
+    | { id: number; title: string; year: number | null; is_seed: number; channel_a: number; channel_b: number }
+    | undefined;
+
+  if (!row) return null;
+
+  const artists = db
+    .prepare(
+      `SELECT ra.artist_id AS id, ra.name, ra.join_phrase, ${HAS_PAGE} AS in_corpus
+         FROM release_artists ra
+         LEFT JOIN artists a ON a.id = ra.artist_id
+        WHERE ra.release_id = ?
+        ORDER BY ra.position`,
+    )
+    .all(id) as { id: number; name: string; join_phrase: string | null; in_corpus: number }[];
+
+  const labels = db
+    .prepare(
+      // Grouped by label, because a release lists the same one once per
+      // catalogue number variant: Rhythm & Sound 92 is filed as "R-N 092",
+      // "RN92" and "r-n 92" on a single record. Those are three spellings of
+      // one number, so the page shows the first rather than all three.
+      // min(position) picks it, and SQLite takes the bare catno from that row.
+      `SELECT rl.label_id AS id, rl.name, rl.catno, min(rl.position) AS pos
+         FROM release_labels rl
+        WHERE rl.release_id = ?
+        GROUP BY rl.label_id
+        ORDER BY pos`,
+    )
+    .all(id) as { id: number; name: string; catno: string | null; pos: number }[];
+
+  return {
+    id: row.id,
+    title: row.title,
+    year: row.year,
+    artists: artists.map((a) => ({
+      id: a.id,
+      name: a.name,
+      joinPhrase: a.join_phrase,
+      inCorpus: a.in_corpus === 1,
+    })),
+    labels: labels.map((l) => ({ id: l.id, name: l.name, catno: l.catno })),
+    isSeed: row.is_seed === 1,
+    channelA: row.channel_a === 1,
+    channelB: row.channel_b === 1,
+  };
+}
+
+/**
+ * Everyone credited on a release, one row each, ranked by what they did.
+ *
+ * Whole rather than paged, and it can be: the median record carries six
+ * credits and the heaviest in the corpus carries 935. The ranking counts the
+ * roles a row prints, which is a display-time reading of the raw strings, so
+ * it cannot be done in SQL and a LIMIT here would page the wrong set.
+ */
+export function getReleaseCredits(releaseId: number): ReleaseCredit[] {
+  const db = getDb();
+  if (!db) return [];
+
+  const rows = db
+    .prepare(
+      // One row per person, however many credits they hold: Mark Ernestus is
+      // three rows on 800% Ndagga and one line on the page. group_concat can
+      // only join on a comma and a role carries commas of its own, so the
+      // joined string is handed over whole for the credit parser to split.
+      `SELECT rc.artist_id AS id, rc.name, group_concat(rc.role) AS roles,
+              min(rc.position) AS pos, ${HAS_PAGE} AS in_corpus
+         FROM release_credits rc
+         LEFT JOIN artists a ON a.id = rc.artist_id
+        WHERE rc.release_id = ?
+        GROUP BY rc.artist_id
+        ORDER BY pos`,
+    )
+    .all(releaseId) as {
+    id: number;
+    name: string;
+    roles: string | null;
+    pos: number;
+    in_corpus: number;
+  }[];
+
+  return rankCredits(
+    rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      inCorpus: r.in_corpus === 1,
+      roles: r.roles ? [r.roles] : [],
+    })),
+  );
 }

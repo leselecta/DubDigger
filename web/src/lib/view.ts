@@ -131,3 +131,47 @@ export function gradeWord(relevance: string): string {
 export function gradeTitle(relevance: string): string {
   return gradeWord(relevance).replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+export interface LineArtist {
+  id: number;
+  name: string;
+  /** The phrase that joins this name to the next, as the dump stores it. */
+  joinPhrase: string | null;
+  /** Whether there is a page to pivot to. */
+  inCorpus: boolean;
+}
+
+/**
+ * What joins two names on a release's artist line.
+ *
+ * The dump stores the phrase trimmed, on the artist it follows, so the spacing
+ * is ours to put back and it is not one rule: "Maurizio, Vainqueur" hugs the
+ * name before it where "Rhythm & Sound" does not. Only a comma and a semicolon
+ * behave that way; "/" and "+" are read as words here and take air on both
+ * sides, which is how Discogs prints them too.
+ *
+ * An empty phrase still separates two names, so it comes back as a space
+ * rather than as nothing: two names run together are a third name.
+ */
+function separator(phrase: string | null): string {
+  const joint = (phrase ?? "").trim();
+  if (joint === "") return " ";
+  return /^[,;]$/.test(joint) ? `${joint} ` : ` ${joint} `;
+}
+
+/**
+ * A release's artist line, with the text between the names worked out.
+ *
+ * Separate from the rendering because each name is a link or a chip depending
+ * on whether the corpus holds a page for it, so the page needs the parts rather
+ * than a finished string.
+ *
+ * The last name never carries a separator, whatever the dump says. A trailing
+ * phrase is in the data, and printing it ends the line on a dangling "&".
+ */
+export function artistLine<T extends LineArtist>(artists: readonly T[]): (T & { separator: string })[] {
+  return artists.map((artist, i) => ({
+    ...artist,
+    separator: i === artists.length - 1 ? "" : separator(artist.joinPhrase),
+  }));
+}

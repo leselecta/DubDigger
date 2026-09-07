@@ -125,7 +125,7 @@ All in `web/src/components/`, all `.astro`.
 | `FieldRow` | `label`, `accent?`, `last?` | `grid-cols-[7rem_1fr] sm:grid-cols-[180px_1fr] py-2` |
 | `LabelledBand` | `label` | `border-t py-14 md:grid-cols-[180px_1fr]`, h2 `mono-label text-ink text-[0.8125rem] md:mt-1` |
 | `ListHeader` | `name`, `count`, `meta?` | `LIST_GRID`, `text-[0.6875rem] tracking-[0.2em]`, `border-b pb-3` |
-| `LoadMore` | `href`, `remaining` | ghost button, `data-hold-scroll` |
+| `LoadMore` | `href`, `remaining`, `label?`, `hold?` | ghost button, `data-hold-scroll` unless `hold={false}` (a link that leaves) |
 | `OutboundLinks` | `kind` (artist \| label \| release), `id`, `urls?[]` | max 5 + Discogs; http/https only; a release has no urls |
 | `ProfileText` | `text`, `names?` | renders Discogs bio markup; links `underline underline-offset-2` |
 | `SearchField` | `size` ("hero" \| "header"), `value?` | `h-16`/`h-11`; hero `border-accent` + inset-shadow focus, header `border-edge-strong` + accent focus; combobox, listbox `-mt-px border-edge-strong z-40 max-h-[60vh]`, 3 rows `px-4 py-2.5` then a "View all results" row `px-4 py-3 bg-accent text-bg`, active `bg-accent text-bg` (that row inverts to `bg-ink`) |
@@ -172,7 +172,9 @@ skip link → SiteHeader → <main id="content"> page bands </main> → SiteFoot
 | Identity block | `<dl class="mt-9 max-w-[760px]">` of `FieldRow`, last one with `last` |
 | Labelled band | `border-hairline grid gap-6 border-t py-14 md:grid-cols-[180px_1fr]` |
 | List band | `column pt-14 pb-32` → Tabs, ListHeader, rows or Absence, LoadMore |
-| Release by-line | `text-lead text-ink-muted mt-6 max-w-[760px]`, names closed up against their join phrase |
+| Release headline | one `h1`, grey `text-ink-dim block` artist line over the white title |
+| Band heading | `border-hairline flex items-baseline gap-3 border-b pb-3`, h2 `mono-label text-ink text-[0.8125rem]` + count |
+| Ghost button | `border-edge-strong hover:bg-ink hover:text-bg border px-8 py-[15px] font-mono text-xs tracking-[0.2em] uppercase` |
 | Figures | `border-t grid sm:grid-cols-3`, cells `px-0 py-10 sm:px-10 sm:py-14` |
 
 | Measurement | Value |

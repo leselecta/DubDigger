@@ -322,11 +322,41 @@ newline inside the anchor makes `link-rule` underline a trailing space. Both are
 closed up on purpose in `release/[id].astro` and in `CreditRow`. Do not let a
 formatter open them.
 
-**What is still missing, and what each would cost:** the tracklist is never
-parsed, so recovering it means the 10.4 GB re-download and a full pass 2; styles
-and genres are in the ingest database and dropped at publish, so republishing
-them is an edit to `publish.ts` and a larger web file; format, country and notes
-are discarded at projection; images are Restricted Data and stay out.
+**The page shows what the record printed, and that took a backfill.** Format,
+country, the date as written and the tracklist were all discarded at parse time
+and came back on 2026-09-07 via `enrich`, which is one more read of the dump and
+deliberately not a re-run of pass 2. Notes and matrix are still discarded, styles
+and genres are still dropped at publish, and images are Restricted Data and stay
+out.
+
+**The layout is Simone's sketch, and three of its decisions are load-bearing:**
+
+- **Two lines in the headline, and only the first name on the top one.** A
+  sleeve says who and then what, so the artist reads grey above the title. It is
+  the first name only however many the line has, because a headline is a name
+  rather than a sentence: 133,205 releases carry more than one, and "Mark
+  Ernestus Presents Jeri-Jeri" over a long title is a paragraph in 60px type.
+  The whole line, join phrases and links, is the Artist row below. Both sit
+  inside the one `<h1>`.
+- **Credits are a band of their own, above the tabs.** They are what the record
+  is; the two "more from" lists are where to go next. A page that filed its own
+  credits behind a tab would be putting the answer in with the follow-up
+  questions.
+- **The "more from" lists stop at ten and then link out.** They are a way on
+  rather than a second copy of the artist page, and paging them here would fight
+  the credits list above for the same `show` parameter. Year takes the middle
+  column and format the wide one, which is the sketch's two right-hand columns
+  reversed: the 10rem column is the only one that holds `2× Vinyl, 12", 45 RPM`,
+  and the 6rem one is built for a number.
+
+**A missing format is not a missing credit, and the page says so by saying
+nothing.** Format and country rows are omitted when the dump has none, rather
+than printing a dash. The honesty rule is about absences the corpus has an
+opinion on: "no credits recorded" is a fact about the record, where a missing
+carrier is a fact about the entry. The tracklist follows the same rule, and when
+it is there it has no cap and no links: a track is not an entity, the track
+level's own artists are dropped at parse time, so there is nobody to pivot to
+and the interface must not imply there is.
 
 **Release titles on the artist and label pages now open the record** rather than
 leaving for Discogs, which was 1,095,302 links out of a tool whose whole premise

@@ -340,13 +340,26 @@ out.
   Ernestus Presents Jeri-Jeri" over a long title is a paragraph in 60px type.
   The whole line, join phrases and links, is the Artist row below. Both sit
   inside the one `<h1>`.
-- **Credits are a band of their own, above the tabs.** They are what the record
-  is; the two "more from" lists are where to go next. A page that filed its own
-  credits behind a tab would be putting the answer in with the follow-up
-  questions.
-- **The "more from" lists stop at ten and then link out.** They are a way on
-  rather than a second copy of the artist page, and paging them here would fight
-  the credits list above for the same `show` parameter. Year takes the middle
+- **Credits are the third tab, and they were a band above the tabs until
+  2026-09-08.** The argument for the band was that credits are what the record
+  is where the two "more from" lists are only where to go next, and that filing
+  the answer with the follow-up questions buries it. The phone settled it the
+  other way: on a well-entered record the band pushed the first list two screens
+  down, so a reader had to scroll past every credit to learn there was anything
+  else on the page. Last of the three rather than first, so the page opens on
+  more from the artist: the record itself is already above in the identity
+  block, which leaves the tabs to answer where to go next. **No tab at all when
+  there are none**, since a tab is a way in and there would be nothing behind
+  it; the identity block carries that absence instead, in one line next to the
+  other things the corpus does and does not hold.
+- **All three tabs page in place, on one `show`.** The "more from" lists used to
+  stop at ten rows and hand the rest to the artist page, which is a link out of
+  a list rather than more of it. They now lengthen where they stand and hold the
+  reader's place, like every other list on the site, which also moves their
+  first page from ten rows to `PAGE_SIZE`. One parameter serves whichever tab is
+  open, and it can because only one list is ever rendered; switching tab drops
+  it, which is right, since that is a different list rather than more of this
+  one. Year takes the middle
   column and format the wide one, which is the sketch's two right-hand columns
   reversed: the 10rem column is the only one that holds `2× Vinyl, 12", 45 RPM`,
   and the 6rem one is built for a number.
@@ -363,7 +376,17 @@ and the interface must not imply there is.
 **Release titles on the artist and label pages now open the record** rather than
 leaving for Discogs, which was 1,095,302 links out of a tool whose whole premise
 is that a pivot costs one click. The Discogs link moved onto the release page
-itself, as the `OutboundLinks` row every entity page carries.
+itself, and it sits directly under the title rather than under the identity
+block: a release lists no sites of its own, so it is a button rather than a
+"View on" row, and it is the one thing a digger reaches for when the corpus runs
+out. Below the block it had the pressing and a full tracklist in front of it.
+
+**What is deliberately NOT on the page is why the record is in the corpus.** An
+"In corpus" row printed the seed and channel flags until 2026-09-08. They answer
+a question about the corpus boundary rather than about the record: an artist
+carries a grade because a ratio over a body of work says something about them,
+and one pressing has no body of work behind it. The flags are still in the data
+and still what `check-corpus` reads.
 
 ## UI principles
 

@@ -4,7 +4,6 @@ import Eyebrow from "@/components/Eyebrow.astro";
 import FieldRow from "@/components/FieldRow.astro";
 import ListHeader from "@/components/ListHeader.astro";
 import CreditRow from "@/components/CreditRow.astro";
-import Absence from "@/components/Absence.astro";
 import LoadMore from "@/components/LoadMore.astro";
 import Tabs from "@/components/Tabs.astro";
 import {
@@ -27,6 +26,7 @@ const limit = pageSize(params.get("show") ?? undefined);
 const base = `/release/${release.id}`;
 
 const credits = getReleaseCredits(release.id);
+const count = credits.length;
 const shown = credits.slice(0, limit);
 const line = artistLine(release.artists);
 
@@ -48,58 +48,57 @@ const artist = lead?.inCorpus ? getArtist(lead.id) : null;
 const label = release.labels[0] ? getLabel(release.labels[0].id) : null;
 
 /* Everything they have except this one, which is not more of anything. */
-const MORE = 10;
 const fromArtist = artist ? Math.max(artist.releaseCount - 1, 0) : 0;
 const fromLabel = label ? Math.max(label.releaseCount - 1, 0) : 0;
 
+/*
+ * Credits last, and they used to be a band of their own above all three.
+ *
+ * The argument for the band was that credits are what the record IS, where the
+ * other two lists are only where to go next, and that filing the answer with
+ * the follow-up questions buries it. What settled it the other way is the
+ * phone: the band pushed the first list two screens down, so a reader had to
+ * scroll past every credit on a well-entered record to find out there was
+ * anything else on the page at all.
+ *
+ * Third rather than first, which means the page opens on more from the artist.
+ * The record itself is already above: the artist line, the label, the pressing
+ * and the tracklist are the identity block, so what the tabs are for is where
+ * to go next, and the credits are the deepest of the three rather than the
+ * headline.
+ *
+ * No tab when the corpus holds no credits, because a tab is a way in and there
+ * is nothing behind that one. The record still says so, in the identity block
+ * above, where a missing thing is reported next to the things that are there.
+ */
 const tabs = [
   ...(fromArtist > 0 ? [{ key: "artist", label: "More from artist", count: fromArtist }] : []),
   ...(fromLabel > 0 ? [{ key: "label", label: "More from label", count: fromLabel }] : []),
+  ...(count > 0 ? [{ key: "credits", label: "Credits", count }] : []),
 ];
 const asked = params.get("tab") ?? "";
 const active = tabs.some((t) => t.key === asked) ? asked : (tabs[0]?.key ?? "");
 
 const more =
   active === "artist" && artist
-    ? getArtistReleases(artist.id, MORE, release.id)
+    ? getArtistReleases(artist.id, limit, release.id)
     : active === "label" && label
-      ? getLabelReleases(label.id, MORE, release.id)
+      ? getLabelReleases(label.id, limit, release.id)
       : [];
 
 /* One query for the whole page of rows, since the sentence is written here. */
 const formats = getFormats(more.map((r) => r.id));
 
 const total = active === "artist" ? fromArtist : fromLabel;
-const allHref =
-  active === "artist" && artist
-    ? `/artist/${artist.id}?tab=releases`
-    : label
-      ? `/label/${label.id}?tab=releases`
-      : "";
 
 /*
- * How this record got in, and it is deliberately not a grade.
- *
- * The five steps measure an artist's or a label's distance from the cluster,
- * which is a ratio over a body of work. One record has no body of work behind
- * it, so it carries no step and reads as a route instead — the same thing the
- * artist page says about someone the seed cannot measure.
- *
- * "Cluster" and not "scene", because these three flags are exactly what the
- * seed measures: its own styles, a credit reaching one of its artists, or a
- * label already inside it.
+ * One `show` for whichever tab is open, and it can be one because only one list
+ * is ever on the page. It used to stop at ten rows and hand the rest to the
+ * artist page, which was a link out of a list rather than more of it: every
+ * other list on the site lengthens where it stands and holds the reader's
+ * place, and there is no reason this one should be the exception.
  */
-const route = release.isSeed
-  ? "here for its own styles, one of the records the dub techno cluster is measured on"
-  : release.channelA && release.channelB
-    ? "here because it credits an artist from the dub techno cluster, and came out on one of its labels"
-    : release.channelA
-      ? "here because it credits an artist from the dub techno cluster"
-      : release.channelB
-        ? "here because it came out on a label in the dub techno cluster"
-        : "here as a neighbour of the dub techno cluster";
-
-const count = credits.length;
+const moreHref = `${base}?tab=${active}&show=${limit + PAGE_SIZE}`;
 
 const description = count
   ? `${release.title}${by ? ` by ${by}` : ""}${release.year ? `, ${release.year}` : ""} on Dub Digger: ${count.toLocaleString("en-GB")} credit${count === 1 ? "" : "s"}, from the Discogs credit dumps.`
@@ -151,7 +150,30 @@ const mainEntity = {
       {release.title}
     </h1>
 
-    <dl class="mt-10 max-w-[760px]">
+    {/*
+     * The one link that leaves, as a button rather than a row, and it sits
+     * under the title rather than under the record.
+     *
+     * Its siblings carry a "View on" row because an artist or a label lists
+     * sites of its own; a release has none, so the row would be a label in
+     * front of a single link. Pure id substitution, no licensing exposure.
+     *
+     * It was below the identity block, which put the sleeve, the pressing and
+     * a full tracklist between the title and the one thing a digger reaches
+     * for when the corpus runs out. Here it is the first thing under the name,
+     * where a reader deciding this is the record can act on it.
+     */}
+    <a
+      href={`https://www.discogs.com/release/${release.id}`}
+      target="_blank"
+      rel="noreferrer"
+      class="border-edge-strong hover:bg-ink hover:text-bg mt-9 inline-block border px-8 py-[15px] font-mono text-xs tracking-[0.2em] uppercase transition-colors"
+    >
+      View on Discogs<span class="sr-only"> (opens in a new tab)</span>
+      <span class="text-ink-faint ml-3" aria-hidden="true">↗</span>
+    </a>
+
+    <dl class="mt-12 max-w-[760px]">
       <FieldRow label={line.length > 1 ? "Artists" : "Artist"}>
         {
           line.length === 0 ? (
@@ -208,13 +230,33 @@ const mainEntity = {
       {format && <FieldRow label="Format">{format}</FieldRow>}
       {release.country && <FieldRow label="Country">{release.country}</FieldRow>}
 
-      <FieldRow label="Released">
+      <FieldRow label="Released" last={count > 0 && release.tracks.length === 0}>
         {date ?? <span class="text-ink-faint">Not recorded</span>}
       </FieldRow>
 
-      <FieldRow label="In corpus" last={release.tracks.length === 0}>
-        <span class="text-ink-faint">{route}</span>
-      </FieldRow>
+      {/*
+       * Why this record is in the corpus used to be a row here, seed styles or
+       * channel A or channel B. It came out because it answers a question about
+       * the corpus rather than about the record: the three flags describe how
+       * the boundary reached this release, which is the sort of thing an artist
+       * page carries as a grade and a sleeve never carries at all.
+       *
+       * What replaced it is the absence that used to be a band. 443,005 of
+       * 1,095,302 releases carry no credits, so this is the page for two in
+       * five of them, and with the Credits tab gone on those pages the record
+       * would otherwise say nothing about credits at all — which reads as a
+       * page that does not do credits rather than a record nobody has finished
+       * entering. It cannot say "worked alone" either: one name on the line and
+       * nobody in the credits is either a solo record or an unfinished entry,
+       * and the dump does not say which.
+       */}
+      {
+        count === 0 && (
+          <FieldRow label="Credits" last={release.tracks.length === 0}>
+            <span class="text-ink-faint">None recorded for this release</span>
+          </FieldRow>
+        )
+      }
 
       {
         release.tracks.length > 0 && (
@@ -240,71 +282,6 @@ const mainEntity = {
         )
       }
     </dl>
-
-    {/*
-     * The one link that leaves, as a button rather than a row.
-     *
-     * Its siblings carry a "View on" row because an artist or a label lists
-     * sites of its own; a release has none, so the row would be a label in
-     * front of a single link. Pure id substitution, no licensing exposure.
-     */}
-    <a
-      href={`https://www.discogs.com/release/${release.id}`}
-      target="_blank"
-      rel="noreferrer"
-      class="border-edge-strong hover:bg-ink hover:text-bg mt-12 inline-block border px-8 py-[15px] font-mono text-xs tracking-[0.2em] uppercase transition-colors"
-    >
-      View on Discogs<span class="sr-only"> (opens in a new tab)</span>
-      <span class="text-ink-faint ml-3" aria-hidden="true">↗</span>
-    </a>
-  </div>
-
-  <div class="column pt-14">
-    {/*
-     * Credits get a band of their own above the tabs, rather than a tab beside
-     * them. They are what the record is: the two lists below are where to go
-     * next, and a page that hid its own credits behind a tab would be filing
-     * the answer with the follow-up questions.
-     */}
-    <div class="border-hairline flex items-baseline gap-3 border-b pb-3">
-      <h2 class="mono-label text-ink text-[0.8125rem]">Credits</h2>
-      <span class="text-ink-faint font-mono text-[0.6875rem] tracking-[0.2em]">
-        {count.toLocaleString("en-GB")}
-      </span>
-    </div>
-
-    {
-      shown.length === 0 ? (
-        /*
-         * 443,005 of 1,095,302 releases carry no credits at all, so this is the
-         * page for two in five of them and it has to be honest about which
-         * absence it is. It cannot say "worked alone": a record with one name on
-         * the line and nobody in the credits is either a solo record or a record
-         * nobody has finished entering, and the dump does not say which.
-         */
-        <Absence>
-          No credits recorded. The corpus holds{" "}
-          {line.length > 0 ? "the artist line above" : "the title above"} and nothing else for this
-          release, which is the case for two in five records in it.
-        </Absence>
-      ) : (
-        <ul>
-          {shown.map((c) => (
-            <CreditRow
-              href={c.inCorpus ? `/artist/${c.id}` : undefined}
-              name={c.name}
-              detail={creditLine(c.roles)}
-            />
-          ))}
-        </ul>
-      )
-    }
-
-    {
-      limit < count && (
-        <LoadMore href={`${base}?show=${limit + PAGE_SIZE}`} remaining={count - limit} />
-      )
-    }
   </div>
 
   {
@@ -312,32 +289,57 @@ const mainEntity = {
       <div class="column pt-14 pb-20 md:pb-32">
         <Tabs tabs={tabs} active={active} basePath={base} />
 
-        {/*
-         * Year in the middle column and format in the wide one, which is the
-         * sketch's two right-hand columns the other way round. The format is
-         * the long value — "2× Vinyl, 12\", 45 RPM" — and the 10rem column is
-         * the only one that holds it; the 6rem one is built for a number.
-         */}
-        <ListHeader name="Release" count="Year" meta="Format" />
-        <ul>
-          {more.map((r) => (
-            <CreditRow
-              count={r.year ?? "—"}
-              href={`/release/${r.id}`}
-              name={r.title}
-              meta={formatLine(formats.get(r.id) ?? [])}
-              metaLabel="Format"
-            />
-          ))}
-        </ul>
+        {active === "credits" && (
+          <>
+            {/*
+             * One column and no count beside it: a credit is a name and the
+             * work they did, and the work wraps under the name where a long
+             * row of roles has somewhere to go.
+             */}
+            <ListHeader name="Name" />
+            <ul>
+              {shown.map((c) => (
+                <CreditRow
+                  href={c.inCorpus ? `/artist/${c.id}` : undefined}
+                  name={c.name}
+                  detail={creditLine(c.roles)}
+                />
+              ))}
+            </ul>
 
-        {/*
-         * Ten rows, then the whole discography one click away. This list is a
-         * way on rather than a second copy of the artist page, and paging it
-         * here would fight the credits list above for the same `show`.
-         */}
-        {total > MORE && (
-          <LoadMore href={allHref} remaining={total} label="See all" hold={false} />
+            {limit < count && <LoadMore href={moreHref} remaining={count - limit} />}
+          </>
+        )}
+
+        {more.length > 0 && (
+          <>
+            {/*
+             * Year in the middle column and format in the wide one, which is
+             * the sketch's two right-hand columns the other way round. The
+             * format is the long value — "2× Vinyl, 12\", 45 RPM" — and the
+             * 10rem column is the only one that holds it; the 6rem one is
+             * built for a number.
+             */}
+            <ListHeader name="Release" count="Year" meta="Format" />
+            <ul>
+              {more.map((r) => (
+                <CreditRow
+                  count={r.year ?? "—"}
+                  href={`/release/${r.id}`}
+                  name={r.title}
+                  meta={formatLine(formats.get(r.id) ?? [])}
+                  metaLabel="Format"
+                />
+              ))}
+            </ul>
+
+            {/*
+             * Inside this branch rather than beside it, because `total` reads
+             * the label's count for any tab that is not the artist's: left
+             * outside, the button for the label list sat under the credits.
+             */}
+            {limit < total && <LoadMore href={moreHref} remaining={total - limit} />}
+          </>
         )}
       </div>
     )

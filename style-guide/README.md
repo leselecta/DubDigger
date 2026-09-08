@@ -172,8 +172,7 @@ skip link → SiteHeader → <main id="content"> page bands </main> → SiteFoot
 | Identity block | `<dl class="mt-9 max-w-[760px]">` of `FieldRow`, last one with `last` |
 | Labelled band | `border-hairline grid gap-6 border-t py-14 md:grid-cols-[180px_1fr]` |
 | List band | `column pt-14 pb-32` → Tabs, ListHeader, rows or Absence, LoadMore |
-| Release headline | one `h1`, grey `text-ink-dim block` artist line over the white title |
-| Band heading | `border-hairline flex items-baseline gap-3 border-b pb-3`, h2 `mono-label text-ink text-[0.8125rem]` + count |
+| Release headline | one `h1`, grey `text-ink-dim block` artist line over the white title, then the Discogs ghost button at `mt-9`, then the identity block at `mt-12` |
 | Ghost button | `border-edge-strong hover:bg-ink hover:text-bg border px-8 py-[15px] font-mono text-xs tracking-[0.2em] uppercase` |
 | Figures | `border-t grid sm:grid-cols-3`, cells `px-0 py-10 sm:px-10 sm:py-14` |
 

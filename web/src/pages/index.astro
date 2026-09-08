@@ -226,13 +226,16 @@ const rows = results?.hits ?? [];
                       )}
 
                       {/*
-                       * Blank on a record, which is the honest cell rather than
-                       * a missing one: the column counts a body of work, and a
-                       * pressing is one thing. A "1" here would be a figure
-                       * invented to fill a column.
+                       * "N/A" on a record rather than a number or a gap. The
+                       * column counts a body of work and a pressing is one
+                       * thing, so a "1" would be a figure invented to fill the
+                       * cell; a blank leaves the reader to work out whether the
+                       * count is zero, missing, or not asked for. The words say
+                       * which, and they are what a reader scanning a column
+                       * expects a cell with no answer to say.
                        */}
                       <span class="text-ink-faint font-mono text-[0.8125rem] font-medium tabular-nums md:row-start-1 md:col-start-2">
-                        {hit.releaseCount === null ? "" : hit.releaseCount.toLocaleString("en-GB")}
+                        {hit.releaseCount === null ? "N/A" : hit.releaseCount.toLocaleString("en-GB")}
                       </span>
 
                       {/*

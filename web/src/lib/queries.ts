@@ -110,9 +110,9 @@ export interface SearchHit {
   name: string;
   kind: "artist" | "label" | "release";
   /**
-   * Releases behind the name, and nothing for a record: a pressing is one
-   * thing rather than a body of work, and a count of 1 in that column would be
-   * a figure invented to fill it.
+   * Releases behind the name, and null for a record, which the page prints as
+   * "N/A": a pressing is one thing rather than a body of work, and a count of 1
+   * in that column would be a figure invented to fill it.
    */
   releaseCount: number | null;
   /**

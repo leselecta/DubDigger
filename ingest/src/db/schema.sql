@@ -327,3 +327,16 @@ CREATE VIRTUAL TABLE IF NOT EXISTS artist_search
 
 CREATE VIRTUAL TABLE IF NOT EXISTS label_search
   USING fts5(name, content='labels', content_rowid='id', tokenize='unicode61');
+
+-- Records became searchable when they became pages. Before the release page a
+-- title was a row that linked out to Discogs, so there was nothing here to find;
+-- now the corpus holds 1,095,302 pages that a search could not reach, and a
+-- digger typing "Biokinetics" got the miss page telling them the corpus is a
+-- slice centred on dub techno. That answer was false.
+--
+-- The title alone, matching the two above, which index a name and nothing else.
+-- Indexing the artist line with it would make "basic channel phylyps" work and
+-- would also make every record by a prolific act match that act's name, which
+-- is a different feature wearing this one's clothes.
+CREATE VIRTUAL TABLE IF NOT EXISTS release_search
+  USING fts5(title, content='releases', content_rowid='id', tokenize='unicode61');

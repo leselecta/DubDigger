@@ -89,7 +89,7 @@ or it is dilution.
 | 0.6875rem | 0.05em | ink-faint | "(Beta)" |
 | 0.75rem | 0.2em | ink-muted | `mono-label` utility, "Load more" |
 | 0.75rem | 0.16em | ink-muted | Bio toggle |
-| 0.75rem | 0.1em | by grade | Relevance and type columns in results |
+| 0.75rem | 0.1em | ink | Type column in results, and the detail line under a record |
 | 0.75rem | 0.05em | ink-faint | Footer; role strings (sentence case, leading 1.65) |
 | 0.8125rem (0.6875rem below `md`) | 0.32em | accent | `Eyebrow`, with a 14px mark on entity pages |
 | 0.8125rem | 0.2em | ink | `LabelledBand` heading |
@@ -181,7 +181,7 @@ skip link → SiteHeader → <main id="content"> page bands </main> → SiteFoot
 |---|---|
 | `column` | 1200px, 1.5rem gutter, 3rem from md |
 | `LIST_GRID` | `1fr 5rem` → `1fr 6rem 10rem` at md |
-| `RESULT_GRID` | `1fr 4.5rem` → `1fr 5.5rem 11rem 5rem` at md (`index.astro` only) |
+| `RESULT_GRID` | `1fr 4.5rem` → `1fr 5.5rem 5rem` at md (`index.astro` only); the relevance column went when records joined the search |
 | Grid gap-x | 22px |
 | List row | `py-[18px]` · identity row `py-2` · band `py-14` |
 | Header height | 76px · hero field 64px · header field 44px |

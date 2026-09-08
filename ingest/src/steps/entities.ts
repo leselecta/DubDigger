@@ -113,6 +113,7 @@ export async function runEntities(
   // rather than written to directly.
   db.exec("INSERT INTO artist_search(artist_search) VALUES('rebuild')");
   db.exec("INSERT INTO label_search(label_search) VALUES('rebuild')");
+  db.exec("INSERT INTO release_search(release_search) VALUES('rebuild')");
 
   run.finish(stats);
   return stats;

@@ -108,19 +108,21 @@ export interface RosterEntry {
 export interface SearchHit {
   id: number;
   name: string;
-  kind: "artist" | "label";
-  releaseCount: number;
+  kind: "artist" | "label" | "release";
   /**
-   * How close to the scene, on one scale for both kinds. Shown in results
-   * because breadth is only an asset when a distant act looks distant: Mozart
-   * is genuinely in the corpus, on 85 releases that really do credit someone
-   * here, and saying so is honest where hiding him would not be.
-   *
-   * An artist is graded on their own work and a label on how much of what it
-   * released is in the cluster. Two measures, five steps, one vocabulary, which
-   * is the only way the column can be scanned as a single column.
+   * Releases behind the name, and nothing for a record: a pressing is one
+   * thing rather than a body of work, and a count of 1 in that column would be
+   * a figure invented to fill it.
    */
-  relevance: Relevance;
+  releaseCount: number | null;
+  /**
+   * The line under the name, on records only: who made it and when.
+   *
+   * Not decoration. "Biokinetics" matches 15 rows and "Phylyps Trak" ten, all
+   * of them the same record pressed again, so a list of bare titles would be
+   * the search offering fifteen identical answers.
+   */
+  detail: string | null;
   /** How a "none" artist reached the corpus. A label mate is not a collaborator. */
   connection: "collaborator" | "label mate" | "collaborator + label mate" | null;
 }
@@ -713,18 +715,45 @@ function nameRank(query: string, name: string): number {
 const RANK_POOL = 200;
 
 interface ScoredRow extends HitRow {
-  kind: "artist" | "label";
+  kind: "artist" | "label" | "release";
   scene_releases: number;
+  /** Records only, and only for the tie-break below. */
+  year?: number | null;
+  /** Records only: the line the page prints under the title. */
+  detail?: string | null;
+  /** Records only: the lead name, which is what makes two rows the same record. */
+  artist?: string | null;
 }
 
 /** One order for the results page and the dropdown, so one is a shortcut into the other. */
 function rankHits(query: string, rows: ScoredRow[]): ScoredRow[] {
-  const score = (r: ScoredRow) =>
-    sceneScore(r.scene_releases, r.relevance ?? "none", nameRank(query, r.name) === 0);
+  const score = (r: ScoredRow) => {
+    const own = sceneScore(r.scene_releases, r.relevance ?? "none", nameRank(query, r.name) === 0);
+    /*
+     * A record sits one step below the name that made it, which is the same
+     * halving the grade already uses: a step of the scale is worth a doubling
+     * of the work. Without it a record ties with its own artist, and "basic
+     * channel" answers with a pressing before it answers with Basic Channel.
+     */
+    return r.kind === "release" ? own / 2 : own;
+  };
+
+  /*
+   * Undated last, earliest first, and only between two records.
+   *
+   * Ten pressings of Phylyps Trak carry one artist, one label and one title,
+   * so nothing above this line separates them: the artist figure is identical
+   * by construction. The year is the only thing that distinguishes an original
+   * from a repress, and three of those ten have no year at all, which is the
+   * honest reason they sort last rather than first.
+   */
+  const dated = (r: ScoredRow) => r.year ?? Number.POSITIVE_INFINITY;
+
   return rows.sort(
     (a, b) =>
       score(b) - score(a) ||
       nameRank(query, a.name) - nameRank(query, b.name) ||
+      (a.kind === "release" && b.kind === "release" ? dated(a) - dated(b) : 0) ||
       b.release_count - a.release_count,
   );
 }
@@ -783,6 +812,76 @@ function labelPool(db: Database, term: string): ScoredRow[] {
     .map((r) => ({ ...(r as HitRow & { scene_releases: number }), kind: "label" as const }));
 }
 
+/**
+ * Records matching the term, ranked by the name that made them.
+ *
+ * A release carries no grade and no ratio of its own: a grade measures a body
+ * of work against the cluster, and one pressing is not a body of work. So it
+ * inherits the lead artist's figure and the lead artist's grade, which is also
+ * what makes the order defensible: a record ranks where its maker ranks, one
+ * step down.
+ *
+ * The lead name rather than the whole line, matching the release page's own
+ * headline: 133,205 releases credit more than one act, and a search row has no
+ * room for a sentence. `left join`, because 33,481 records are credited to
+ * someone the corpus never admitted as an artist, and those still deserve to be
+ * findable by title.
+ */
+function releasePool(db: Database, term: string): ScoredRow[] {
+  return db
+    .prepare(
+      `SELECT r.id, r.title AS name, 0 AS release_count, r.year,
+              lead_artist.name AS artist,
+              coalesce(c.seed_releases, 0) AS scene_releases,
+              coalesce(c.relevance, 'none') AS relevance
+         FROM release_search s
+         JOIN releases r ON r.id = s.rowid
+         LEFT JOIN release_artists lead_artist
+                ON lead_artist.release_id = r.id AND lead_artist.position = 0
+         LEFT JOIN artist_coverage c ON c.artist_id = lead_artist.artist_id
+        WHERE release_search MATCH ?
+        ORDER BY scene_releases DESC, r.year IS NULL, r.year
+        LIMIT ?`,
+    )
+    .all(term, RANK_POOL)
+    .map((row) => {
+      const r = row as HitRow & { scene_releases: number; year: number | null; artist: string | null };
+      return {
+        ...r,
+        kind: "release" as const,
+        artist: r.artist,
+        detail: [r.artist, r.year].filter(Boolean).join(" · ") || null,
+      };
+    });
+}
+
+/**
+ * One row per record, not one per pressing.
+ *
+ * `phylyps` answered with three rows reading "Phylyps Trak · Basic Channel ·
+ * 1993" and `biokinetics` with fifteen, which is one record pressed again and
+ * a list spending every row it has saying so. Ten pressings of a record are ten
+ * real rows in the corpus and each still has its own page, reachable from the
+ * artist and the label; what they are not is ten answers to a question, and
+ * this list has no column for the things that actually tell them apart, since
+ * format and country are on the page rather than in the row.
+ *
+ * Title and artist rather than title alone, because two acts really do use one
+ * title and collapsing those would hide an answer rather than a duplicate. The
+ * ranking has already put the earliest pressing first, so keeping the first one
+ * seen is keeping the original rather than a repress.
+ */
+function oneRowPerRecord(rows: ScoredRow[]): ScoredRow[] {
+  const seen = new Set<string>();
+  return rows.filter((r) => {
+    if (r.kind !== "release") return true;
+    const key = `${r.name}\u0000${r.artist ?? ""}`.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export function search(query: string, limit = 40): SearchResults {
   const db = getDb();
   if (!db || query.trim().length === 0) return { hits: [], truncated: false };
@@ -790,40 +889,48 @@ export function search(query: string, limit = 40): SearchResults {
   const term = matchTerm(query);
   const artists = artistPool(db, term);
   const labels = labelPool(db, term);
+  const releases = releasePool(db, term);
 
   const connection = (r: ScoredRow): SearchHit["connection"] => {
-    if (r.kind === "label") return null;
+    if (r.kind !== "artist") return null;
     if (r.channel_a === 1 && r.channel_b === 1) return "collaborator + label mate";
     if (r.channel_a === 1) return "collaborator";
     if (r.channel_b === 1) return "label mate";
     return null;
   };
 
+  const ranked = oneRowPerRecord(rankHits(query, [...artists, ...labels, ...releases]));
+
   return {
-    hits: rankHits(query, [...artists, ...labels])
+    hits: ranked
       .slice(0, limit)
       .map((r) => ({
         id: r.id,
         name: r.name,
         kind: r.kind,
-        releaseCount: r.release_count,
-        relevance: r.relevance ?? "none",
+        releaseCount: r.kind === "release" ? null : r.release_count,
+        detail: r.detail ?? null,
         connection: connection(r),
       })),
-    truncated: artists.length + labels.length > limit,
+    truncated: ranked.length > limit,
   };
 }
 
 export interface Suggestion {
   id: number;
   name: string;
-  kind: "artist" | "label";
+  kind: "artist" | "label" | "release";
   /**
-   * The same five steps as everywhere else. A dropdown that ranked names and
-   * said nothing about why would be ordering by a measure it keeps to itself,
-   * which is the one thing this interface does not do.
+   * What the row is, where it used to be how close to the scene.
+   *
+   * The grade went with the results column it mirrored: a record has none, and
+   * inventing a word for a third of the rows would be worse than the blank it
+   * replaced. What a shortlist needs anyway is not "how close" but "which of
+   * these", since Chain Reaction is a label and two unrelated artists, and
+   * Biokinetics is fifteen pressings of one record. So the line under the name
+   * says the kind, and on a record it says who made it too.
    */
-  relevance: Relevance;
+  detail: string;
 }
 
 /**
@@ -863,13 +970,15 @@ export function suggest(query: string, limit = 3): Suggestion[] {
 
   const term = matchTerm(query);
 
-  return rankHits(query, [...artistPool(db, term), ...labelPool(db, term)])
+  return oneRowPerRecord(
+    rankHits(query, [...artistPool(db, term), ...labelPool(db, term), ...releasePool(db, term)]),
+  )
     .slice(0, limit)
     .map((r) => ({
       id: r.id,
       name: r.name,
       kind: r.kind,
-      relevance: r.relevance ?? "none",
+      detail: r.kind === "release" && r.detail ? `Release · ${r.detail}` : r.kind,
     }));
 }
 

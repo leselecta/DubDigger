@@ -1,6 +1,5 @@
 ---
 import { suggest } from "@/lib/queries";
-import { GRADE_SHADE, gradeWord } from "@/lib/view";
 
 /**
  * The rows under the search box, rendered by the server.
@@ -48,32 +47,27 @@ Astro.response.headers.set("X-Robots-Tag", "noindex");
       aria-selected="false"
       href={`/${hit.kind}/${hit.id}`}
       data-suggest-option
-      class="group/opt border-hairline-soft text-left data-[active=true]:bg-accent data-[active=true]:text-bg grid cursor-pointer grid-cols-[1fr_3.5rem] items-baseline gap-x-3 border-b px-4 py-2.5 last:border-b-0 md:grid-cols-[1fr_3.5rem_5.5rem]"
+      class="group/opt border-hairline-soft text-left data-[active=true]:bg-accent data-[active=true]:text-bg grid cursor-pointer grid-cols-[1fr_auto] items-baseline gap-x-3 border-b px-4 py-2.5 last:border-b-0"
     >
       <span class="truncate text-[0.9375rem] font-bold tracking-[-0.01em]">{hit.name}</span>
 
-      <span class="text-ink-faint group-data-[active=true]/opt:text-bg font-mono text-[0.6875rem] tracking-[0.1em] uppercase group-data-[active=true]/opt:opacity-70">
-        {hit.kind}
-      </span>
-
       {/*
-       * The grade the results page would show for the same name, in the same
-       * five words and the same shade. A dropdown that ranked names and said
-       * nothing about why would be ordering by a measure it kept to itself.
+       * What the row is, where the grade used to be.
        *
-       * It folds away below `md`, where the field is a phone's width and the
-       * name is what a thumb is aiming at. `sr-only` rather than `hidden`, so
-       * the option is still read out with its grade: the row is one control and
-       * cannot say in a heading what its columns are.
+       * The grade left with the results column it mirrored, since a record has
+       * none and a shortlist cannot carry a word for two kinds out of three.
+       * What this list actually needs is nearer at hand anyway: Chain Reaction
+       * is a label and two unrelated artists, and Biokinetics is fifteen
+       * pressings of one record, so "which of these" is the question three rows
+       * under a search box are being asked.
+       *
+       * Truncated rather than folded away on a phone. A record says who made it
+       * and when, which is the whole of how one pressing is told from another,
+       * and losing it at the width where the list is most used would leave three
+       * identical rows.
        */}
-      <span
-        class:list={[
-          "font-mono text-[0.6875rem] tracking-[0.1em] uppercase sr-only md:not-sr-only",
-          "group-data-[active=true]/opt:text-bg group-data-[active=true]/opt:opacity-70",
-          GRADE_SHADE[gradeWord(hit.relevance)],
-        ]}
-      >
-        {gradeWord(hit.relevance)}
+      <span class="text-ink-faint group-data-[active=true]/opt:text-bg max-w-[9rem] truncate font-mono text-[0.6875rem] tracking-[0.1em] uppercase group-data-[active=true]/opt:opacity-70 md:max-w-[14rem]">
+        {hit.detail}
       </span>
     </a>
   ))

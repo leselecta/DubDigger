@@ -21,6 +21,7 @@ import {
   getArtistReleases,
   type Relation,
 } from "@/lib/queries";
+import { opticalLeft } from "@/lib/optical";
 import { creditLine } from "@/lib/roles";
 import { countLine } from "@/lib/seo";
 import { PAGE_SIZE, gradeTitle, pageSize, years } from "@/lib/view";
@@ -167,7 +168,10 @@ const route =
 >
   <div class="column pt-16 pb-16 md:pt-24">
     <Eyebrow>Artist</Eyebrow>
-    <h1 class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]">
+    <h1
+      class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]"
+      style={opticalLeft(artist.name)}
+    >
       {artist.name}
     </h1>
 

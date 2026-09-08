@@ -340,6 +340,36 @@ out.
   Ernestus Presents Jeri-Jeri" over a long title is a paragraph in 60px type.
   The whole line, join phrases and links, is the Artist row below. Both sit
   inside the one `<h1>`.
+- **The artist line is a third of the title, and grey was not enough on its
+  own.** Both were set at `--text-name-label` until 2026-09-08, when testing
+  with real readers found they could not say at a glance which of the two
+  stacked names was the record: same face, same size, same weight reads as one
+  name in two colours. The worst case is a long act over a short title, where
+  the grey line is also the longer one and takes the headline by size. A size
+  step is what makes them read as different kinds of thing, and it beat the
+  alternatives on the table: quotation marks around the title say "track" by
+  every music-publishing convention and collide with 2,657 titles that already
+  carry quotes, 775 of which open with one; a mono "BY" label marks the
+  category correctly but cannot sit inline without pushing the artist off the
+  title's left edge, and stacked above it puts two mono labels under each other.
+  The size is `--text-byline`. **The entity badge in the eyebrow is the next
+  thing to try here**, and it is the one that would answer the same question on
+  the artist and label pages too.
+- **Both headline lines are pulled flush by their first letter's side bearing.**
+  A glyph does not start where its box does, and the bearing is a fraction of
+  the size, so two lines at 38px and 120px start 7px apart on the same left
+  edge: the size step made a misalignment that had always been there visible.
+  `opticalLeft` in `web/src/lib/optical.ts` holds a bearing per character,
+  measured off the served font with `actualBoundingBoxLeft` at weight 700, and
+  returns a negative margin in `em` so it scales with the clamp. The spread is
+  why one correction cannot serve: `W` sits at 0.013em and `B` at 0.082em. A
+  character the table does not hold gets no correction rather than a guessed
+  one, which is the honest answer for the accented and non-Latin titles in the
+  corpus. **The artist and label headlines take the same correction**, so a name
+  starts on the column's edge whichever page it is on. The eyebrow above them is
+  deliberately left alone: mono at 13px is out by under a pixel, which is below
+  the size at which a correction is worth its own line of code. The home, Core,
+  Info and 404 headlines are still uncorrected.
 - **Credits are the third tab, and they were a band above the tabs until
   2026-09-08.** The argument for the band was that credits are what the record
   is where the two "more from" lists are only where to go next, and that filing

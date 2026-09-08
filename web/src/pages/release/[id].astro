@@ -15,6 +15,7 @@ import {
   getRelease,
   getReleaseCredits,
 } from "@/lib/queries";
+import { opticalLeft } from "@/lib/optical";
 import { creditLine } from "@/lib/roles";
 import { PAGE_SIZE, artistLine, formatLine, pageSize, releasedOn } from "@/lib/view";
 
@@ -146,8 +147,26 @@ const mainEntity = {
      * reader gets "Substance, Rise And Shine" the way the design reads it.
      */}
     <h1 class="text-name-label text-ink-strong mt-6 leading-[0.9] font-bold tracking-[-0.045em]">
-      {lead && <span class="text-ink-dim block">{lead.name}</span>}
-      {release.title}
+      {
+        lead && (
+          /*
+           * A third of the title's size, and its own tracking with it: the
+           * headline's -0.045em is drawn for 120px type and closes up a 38px
+           * line. `--text-byline` carries the reasoning.
+           *
+           * Both lines are pulled flush by their own first letter's side
+           * bearing, which is what makes them share a left edge at two
+           * different sizes. See `opticalLeft`.
+           */
+          <span
+            class="text-byline text-ink-dim block pb-3 tracking-[-0.02em]"
+            style={opticalLeft(lead.name)}
+          >
+            {lead.name}
+          </span>
+        )
+      }
+      <span class="block" style={opticalLeft(release.title)}>{release.title}</span>
     </h1>
 
     {/*

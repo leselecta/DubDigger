@@ -61,6 +61,7 @@ or it is dilution.
 | `--text-hero` | `clamp(2.5rem, 8vw, 6.25rem)` | -0.04em | 0.92 | Home headline |
 | `--text-name` | `clamp(2.5rem, 8vw, 6.5rem)` | -0.04em | 0.92 | Artist / Core / Info / 404 h1 |
 | `--text-name-label` | `clamp(2.5rem, 9vw, 7.5rem)` | -0.04em | 0.92 | Label page h1 |
+| `--text-byline` | `clamp(1.375rem, 3vw, 2.375rem)` | -0.02em | — | Artist line above a release title, a third of it |
 | `--text-stat` | `clamp(2.5rem, 6vw, 4.125rem)` | -0.03em | — | The three figures |
 | `--text-row` | `1.25rem` | -0.01em | — | The clickable name in a list row |
 | `--text-lead` | `1.1875rem` | — | 1.6 | The paragraph under a headline |
@@ -168,11 +169,11 @@ skip link → SiteHeader → <main id="content"> page bands </main> → SiteFoot
 
 | Band | Classes |
 |---|---|
-| Page head | `column pt-16 pb-16 md:pt-24` → Eyebrow, one h1, then `text-lead` or the count line |
+| Page head | `column pt-16 pb-16 md:pt-24` → Eyebrow, one h1 pulled flush by `opticalLeft`, then `text-lead` or the count line |
 | Identity block | `<dl class="mt-9 max-w-[760px]">` of `FieldRow`, last one with `last` |
 | Labelled band | `border-hairline grid gap-6 border-t py-14 md:grid-cols-[180px_1fr]` |
 | List band | `column pt-14 pb-32` → Tabs, ListHeader, rows or Absence, LoadMore |
-| Release headline | one `h1`, grey `text-ink-dim block` artist line over the white title, then the Discogs ghost button at `mt-9`, then the identity block at `mt-12` |
+| Release headline | one `h1`, grey `text-byline` artist line over the white title at `text-name-label`, both pulled flush by `opticalLeft`, then the Discogs ghost button at `mt-9`, then the identity block at `mt-12` |
 | Ghost button | `border-edge-strong hover:bg-ink hover:text-bg border px-8 py-[15px] font-mono text-xs tracking-[0.2em] uppercase` |
 | Figures | `border-t grid sm:grid-cols-3`, cells `px-0 py-10 sm:px-10 sm:py-14` |
 

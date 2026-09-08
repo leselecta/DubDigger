@@ -12,6 +12,7 @@ import ProfileText from "@/components/ProfileText.astro";
 import OutboundLinks from "@/components/OutboundLinks.astro";
 import CollapsibleText from "@/components/CollapsibleText.astro";
 import { getLabel, getRoster, getProfileNames, getLabelReleases } from "@/lib/queries";
+import { opticalLeft } from "@/lib/optical";
 import { countLine } from "@/lib/seo";
 import { PAGE_SIZE, gradeTitle, pageSize, percent, years } from "@/lib/view";
 
@@ -90,7 +91,10 @@ const reason = label.isImprint
 >
   <div class="column pt-16 pb-16 md:pt-24">
     <Eyebrow>Label</Eyebrow>
-    <h1 class="text-name-label text-ink-strong mt-6 leading-[0.9] font-bold tracking-[-0.045em]">
+    <h1
+      class="text-name-label text-ink-strong mt-6 leading-[0.9] font-bold tracking-[-0.045em]"
+      style={opticalLeft(label.name)}
+    >
       {label.name}
     </h1>
 

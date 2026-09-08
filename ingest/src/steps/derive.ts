@@ -337,6 +337,31 @@ export async function runDerive(
     ).run(t.floor, t.name, ...below);
   }
 
+  // What a record is worth to a search: the lead artist's figure, discounted by
+  // the lead artist's grade. Last, because it reads artist_coverage and so has
+  // to run after the grades and the lineage floor are settled.
+  //
+  // The lead name only, matching the release page's headline and the search
+  // row: 133,205 releases credit more than one act, and picking the strongest
+  // of them would rank a record by someone whose name the row never shows.
+  step("ranking releases for search");
+  db.exec(`
+    DELETE FROM release_rank;
+
+    INSERT INTO release_rank (release_id, weight, year)
+    SELECT r.id,
+           coalesce(c.seed_releases, 0) / (1 << (CASE coalesce(c.relevance, 'none')
+             WHEN 'very high' THEN 0
+             WHEN 'high'      THEN 1
+             WHEN 'medium'    THEN 2
+             WHEN 'low'       THEN 3
+             ELSE 4 END)),
+           r.year
+      FROM releases r
+      LEFT JOIN release_artists la ON la.release_id = r.id AND la.position = 0
+      LEFT JOIN artist_coverage c ON c.artist_id = la.artist_id;
+  `);
+
   // Labels, on the same five steps, from the same measure the seed-label rule
   // uses: every act on the artist line across the whole dump, and how many of
   // them are seed artists. `very high` is that rule exactly, so a label the

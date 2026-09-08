@@ -319,6 +319,32 @@ CREATE TABLE IF NOT EXISTS label_coverage (
   relevance         TEXT NOT NULL DEFAULT 'none'
 );
 
+-- What a record is worth to a search, precomputed because the search cannot
+-- afford to work it out.
+--
+-- A release has no grade of its own, so its rank is the lead artist's figure
+-- discounted by the lead artist's grade, which the app then halves again: a
+-- record ranks where its maker ranks, one step down. Computed here because the
+-- query that needs it is the one that cannot pay for it: "re" matches about
+-- 200,000 titles, and reaching the artist line and the coverage row for every
+-- one of them cost 103 ms of a 196 ms page against 84 ms before records were
+-- searchable. Ordering against this table instead costs 31 ms.
+--
+-- Deliberately three columns and no title. A wider version carrying the title
+-- and the artist name saves the app a second query and measured 49 ms against
+-- this one's 31, because 60 MB of table touches four times the pages 15 MB
+-- does. The app pays one extra lookup for the 200 rows that survive, which is
+-- the trade the whole architecture already makes: rank on a narrow key, read
+-- the wide row only for what is shown.
+CREATE TABLE IF NOT EXISTS release_rank (
+  release_id INTEGER PRIMARY KEY,
+  -- seed releases of the lead artist, halved once per step down their grade.
+  weight     REAL NOT NULL DEFAULT 0,
+  -- Carried so the tie-break between two pressings is settled here rather than
+  -- by a second read: earliest first, undated last.
+  year       INTEGER
+) WITHOUT ROWID;
+
 -- Search: the entry point to the whole tool is typing a name.
 -- External-content FTS, rebuilt at the end of ingest with:
 --   INSERT INTO artist_search(artist_search) VALUES('rebuild');

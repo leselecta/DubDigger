@@ -821,38 +821,65 @@ function labelPool(db: Database, term: string): ScoredRow[] {
  * what makes the order defensible: a record ranks where its maker ranks, one
  * step down.
  *
+ * Two queries, and the split is the whole performance story. "re" matches about
+ * 200,000 titles, and reaching the artist line and the coverage row for each of
+ * them to find that figure cost 103 ms — a 196 ms page against the 84 ms that
+ * was the worst case before records were searchable. `release_rank` is that
+ * figure precomputed in `derive`, three columns wide so the ranking pass reads
+ * a 15 MB table instead of the 60 MB one a title and an artist name would make.
+ * The wide row is then read for the 200 that survive, which is the trade the
+ * rest of the architecture already makes.
+ *
  * The lead name rather than the whole line, matching the release page's own
  * headline: 133,205 releases credit more than one act, and a search row has no
- * room for a sentence. `left join`, because 33,481 records are credited to
- * someone the corpus never admitted as an artist, and those still deserve to be
- * findable by title.
+ * room for a sentence. `left join`, because a record credited to someone the
+ * corpus never admitted as an artist should still be findable by title.
  */
 function releasePool(db: Database, term: string): ScoredRow[] {
-  return db
+  const ids = db
+    .prepare(
+      `SELECT s.rowid AS id
+         FROM release_search s
+         JOIN release_rank k ON k.release_id = s.rowid
+        WHERE release_search MATCH ?
+        ORDER BY k.weight DESC, k.year IS NULL, k.year
+        LIMIT ?`,
+    )
+    .pluck()
+    .all(term, RANK_POOL) as number[];
+
+  if (ids.length === 0) return [];
+
+  const rows = db
     .prepare(
       `SELECT r.id, r.title AS name, 0 AS release_count, r.year,
               lead_artist.name AS artist,
               coalesce(c.seed_releases, 0) AS scene_releases,
               coalesce(c.relevance, 'none') AS relevance
-         FROM release_search s
-         JOIN releases r ON r.id = s.rowid
+         FROM releases r
          LEFT JOIN release_artists lead_artist
                 ON lead_artist.release_id = r.id AND lead_artist.position = 0
          LEFT JOIN artist_coverage c ON c.artist_id = lead_artist.artist_id
-        WHERE release_search MATCH ?
-        ORDER BY scene_releases DESC, r.year IS NULL, r.year
-        LIMIT ?`,
+        WHERE r.id IN (${ids.map(() => "?").join(",")})`,
     )
-    .all(term, RANK_POOL)
-    .map((row) => {
-      const r = row as HitRow & { scene_releases: number; year: number | null; artist: string | null };
-      return {
-        ...r,
-        kind: "release" as const,
-        artist: r.artist,
-        detail: [r.artist, r.year].filter(Boolean).join(" · ") || null,
-      };
-    });
+    .all(...ids) as (HitRow & { scene_releases: number; year: number | null; artist: string | null })[];
+
+  /*
+   * Back into the order the first query settled. `IN` returns rows in whatever
+   * order the index hands them over, and the ranking below is stable, so
+   * skipping this would quietly re-sort every tie by release id.
+   */
+  const byId = new Map(rows.map((r) => [r.id, r]));
+
+  return ids
+    .map((id) => byId.get(id))
+    .filter((r): r is (typeof rows)[number] => Boolean(r))
+    .map((r) => ({
+      ...r,
+      kind: "release" as const,
+      artist: r.artist,
+      detail: [r.artist, r.year].filter(Boolean).join(" · ") || null,
+    }));
 }
 
 /**
@@ -860,11 +887,11 @@ function releasePool(db: Database, term: string): ScoredRow[] {
  *
  * `phylyps` answered with three rows reading "Phylyps Trak · Basic Channel ·
  * 1993" and `biokinetics` with fifteen, which is one record pressed again and
- * a list spending every row it has saying so. Ten pressings of a record are ten
- * real rows in the corpus and each still has its own page, reachable from the
- * artist and the label; what they are not is ten answers to a question, and
- * this list has no column for the things that actually tell them apart, since
- * format and country are on the page rather than in the row.
+ * a list spending every row it has saying so. Ten pressings are ten real rows
+ * in the corpus and each still has its own page, reachable from the artist and
+ * the label; what they are not is ten answers to a question, and this list has
+ * no column for the things that actually tell them apart, since format and
+ * country are on the page rather than in the row.
  *
  * Title and artist rather than title alone, because two acts really do use one
  * title and collapsing those would hide an answer rather than a duplicate. The
@@ -978,7 +1005,15 @@ export function suggest(query: string, limit = 3): Suggestion[] {
       id: r.id,
       name: r.name,
       kind: r.kind,
-      detail: r.kind === "release" && r.detail ? `Release · ${r.detail}` : r.kind,
+      /*
+       * The year is on the results page and not here. A shortlist is read at a
+       * glance in a column the width of the search field, and "Release · Basic
+       * Channel · 1993" is a line that has to be read rather than seen; what
+       * tells one row from another at that width is the name that made it. The
+       * pressings are collapsed by then anyway, so the year is answering a
+       * question the row no longer raises.
+       */
+      detail: r.kind === "release" && r.artist ? `Release · ${r.artist}` : r.kind,
     }));
 }
 

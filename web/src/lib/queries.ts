@@ -652,6 +652,8 @@ const RELEVANCE_ORDER: Record<string, number> = {
 /**
  * How much of this scene a name actually accounts for, as one number for both
  * kinds: releases the cluster explains, halved for each step down the grade.
+ * What that figure is per kind is settled in the two pools below, since an
+ * artist the seed cannot measure needs a different one.
  *
  * Sorting on the grade alone was a bug, and a bad one, because the grade is a
  * ratio and a ratio needs work behind it before it describes anything. Label
@@ -730,14 +732,33 @@ function rankHits(query: string, rows: ScoredRow[]): ScoredRow[] {
 
 /**
  * Every artist matching the term, ranked-pool sized, with the scene work each
- * one accounts for. `seed_releases` is that figure already: releases of theirs
- * inside the cluster the seed measured.
+ * one accounts for. `seed_releases` is that figure for most people: releases of
+ * theirs inside the cluster the seed measured.
+ *
+ * It is not that figure for anyone the seed cannot see, which is the King Tubby
+ * problem arriving one layer along. Lineage exists because the seed measures
+ * dub techno and therefore scores a Jamaican dub engineer, a Detroit originator
+ * or a dubstep producer at nothing. That fixed the grade and left the sort key
+ * reading the same blind measure: 2,820 lineage artists had a score of exactly
+ * zero, Loefah, Silkie and Commodo among them, surviving only on tiebreakers.
+ * `commodo` returned Commodore C 64 first, `scientist` put Scientist third
+ * behind Full Moon Scientist, `atkins` put Martin Atkins above Juan Atkins.
+ *
+ * So a tradition scores on the artist's corpus output instead, halved: one step
+ * of the same rule the grade uses, paid because the corpus cannot tell which
+ * part of that output is the tradition. Floored at `seed_releases`, so it only
+ * ever lifts. Full release count was measured and is too strong: it puts Jan
+ * Delay above Vladislav Delay. Half moves 20 of 105 queries and none the wrong
+ * way: Juan Atkins, Carl Craig, Mike Banks, King Tubby, Scientist and Commodo
+ * all come first, and `delay` and `prince` are untouched.
  */
 function artistPool(db: Database, term: string): ScoredRow[] {
   return db
     .prepare(
       `SELECT a.id, a.name, coalesce(c.release_count, 0) AS release_count,
-              coalesce(c.seed_releases, 0) AS scene_releases,
+              max(coalesce(c.seed_releases, 0),
+                  CASE WHEN c.lineage IS NOT NULL
+                       THEN coalesce(c.release_count, 0) / 2 ELSE 0 END) AS scene_releases,
               coalesce(m.channel_a, 0) AS channel_a,
               coalesce(m.channel_b, 0) AS channel_b,
               coalesce(c.relevance, 'none') AS relevance

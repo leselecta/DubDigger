@@ -1219,8 +1219,21 @@ export function getRelease(id: number): Release | null {
 
   const tracks = db
     .prepare(
+      /*
+       * A track with no title is not a track, it is half an entry: 87 rows
+       * across 18 releases carry a printed position and nothing else, and on
+       * the page they render as a number with empty space beside it, which
+       * reads as a broken row rather than as a gap in the data.
+       *
+       * Dropped here rather than at parse time, because the rows are honest
+       * about what the dump holds and re-running `enrich` to remove them costs
+       * a full read of a 100 GB file. Dropping cannot empty a tracklist, since
+       * no release in the corpus is untitled all the way down, and cannot
+       * renumber anything, since `position` is the label printed on the record
+       * rather than an index into this list.
+       */
       `SELECT position, title, duration FROM release_tracks
-        WHERE release_id = ? ORDER BY seq`,
+        WHERE release_id = ? AND trim(title) <> '' ORDER BY seq`,
     )
     .all(id) as ReleaseTrack[];
 

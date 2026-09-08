@@ -228,6 +228,17 @@ export function releasedOn(raw: string | null): string | null {
   if (!match) return null;
 
   const year = match[1]!;
+
+  /*
+   * `0000` is the dump's way of saying it does not know, and it reaches here on
+   * 3 releases. Pass 1 already reads it that way: `year` is NULL on all three,
+   * so printing "Released 0000" was the formatter siding against the parser
+   * about the same field. A zero month or day needs no such guard, since the
+   * two tests below already fall back to the month and the year: 4,106 records
+   * carry a zero month and 92,193 a zero day, and all of them read correctly.
+   */
+  if (year === "0000") return null;
+
   const month = Number(match[2] ?? 0);
   const day = Number(match[3] ?? 0);
 

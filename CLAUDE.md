@@ -352,9 +352,22 @@ out.
   carry quotes, 775 of which open with one; a mono "BY" label marks the
   category correctly but cannot sit inline without pushing the artist off the
   title's left edge, and stacked above it puts two mono labels under each other.
-  The size is `--text-byline`. **The entity badge in the eyebrow is the next
-  thing to try here**, and it is the one that would answer the same question on
-  the artist and label pages too.
+  The size is `--text-byline`.
+- **The eyebrow carries a mark on the three entity pages**, and only there: a
+  person, a tag, a disc. Same wayfinding problem as the size step above, one
+  layer up — a shape is read before a word is, so it is the answer the eyebrow
+  already gave arriving sooner. Not a rebus: the word sits right beside it, so
+  the mark only has to be told apart from the other two, which is why they are
+  drawn for silhouette rather than detail. Drawing the candidates is what chose
+  them. A ring, the paper centre a label is named after, is the same mark as the
+  release disc at 13px; two overlapping discs collapse into a squiggle; a sleeve
+  with the record's edge showing reads as a mug. The tag is the everyday sense
+  of the word rather than the music one and wins anyway, because every other
+  label candidate was a circle or a box and both were taken. **Non-entity pages
+  keep the bare word**: a mark is an identifier and "Info" identifies nothing.
+  14px in a 12px box on a 1.35 stroke, against the 1.5 the site's other SVGs
+  use, because at 12px they read as dots and at 1.5 the tag's hole and the
+  disc's centre close up.
 - **Both headline lines are pulled flush by their first letter's side bearing.**
   A glyph does not start where its box does, and the bearing is a fraction of
   the size, so two lines at 38px and 120px start 7px apart on the same left

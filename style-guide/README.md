@@ -91,7 +91,7 @@ or it is dilution.
 | 0.75rem | 0.16em | ink-muted | Bio toggle |
 | 0.75rem | 0.1em | by grade | Relevance and type columns in results |
 | 0.75rem | 0.05em | ink-faint | Footer; role strings (sentence case, leading 1.65) |
-| 0.8125rem (0.6875rem below `md`) | 0.32em | accent | `Eyebrow` |
+| 0.8125rem (0.6875rem below `md`) | 0.32em | accent | `Eyebrow`, with a 14px mark on entity pages |
 | 0.8125rem | 0.2em | ink | `LabelledBand` heading |
 | 0.8125rem | 0.14em | ink-strong / ink-dim | Tab labels, active / resting |
 | 0.8125rem | 0.12em | ink-faint | Field labels (`FieldRow` dt) |
@@ -122,7 +122,7 @@ All in `web/src/components/`, all `.astro`.
 | `CollapsibleText` | slot | `CLAMP_PX = 145`; fade `h-12`, `linear-gradient(transparent, var(--color-bg))` |
 | `ContactDialog` | — | `<dialog>` + `showModal()`, `w-[min(26rem,calc(100vw-3rem))]`, `backdrop:bg-black/70` |
 | `CreditRow` | `count?`, `href?`, `name`, `detail?`, `meta?`, `metaLabel?`, `external?`, `slot="meta"` | `LIST_GRID`, `py-[18px]`, `gap-x-[22px]`; no `href` → plain `text-ink-dim` name, no rule, no hover |
-| `Eyebrow` | slot | `text-accent font-mono text-[0.6875rem] md:text-[0.8125rem] tracking-[0.32em] uppercase` |
+| `Eyebrow` | `icon?` (artist \| label \| release) | `text-accent inline-flex items-center gap-2 font-mono text-[0.6875rem] md:text-[0.8125rem] tracking-[0.32em] uppercase`; the mark is 14px in a 12px box on a 1.35 stroke, entity pages only |
 | `FieldRow` | `label`, `accent?`, `last?` | `grid-cols-[7rem_1fr] sm:grid-cols-[180px_1fr] py-2` |
 | `LabelledBand` | `label` | `border-t py-14 md:grid-cols-[180px_1fr]`, h2 `mono-label text-ink text-[0.8125rem] md:mt-1` |
 | `ListHeader` | `name`, `count`, `meta?` | `LIST_GRID`, `text-[0.6875rem] tracking-[0.2em]`, `border-b pb-3` |

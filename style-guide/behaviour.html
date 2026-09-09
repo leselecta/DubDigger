@@ -45,7 +45,7 @@
           <div>
             <div class="sg-scroll">
               <table class="sg-spec">
-                <caption>Measured, and the heaviest page is an artist or label at 21,438 bytes</caption>
+                <caption>Measured, and the heaviest page is an artist or label at 22,781 bytes</caption>
                 <thead>
                   <tr>
                     <th scope="col">Script</th>
@@ -57,7 +57,7 @@
                 <tbody>
                   <tr>
                     <td class="key">ClientRouter</td>
-                    <td class="num">16,075</td>
+                    <td class="num">16,357</td>
                     <td>every page</td>
                     <td class="note">
                       76% of the budget, and deliberate: the premise is that a pivot costs one
@@ -85,7 +85,7 @@
                   </tr>
                   <tr>
                     <td class="key">scroll hold and active tab</td>
-                    <td class="num">662</td>
+                    <td class="num">686</td>
                     <td>every page</td>
                     <td class="note">
                       Where the reader was is not something a server response can carry, and neither
@@ -96,12 +96,14 @@
                   </tr>
                   <tr>
                     <td class="key">search suggestions</td>
-                    <td class="num">1,641</td>
+                    <td class="num">2,678</td>
                     <td>every page</td>
                     <td class="note">
                       A keystroke has not been submitted yet. Everything else still is the server:
                       <code>/suggest</code> is a partial returning the rows as markup, so this only
                       fetches, assigns and moves a highlight — no JSON, no templates in the browser.
+                      All three tabs arrive on the one fetch, so switching between them is toggling
+                      <code>hidden</code> and not a request.
                     </td>
                   </tr>
                   <tr>
@@ -273,7 +275,8 @@ if (matchMedia("<b>(prefers-reduced-motion: reduce)</b>").matches) return;
                   <tr><td class="key">data-contact-open</td><td>any mailto: link</td><td class="note">Intercepted to open the dialog. Degrades to the real address.</td></tr>
                   <tr><td class="key">data-contact / -close / -copy</td><td>the dialog</td><td class="note">The card, its × and its clipboard button. <code>data-copied</code> swaps the icon from CSS.</td></tr>
                   <tr><td class="key">data-collapsible / -clamp / -inner / -fade / -toggle</td><td>bio, label info</td><td class="note">Measured after paint; a short bio renders as a paragraph with nothing to click.</td></tr>
-                  <tr><td class="key">data-suggest / data-suggest-list / data-suggest-option / data-active</td><td>SearchField</td><td class="note">The form carries the minimum character count, so the guard in the browser and the guard in the query are one constant.</td></tr>
+                  <tr><td class="key">data-suggest / data-suggest-panel / data-suggest-list / data-suggest-option / data-suggest-out / data-active</td><td>SearchField</td><td class="note">The form carries the minimum character count, so the guard in the browser and the guard in the query are one constant. The panel is what opens and shuts; the listbox is only the fetch target.</td></tr>
+                  <tr><td class="key">data-suggest-tabs / data-suggest-tab / data-suggest-group</td><td>SearchField, /suggest</td><td class="note">The tab row sits beside the listbox, never in it. The server leaves one group unhidden to say which tab the panel opens on, so the fallback rule lives in one place.</td></tr>
                   <tr><td class="key">data-figures / data-count</td><td>the home band</td><td class="note">The real value, handed to the script only when it is going to animate.</td></tr>
                 </tbody>
               </table>
@@ -321,6 +324,17 @@ if (matchMedia("<b>(prefers-reduced-motion: reduce)</b>").matches) return;
               <code>aria-activedescendant</code> at the highlighted row. Only that row carries an
               id, given on highlight and taken back on leaving, because the header and the drawer
               both render the field and an id has to be unique in a document.
+            </p>
+            <p class="sg-rule">
+              <b>Its tabs are operated by proxy, because focus cannot move.</b> They are
+              <code>tabindex="-1"</code> buttons in a <code>group</code> rather than a
+              <code>tablist</code>, driven by left and right — and only once the arrows are in the
+              list, since those keys are the caret's until then. Switching lands the highlight on
+              the first row of the new tab, which is what a screen reader then reads: the change
+              announces itself as a new active option rather than needing a live region. The row is
+              a sibling of the listbox because a <code>listbox</code> may hold options and nothing
+              else, and it hides itself when only one kind matched, since a tab that is a way in to
+              nothing is the same thing the release page refuses to draw.
             </p>
           </div>
         </section>

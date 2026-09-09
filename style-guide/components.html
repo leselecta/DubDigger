@@ -453,22 +453,31 @@ fade → "pointer-events-none absolute right-0 bottom-0 left-0 h-12"
                   </button>
                 </form>
                 <div class="spec-suggest">
+                  <!-- Sibling of the listbox, never inside it. Only shown when both
+                       kinds matched, since a tab is a way in to something. -->
+                  <div class="spec-suggest-tabs" role="group" aria-label="Filter suggestions">
+                    <button type="button" tabindex="-1" aria-current="true">Artists &amp; Labels</button>
+                    <button type="button" tabindex="-1">Releases</button>
+                    <button type="button" tabindex="-1">All</button>
+                  </div>
                   <a href="#" data-active="true">
                     <span class="sg-suggest-name">Chain Reaction</span>
-                    <span class="sg-suggest-meta">label</span>
                     <!-- No shade on the active row: the ground takes the accent, so the
                          grade reads in bg like the rest of the row. -->
-                    <span class="sg-suggest-grade">very high</span>
+                    <span class="sg-suggest-meta">label<span class="sg-suggest-grade"> · very high</span></span>
                   </a>
                   <a href="#">
                     <span class="sg-suggest-name">Chain Selector</span>
-                    <span class="sg-suggest-meta">artist</span>
-                    <span class="sg-suggest-grade" style="color: var(--color-accent)">very high</span>
+                    <span class="sg-suggest-meta">artist<span class="sg-suggest-grade" style="color: var(--color-accent)"> · very high</span></span>
                   </a>
                   <a href="#">
                     <span class="sg-suggest-name">chained library</span>
-                    <span class="sg-suggest-meta">label</span>
-                    <span class="sg-suggest-grade" style="color: var(--color-accent)">high</span>
+                    <span class="sg-suggest-meta">label<span class="sg-suggest-grade" style="color: var(--color-accent)"> · high</span></span>
+                  </a>
+                  <!-- A record on the All tab: no grade, the lead name in its place. -->
+                  <a href="#">
+                    <span class="sg-suggest-name">Chain Reaction EP</span>
+                    <span class="sg-suggest-meta">release · Martin Schulte</span>
                   </a>
                   <!-- The last row is the way out of the shortlist, and the only one
                        that is not a name. It is a real option, so the arrows reach it. -->
@@ -502,10 +511,29 @@ header → "border-edge-strong transition-colors <b>focus:border-accent</b>
                 of the field so the target is the whole right end rather than an 18px glyph.
               </p>
               <p class="sg-rule">
-                <b>Three rows, then the way out.</b> A dropdown is read at a glance while the hands
-                are still on the keys, and past the third the ranking starts putting a name nobody
-                typed under one they did. What does not fit belongs on the results page, which is
-                one keystroke away and built for forty of them.
+                <b>Four rows a tab, then the way out.</b> A dropdown is read at a glance while the
+                hands are still on the keys, and past the fourth the ranking starts putting a name
+                nobody typed under one they did. It was three until records became searchable and a
+                query started answering two questions in one list; the fourth row is what keeps the
+                second from pushing the first off the bottom. What does not fit belongs on the
+                results page, which is one keystroke away and built for forty of them.
+              </p>
+              <p class="sg-rule">
+                <b>The tabs ask which question first</b> — Artists &amp; Labels, Releases, All,
+                defaulting to the first. They are three slices of <i>one</i> ranking, not three
+                rankings, so the order is the results page's order throughout. All three come back
+                on one fetch, because the pools run anyway to know which tabs have anything behind
+                them, so a switch costs no request. The row appears only when both kinds matched:
+                with names alone, Releases is empty and All is the same four rows under another
+                word.
+              </p>
+              <p class="sg-rule">
+                <b>Left and right change the tab, and only once the arrows are in the list.</b>
+                Those keys already mean something in a text box, and a search field is one people
+                back into to fix a letter — the highlight is what separates the two meanings. Focus
+                never leaves the input, so the buttons are <code>tabindex="-1"</code> in a
+                <code>group</code> rather than a <code>tablist</code>, and the row sits beside the
+                listbox because a <code>listbox</code> may hold options and nothing else.
               </p>
               <p class="sg-rule">
                 <b>“View all results” is that keystroke written down.</b> It is a real option in the
@@ -516,22 +544,27 @@ header → "border-edge-strong transition-colors <b>focus:border-accent</b>
                 tab row’s, at the size the tab row draws it.
               </p>
               <p class="sg-rule">
-                <b>A suggestion row carries its grade</b>, in the same five words and the same shades
-                the results column uses. A shortlist that ranked names and said nothing about why
-                would be ordering by a measure it kept to itself. The grade folds away below
-                <code>md</code> — <code>sr-only</code>, not <code>hidden</code>, so the row is still
-                read out with it.
+                <b>A row says what it is, then what stands behind it</b> — the grade on a name, the
+                lead artist on a record. One right-hand cell rather than two columns, since a record
+                has no grade and a column of its own would leave a hole in its row: a grade measures
+                a body of work against the cluster, and one pressing is not a body of work. The kind
+                never folds, because “which of these” is what a shortlist under a half-typed word is
+                asked, and Chain Reaction is a label and a record and an act. The grade folds away
+                below <code>md</code> and takes its separator with it — <code>sr-only</code>, not
+                <code>hidden</code>, so the row is still read out with it.
               </p>
               <p class="sg-rule">
                 <b>The highlighted row takes the accent as a ground</b>, like the current nav cell:
                 it is the thing being reached for. The rows come from <code>/suggest</code> as
-                markup, so the script only fetches, assigns and moves that highlight — 1,622 bytes,
+                markup, so the script only fetches, assigns and moves that highlight — 2,678 bytes,
                 and the form underneath is the same plain GET with or without JavaScript.
               </p>
               <p class="sg-rule">
                 <b>The way out wears the accent at rest</b>, the only place on the site it grounds
                 something nobody is on yet. It earns it by being the offer the three names above it
-                are not: visible without being read. It costs that row its highlight, since a row
+                are not: visible without being read. The tab row above deliberately declines it for the same
+                reason it works here — two accent grounds in one 250px panel each stop marking. It
+                costs that row its highlight, since a row
                 already accent cannot say the arrows are on it by turning accent, so hover and
                 <code>data-active</code> invert to the ink ground <b>Load more</b> and the nav
                 cells take.

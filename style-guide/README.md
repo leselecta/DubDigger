@@ -129,7 +129,7 @@ All in `web/src/components/`, all `.astro`.
 | `LoadMore` | `href`, `remaining`, `label?`, `hold?` | ghost button, `data-hold-scroll` unless `hold={false}` (a link that leaves) |
 | `OutboundLinks` | `kind` (artist \| label \| release), `id`, `urls?[]` | max 5 + Discogs; http/https only; a release has no urls |
 | `ProfileText` | `text`, `names?` | renders Discogs bio markup; links `underline underline-offset-2` |
-| `SearchField` | `size` ("hero" \| "header"), `value?` | `h-16`/`h-11`; hero `border-accent` + inset-shadow focus, header `border-edge-strong` + accent focus; combobox, listbox `-mt-px border-edge-strong z-40 max-h-[60vh]`, 3 rows `px-4 py-2.5` then a "View all results" row `px-4 py-3 bg-accent text-bg`, active `bg-accent text-bg` (that row inverts to `bg-ink`) |
+| `SearchField` | `size` ("hero" \| "header"), `value?` | `h-16`/`h-11`; hero `border-accent` + inset-shadow focus, header `border-edge-strong` + accent focus; combobox, panel `-mt-px border-edge-strong z-40`, listbox `max-h-[60vh]`, tab row beside it (`tabindex="-1"` buttons, `aria-current` = `text-ink-strong border-ink-strong`), 4 rows a tab `px-4 py-2.5` then a "View all results" row `px-4 py-3 bg-accent text-bg`, active `bg-accent text-bg` (that row inverts to `bg-ink`) |
 | `SiteFooter` | — | `py-11 font-mono text-xs md:grid-cols-2` |
 | `SiteHeader` | `search?` | 76px row; cells `px-5 py-3 text-[0.6875rem] tracking-[0.14em]`; drawer `w-[min(20rem,82vw)]` |
 | `SortBy` | `basePath`, `active` | `flex justify-end gap-5`; cells from `LIST_SORTS` (ranking · A–Z), live on both Core pages |
@@ -143,7 +143,14 @@ Component rules worth not rediscovering:
 - **No cap on roles.** Collapsing shortens the row, not truncation. 24 roles show if there are 24.
 - **Absence is three different sentences**: no releases / no credits entered / genuinely solo.
 - **`FieldRow last` is a prop**, not a wrapper: a `<dl>`'s grouping `<div>` is the component itself.
-- **A grade never appears as a bare word** except in the results column, which is a known cost.
+- **A grade never appears as a bare word** except in the results column, which is a known cost,
+  and in the suggestion dropdown's Artists & Labels tab, which is the same cost on the same
+  ranking. A record has no grade and is never given a borrowed one: its row prints the lead
+  artist where a name's row prints the grade.
+- **The dropdown asks which question first.** Three tabs (Artists & Labels · Releases · All),
+  four rows each, all three fetched together and switched with left/right — but only once the
+  arrows are in the list, since those keys are the caret's until then. A tab shows only when
+  both kinds matched.
 - **The dropdown's last row is the way out**, "View all results" pointing at `/?q=`. A real option,
   so the arrows reach it and the script needs no line for it, and only rendered under names: a miss
   returns nothing and the list stays shut. It carries the accent as a ground at rest, which is why
@@ -210,15 +217,15 @@ Prefer the server, then a link, then a script.
 
 | Script | Bytes | Where |
 |---|---|---|
-| ClientRouter | 16,075 | every page |
+| ClientRouter | 16,357 | every page |
 | drawer | 1,064 | every page |
 | contact dialog | 961 | every page |
-| scroll hold and active tab | 662 | every page |
-| search suggestions | 1,641 | every page |
+| scroll hold and active tab | 686 | every page |
+| search suggestions | 2,678 | every page |
 | collapsing bio | 1,035 | artist, label |
 | figures count-up | 644 | home |
 
-Heaviest page: **21,438 bytes**. A seventh inline script needs the argument the six made.
+Heaviest page: **22,781 bytes**. A seventh inline script needs the argument the six made.
 
 The suggestions script is the sixth and shows the shape the argument takes: `/suggest` is an Astro
 partial returning the rows as markup, so the script only fetches, assigns and moves a highlight.

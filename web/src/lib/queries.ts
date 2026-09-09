@@ -948,16 +948,25 @@ export interface Suggestion {
   name: string;
   kind: "artist" | "label" | "release";
   /**
-   * What the row is, where it used to be how close to the scene.
+   * The grade, on artists and labels and nowhere else.
    *
-   * The grade went with the results column it mirrored: a record has none, and
-   * inventing a word for a third of the rows would be worse than the blank it
-   * replaced. What a shortlist needs anyway is not "how close" but "which of
-   * these", since Chain Reaction is a label and two unrelated artists, and
-   * Biokinetics is fifteen pressings of one record. So the line under the name
-   * says the kind, and on a record it says who made it too.
+   * It left with the results column it mirrored on 2026-09-08, because a record
+   * has no grade and a third of one merged list had no word to show. The tabs
+   * are what bring it back: on the tab that holds only artists and labels,
+   * every row has one, so the column answers for all of it rather than for
+   * two kinds out of three. `null` on a record, and the row prints the lead
+   * name there instead — the one thing that tells one pressing from another.
    */
-  detail: string;
+  relevance: Relevance | null;
+  /** Records only: who made it, which is a record's version of the grade. */
+  artist: string | null;
+}
+
+/** The three tabs, each a slice of one ranking rather than a list of its own. */
+export interface SuggestGroups {
+  names: Suggestion[];
+  releases: Suggestion[];
+  all: Suggestion[];
 }
 
 /**
@@ -972,49 +981,69 @@ export const SUGGEST_MIN_CHARS = 2;
 /**
  * The shortlist under the search box: what you are probably typing.
  *
- * Three rows. A dropdown is read at a glance while the hands are still on the
- * keys, and a list long enough to need scanning is one the reader would be
- * faster submitting. Past the third the ranking starts putting a name nobody
- * typed under one they did. What does not fit belongs on the results page,
- * which is one keystroke away and built for forty of them.
+ * Four rows a tab, and it was three until records became searchable. Three was
+ * the number when every row was a name and the only question was which name;
+ * with records in the list a query answers two questions at once, and the
+ * fourth row is what keeps the second one from pushing the first off the
+ * bottom. Past the fourth the old argument still holds, that the ranking starts
+ * putting a name nobody typed under one they did, and what does not fit belongs
+ * on the results page, one keystroke away and built for forty.
  *
- * The same pools and the same ranking as `search`, sliced shorter. It used to
- * shortlist by grade first and cost the release count on only the three rows
- * that survived, which was cheap and wrong: the count is what puts a label and
- * an artist on one scale, so deferring it meant the shortlist was picked by a
- * measure it could not yet apply. Paying it up front takes the worst two-letter
- * prefix in the corpus, "re", from 39 ms to 84 ms, and an ordinary one from
- * about 23 to 30. That is the same budget that set SUGGEST_MIN_CHARS, where a
- * single letter cost 300 ms and two cost 65, and the answers are cached for
- * five minutes and per keystroke besides.
+ * Three tabs, and they are three slices of ONE ranking rather than three
+ * lists. The order is the results page's order throughout, so this stays a
+ * shortcut into that page and not a second opinion about it: filtering a total
+ * order by kind leaves the survivors in the order they were already in.
  *
- * Ordered exactly as the results page orders the same names, because this list
- * is a shortcut into that page and not a second opinion about it.
+ * All three are costed and returned together, on one fetch. The pools have to
+ * run anyway to know which tabs have anything behind them, so slicing the same
+ * ranked array three ways is free, and it buys a tab switch that costs no
+ * request at all — which is the right price for a control read at a glance
+ * while the hands are still on the keys.
+ *
+ * The same pools and the same ranking as `search`. It used to shortlist by
+ * grade first and cost the release count on only the three rows that survived,
+ * which was cheap and wrong: the count is what puts a label and an artist on
+ * one scale, so deferring it meant the shortlist was picked by a measure it
+ * could not yet apply. Paying it up front takes the worst two-letter prefix in
+ * the corpus, "re", from 39 ms to 84 ms, and an ordinary one from about 23 to
+ * 30. That is the same budget that set SUGGEST_MIN_CHARS, where a single letter
+ * cost 300 ms and two cost 65, and the answers are cached for five minutes and
+ * per keystroke besides.
  */
-export function suggest(query: string, limit = 3): Suggestion[] {
+export function suggest(query: string, limit = 4): SuggestGroups {
   const db = getDb();
-  if (!db || query.trim().length < SUGGEST_MIN_CHARS) return [];
+  const empty = { names: [], releases: [], all: [] };
+  if (!db || query.trim().length < SUGGEST_MIN_CHARS) return empty;
 
   const term = matchTerm(query);
 
-  return oneRowPerRecord(
+  const ranked = oneRowPerRecord(
     rankHits(query, [...artistPool(db, term), ...labelPool(db, term), ...releasePool(db, term)]),
-  )
-    .slice(0, limit)
-    .map((r) => ({
-      id: r.id,
-      name: r.name,
-      kind: r.kind,
-      /*
-       * The year is on the results page and not here. A shortlist is read at a
-       * glance in a column the width of the search field, and "Release · Basic
-       * Channel · 1993" is a line that has to be read rather than seen; what
-       * tells one row from another at that width is the name that made it. The
-       * pressings are collapsed by then anyway, so the year is answering a
-       * question the row no longer raises.
-       */
-      detail: r.kind === "release" && r.artist ? `Release · ${r.artist}` : r.kind,
-    }));
+  );
+
+  const row = (r: ScoredRow): Suggestion => ({
+    id: r.id,
+    name: r.name,
+    kind: r.kind,
+    relevance: r.kind === "release" ? null : (r.relevance ?? "none"),
+    /*
+     * The year is on the results page and not here. A shortlist is read at a
+     * glance in a column the width of the search field, and "Basic Channel ·
+     * 1993" is a line that has to be read rather than seen; what tells one row
+     * from another at that width is the name that made it. The pressings are
+     * collapsed by then anyway, so the year is answering a question the row no
+     * longer raises.
+     */
+    artist: r.kind === "release" ? (r.artist ?? null) : null,
+  });
+
+  const take = (rows: ScoredRow[]) => rows.slice(0, limit).map(row);
+
+  return {
+    names: take(ranked.filter((r) => r.kind !== "release")),
+    releases: take(ranked.filter((r) => r.kind === "release")),
+    all: take(ranked),
+  };
 }
 
 /**

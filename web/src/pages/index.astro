@@ -175,9 +175,9 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
      * the one thing on this page that no other page's eyebrow does: everywhere
      * else it names a kind and the `<h1>` under it names the thing, where here
      * the title is a fixed phrase and the query is the only part that varies.
-     * Unquoted, since the count line below already sets it in curly quotes and
-     * two sets of them in eight lines reads as punctuation rather than as a
-     * query. The
+     * In the same curly quotes the count line below uses, because they are what
+     * says where the query stops: unquoted, a two-word search read as part of
+     * the label rather than as the thing being searched for. The
      * count moves under it and stops being the `<h1>`, which is a change to a
      * decision recorded in CLAUDE.md — the count was the heading because the
      * page had no other, and now it has one. Still exactly one `<h1>`, which is
@@ -187,13 +187,35 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
      * The miss heading below spends the accent on this page, and a stop would
      * be competing with it in the one case it has to be read.
      */}
-    <Eyebrow>{searching ? `Search for ${q}` : "The Dub Techno Index"}</Eyebrow>
+    <Eyebrow>{searching ? `Search for “${q}”` : "The Dub Techno Index"}</Eyebrow>
 
     {
       searching ? (
-        <h1 class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]">
-          Search results
-        </h1>
+        <>
+          <h1 class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]">
+            Search results
+          </h1>
+
+          {/*
+           * The phone gets a field back, under the title rather than in the
+           * header.
+           *
+           * Below `sm` the header's own is hidden, because a wordmark and a
+           * field do not fit on one line at 390, which left the drawer holding
+           * the only copy and search a tap behind three bars. Tolerable on a
+           * page about one artist; wrong here, where changing the query is the
+           * likeliest next thing a reader does.
+           *
+           * `sm:hidden`, which is exactly the seam the header field appears on,
+           * so the two are never on screen together and this is not a second
+           * copy of anything. The header size rather than the hero's: the hero
+           * is why the home page exists and is the biggest thing on it, where
+           * this is a tool sitting under the answer it belongs to.
+           */}
+          <div class="mt-8 sm:hidden">
+            <SearchField size="header" value={q} />
+          </div>
+        </>
       ) : (
         <>
           <h1 class="text-hero text-ink-strong mt-3 leading-[0.92] font-bold tracking-[-0.04em] md:mt-9">

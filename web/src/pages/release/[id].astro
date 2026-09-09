@@ -9,7 +9,7 @@ import Tabs from "@/components/Tabs.astro";
 import {
   getArtist,
   getArtistReleases,
-  getFormats,
+  getCatnos,
   getRelease,
   getReleaseCredits,
 } from "@/lib/queries";
@@ -105,8 +105,8 @@ const active = tabs.some((t) => t.key === asked) ? asked : (tabs[0]?.key ?? "");
 
 const more = active === "artist" && artist ? getArtistReleases(artist.id, limit, release.id) : [];
 
-/* One query for the whole page of rows, since the sentence is written here. */
-const formats = getFormats(more.map((r) => r.id));
+/* One query for the whole page of rows, rather than one per row. */
+const catnos = getCatnos(more.map((r) => r.id));
 
 const total = fromArtist;
 
@@ -382,21 +382,22 @@ const mainEntity = {
         {more.length > 0 && (
           <>
             {/*
-             * Year in the middle column and format in the wide one, which is
-             * the sketch's two right-hand columns the other way round. The
-             * format is the long value — "2× Vinyl, 12\", 45 RPM" — and the
-             * 10rem column is the only one that holds it; the 6rem one is
-             * built for a number.
+             * Year in the middle column and the catalogue number in the wide
+             * one, the same three columns the label page's list carries. The
+             * format was here first and said the least: it describes the object
+             * rather than the record, and a column of "2× Vinyl, 12\"" repeated
+             * down the page is not what anyone is scanning a discography for.
+             * A number is what a digger writes down.
              */}
-            <ListHeader name="Release" count="Year" meta="Format" />
+            <ListHeader name="Release" count="Year" meta="Cat no." />
             <ul>
               {more.map((r) => (
                 <CreditRow
                   count={r.year ?? "—"}
                   href={`/release/${r.id}`}
                   name={r.title}
-                  meta={formatLine(formats.get(r.id) ?? [])}
-                  metaLabel="Format"
+                  meta={catnos.get(r.id) ?? null}
+                  metaLabel="Cat no."
                 />
               ))}
             </ul>

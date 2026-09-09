@@ -316,7 +316,15 @@ CREATE TABLE IF NOT EXISTS label_coverage (
   -- The same five words an artist wears, from a measure of the label's own.
   -- 'very high' IS the seed-label rule, which is what keeps the corpus boundary
   -- and the top step of the display one decision.
-  relevance         TEXT NOT NULL DEFAULT 'none'
+  relevance         TEXT NOT NULL DEFAULT 'none',
+  -- What search ranks it on: releases of ITS OWN that are in the seed, counted
+  -- rather than estimated. The ratio above is a share of PEOPLE, and multiplying
+  -- a release count by it answered a question about records with a fact about
+  -- the roster: Planet Rhythm came out at 764 where the true figure is 126,
+  -- and outranked Rhythm & Sound, whose 160 is measured the strict way because
+  -- an artist's always was. The grade still reads the ratio; only the sort
+  -- reads this.
+  seed_releases     INTEGER NOT NULL DEFAULT 0
 );
 
 -- What a record is worth to a search, precomputed because the search cannot

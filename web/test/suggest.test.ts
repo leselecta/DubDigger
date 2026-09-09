@@ -26,7 +26,7 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
     CREATE TABLE labels  (id INTEGER PRIMARY KEY, name TEXT NOT NULL, profile TEXT, urls TEXT);
     CREATE TABLE artist_coverage (artist_id INTEGER PRIMARY KEY, release_count INTEGER NOT NULL DEFAULT 0, seed_releases INTEGER NOT NULL DEFAULT 0, relevance TEXT NOT NULL DEFAULT 'none', lineage TEXT);
     CREATE TABLE corpus_artists (artist_id INTEGER PRIMARY KEY, is_seed INTEGER NOT NULL DEFAULT 0, channel_a INTEGER NOT NULL DEFAULT 0, channel_b INTEGER NOT NULL DEFAULT 0);
-    CREATE TABLE label_coverage (label_id INTEGER PRIMARY KEY, line_artist_count INTEGER NOT NULL DEFAULT 0, seed_artist_count INTEGER NOT NULL DEFAULT 0, seed_ratio REAL, relevance TEXT NOT NULL DEFAULT 'none');
+    CREATE TABLE label_coverage (label_id INTEGER PRIMARY KEY, line_artist_count INTEGER NOT NULL DEFAULT 0, seed_artist_count INTEGER NOT NULL DEFAULT 0, seed_ratio REAL, relevance TEXT NOT NULL DEFAULT 'none', seed_releases INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE release_labels (release_id INTEGER NOT NULL, position INTEGER NOT NULL, label_id INTEGER NOT NULL, name TEXT NOT NULL, catno TEXT, PRIMARY KEY (release_id, position)) WITHOUT ROWID;
     CREATE TABLE releases (id INTEGER PRIMARY KEY, title TEXT NOT NULL, year INTEGER);
     CREATE TABLE release_artists (release_id INTEGER NOT NULL, position INTEGER NOT NULL, artist_id INTEGER NOT NULL, name TEXT NOT NULL, join_phrase TEXT, PRIMARY KEY (release_id, position)) WITHOUT ROWID;
@@ -40,10 +40,12 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
   const cover = db.prepare("INSERT INTO artist_coverage VALUES (?, ?, ?, ?, ?)");
   const corpus = db.prepare("INSERT INTO corpus_artists VALUES (?, ?, ?, ?)");
   const label = db.prepare("INSERT INTO labels (id, name) VALUES (?, ?)");
-  const grade = db.prepare("INSERT INTO label_coverage VALUES (?, ?, ?, ?, ?)");
+  const grade = db.prepare("INSERT INTO label_coverage VALUES (?, ?, ?, ?, ?, ?)");
   const release = db.prepare("INSERT INTO release_labels VALUES (?, 0, ?, ?, NULL)");
 
-  // Columns: release_count, seed_releases, grade, lineage. The scene figure and
+  // Artists: release_count, seed_releases, grade, lineage. Labels: line artists,
+  // seed artists, ratio, grade, and the measured scene figure the sort reads.
+  // The scene figure and
   // the grade are set against each other on purpose, since sorting on either
   // alone is the bug this file exists to catch.
   artist.run(1, "Basic Channel");
@@ -63,11 +65,11 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
   // A label sharing a name with an artist, which is the case the type column
   // exists for: "Chain Reaction" is both, and so is this.
   label.run(10, "Basic Channel");
-  grade.run(10, 40, 30, 0.75, "very high");
+  grade.run(10, 40, 30, 0.75, "very high", 37);
   for (let i = 0; i < 50; i++) release.run(i, 10, "Basic Channel");
 
   label.run(11, "Bassment Records");
-  grade.run(11, 4, 0, 0, "none");
+  grade.run(11, 4, 0, 0, "none", 0);
   for (let i = 100; i < 102; i++) release.run(i, 11, "Bassment Records");
 
   // The exact-name pair. On the scene figure alone Dubplate wins, 30 against
@@ -79,7 +81,7 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
   corpus.run(4, 0, 1, 0);
 
   label.run(12, "Dub (3)");
-  grade.run(12, 20, 10, 0.667, "high");
+  grade.run(12, 20, 10, 0.667, "high", 40);
   for (let i = 200; i < 260; i++) release.run(i, 12, "Dub (3)");
 
   /*
@@ -123,7 +125,7 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
    * the fallback quietly overwriting an answer it was only meant to replace.
    */
   label.run(13, "Comp Rooms");
-  grade.run(13, 30, 25, 0.83, "very high");
+  grade.run(13, 30, 25, 0.83, "very high", 25);
 
   record.run(504, "Comp Rooms Vol 1", 2010);
   by.run(504, 97, "Various");
@@ -168,7 +170,7 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
   corpus.run(7, 0, 0, 1);
 
   label.run(14, "Jah Tubbys");
-  grade.run(14, 20, 15, 0.5, "very high");
+  grade.run(14, 20, 15, 0.5, "very high", 14);
   for (let i = 300; i < 328; i++) release.run(i, 14, "Jah Tubbys");
 
   /*
@@ -181,6 +183,21 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
   record.run(505, "Tubby Dub", 1975);
   by.run(505, 5, "King Tubby");
   weigh.run(505, 27, 1975);
+
+  /*
+   * Two names at the top step, one of them typed exactly. `very high` is step
+   * 0, so taking a step off the discount had nothing to take: the bonus was a
+   * no-op for exactly the names most likely to be typed in full. As a doubling
+   * it applies at every grade, and this is the only pair in this file that can
+   * tell the two spellings apart.
+   */
+  artist.run(8, "Vertigo Deep");
+  cover.run(8, 25, 20, "very high", null);
+  corpus.run(8, 0, 1, 0);
+
+  label.run(15, "Vertigo (2)");
+  grade.run(15, 20, 18, 0.9, "very high", 12);
+  for (let i = 400; i < 412; i++) release.run(i, 15, "Vertigo (2)");
 
   db.exec("INSERT INTO artist_search(artist_search) VALUES('rebuild')");
   db.exec("INSERT INTO label_search(label_search) VALUES('rebuild')");
@@ -207,7 +224,7 @@ test("ranks on scene work, discounted by the grade rather than gated by it", () 
   assert.deepEqual(names, [
     // 80 releases of scene work at the top grade, undiscounted.
     "Basic Channel (artist)",
-    // 50 releases at a 0.75 roster share is 37, also undiscounted.
+    // 37 releases of its own inside the cluster, also undiscounted.
     "Basic Channel (label)",
     // 40 at `low` is 5, which beats 64 at `none` at 4. The grade separates
     // them; on raw scene work alone the order would reverse.
@@ -249,7 +266,7 @@ test("a tradition is scored on work the seed cannot see", () => {
       "King Tubby",
       // The floor holding: 18 measured, not the 10 the halving would give.
       "Tubby Deep",
-      // 28 releases at a 0.5 roster share, undiscounted: 14.
+      // 14 releases of its own inside the cluster, undiscounted.
       "Jah Tubbys",
       // No tradition, so the measured figure stands: 6 halved for `high`.
       "Tubby Isiah",
@@ -276,6 +293,22 @@ test("a record inherits the lifted figure, not the measure that cannot see it", 
       "release:Tubby Dub",
       "artist:Tubby Isiah",
     ],
+  );
+});
+
+test("an exact name is worth a doubling at every grade, the top one included", () => {
+  // Not typed exactly, so the measured figures stand: 20 beats 12.
+  assert.deepEqual(
+    suggest("vertig", 8).names.map((s) => s.name),
+    ["Vertigo Deep", "Vertigo (2)"],
+  );
+
+  // Typed exactly. Both are `very high`, which is the case the old spelling
+  // could not express: `step - 1` has nothing to subtract at step 0, so the
+  // label stayed on 12 and lost. Doubled, 24 beats 20.
+  assert.deepEqual(
+    suggest("vertigo", 8).names.map((s) => s.name),
+    ["Vertigo (2)", "Vertigo Deep"],
   );
 });
 

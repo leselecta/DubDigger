@@ -707,11 +707,20 @@ const RELEVANCE_ORDER: Record<string, number> = {
  * Typing a name exactly is worth one step of it. Bounded on purpose, because
  * name matching is the same trap as the grade when it gates: ranking exact
  * matches first hands `basic` to five unrelated acts called "Basic (2)". Worth
- * a step, it lifts PAN over Pandit G on `pan` and moves nothing else.
+ * a step, it moves almost nothing else.
  */
 function sceneScore(sceneReleases: number, relevance: Relevance, exactName: boolean): number {
   const step = RELEVANCE_ORDER[relevance] ?? RELEVANCE_ORDER.none!;
-  return sceneReleases / 2 ** Math.max(0, step - (exactName ? 1 : 0));
+  /*
+   * A doubling, not a step taken off the discount, and the difference only
+   * shows at the top of the scale. `step - 1` has nothing to subtract when the
+   * step is already 0, so `very high` was the one grade where typing a name
+   * exactly bought nothing at all — the rule read as one sentence and behaved
+   * as another on every top-step name on the site. At every other grade the two
+   * spellings are the same arithmetic, which is why this changes nothing else:
+   * dividing by 2^(step-1) IS doubling and then dividing by 2^step.
+   */
+  return (sceneReleases / 2 ** step) * (exactName ? 2 : 1);
 }
 
 /**
@@ -852,23 +861,40 @@ function artistPool(db: Database, term: string): ScoredRow[] {
 }
 
 /**
- * The same for labels, where the scene figure has to be derived: releases on
- * the label, times the share of its roster that is in the cluster. That is the
- * one unit an artist and a label can be compared in, and the reason the count
- * is paid for here rather than deferred.
+ * The same for labels, and the figure is measured rather than estimated.
+ *
+ * It used to be the release count times the roster share, described here as the
+ * one unit an artist and a label could be compared in. It was not one unit. An
+ * artist's `seed_releases` counts releases of theirs actually inside the
+ * cluster; the label figure multiplied a release count by a share of PEOPLE,
+ * which answers a question about records with a fact about the roster. The two
+ * come apart because a seed artist needs only 2% of their own output inside the
+ * seed, so a label can have half its roster in the cluster and almost none of
+ * its own records there.
+ *
+ * Measured: Planet Rhythm Records read 764 against a true 126 and beat Rhythm &
+ * Sound, whose 160 was strict because an artist's always was. Tresor read 27
+ * against 9, Chain Reaction 105 against 80, and a label wholly in the scene
+ * like Rhythm & Sound read 57 against 57 — the inflation scales with catalogue
+ * size and roster share, so it fell hardest on the large labels the second seed
+ * gate was written to admit, and not at all on the pure imprints.
+ *
+ * `label_coverage.seed_releases` is that count, written once in `derive`. The
+ * grade still reads the roster ratio, deliberately: what a label puts out and
+ * who it puts out are different claims, and the grade has always been the
+ * second one.
  */
 function labelPool(db: Database, term: string): ScoredRow[] {
   return db
     .prepare(
       // Wrapped, because the scene figure is built from the release count and
       // SQLite cannot read one select-list alias from another.
-      `SELECT t.id, t.name, t.release_count, t.relevance,
-              cast(t.release_count * t.seed_ratio AS INTEGER) AS scene_releases
+      `SELECT t.id, t.name, t.release_count, t.relevance, t.scene_releases
          FROM (SELECT l.id, l.name,
                       (SELECT count(DISTINCT rl.release_id)
                          FROM release_labels rl WHERE rl.label_id = l.id) AS release_count,
                       coalesce(g.relevance, 'none') AS relevance,
-                      coalesce(g.seed_ratio, 0) AS seed_ratio
+                      coalesce(g.seed_releases, 0) AS scene_releases
                  FROM label_search s
                  JOIN labels l ON l.id = s.rowid
                  LEFT JOIN label_coverage g ON g.label_id = l.id

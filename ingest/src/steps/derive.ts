@@ -414,7 +414,7 @@ export async function runDerive(
     );
   }
   db.exec(`
-    INSERT INTO label_coverage (label_id, line_artist_count, seed_artist_count, seed_ratio, relevance)
+    INSERT INTO label_coverage (label_id, line_artist_count, seed_artist_count, seed_ratio, relevance, seed_releases)
     SELECT l.id,
            coalesce(p.total, 0),
            coalesce(p.seeds, 0),
@@ -433,7 +433,8 @@ export async function runDerive(
               AND 1.0 * p.seeds / p.total
                   >= ${labelRelevance.medium.minSeedArtistRatio}          THEN 'medium'
              ELSE 'low'
-           END
+           END,
+           coalesce(sr.seed_rels, 0)
       FROM labels l
       LEFT JOIN (
         SELECT p.label_id,
@@ -442,7 +443,16 @@ export async function runDerive(
           FROM label_artist_pairs p
           LEFT JOIN seed_artists s ON s.artist_id = p.artist_id
          GROUP BY p.label_id
-      ) p ON p.label_id = l.id;
+      ) p ON p.label_id = l.id
+      -- Grouped rather than correlated: one pass over release_labels for all
+      -- 114,226 labels instead of a scan each.
+      LEFT JOIN (
+        SELECT rl.label_id, count(DISTINCT rl.release_id) AS seed_rels
+          FROM release_labels rl
+          JOIN releases r ON r.id = rl.release_id
+         WHERE r.is_seed = 1
+         GROUP BY rl.label_id
+      ) sr ON sr.label_id = l.id;
   `);
 
   db.exec(`DROP TABLE IF EXISTS temp.release_people;

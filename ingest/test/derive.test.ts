@@ -601,6 +601,37 @@ test("a tradition needs both the floor and the share", async () => {
   assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 17").pluck().get(), null);
 });
 
+test("a label's scene figure counts its own records, not a share of its roster", async () => {
+  // The figure search ranks a label on, and it used to be the release count
+  // times the share of the ROSTER in the cluster. That answered a question
+  // about records with a fact about people, and the two come apart because a
+  // seed artist needs only 2% of their own output inside the seed: Planet
+  // Rhythm read 764 against a true 126 and beat Rhythm & Sound's strictly
+  // counted 160.
+  //
+  // Label 100 puts out four records and one of them is in the seed, while both
+  // acts on its line are seed artists. The roster says 100%, the records say
+  // one, and one is the answer.
+  const db = corpus([
+    { id: 1, artists: [10], labels: [100] },
+    { id: 2, artists: [10], labels: [100], seed: false },
+    { id: 3, artists: [11], labels: [100], seed: false },
+    { id: 4, artists: [11], labels: [100], seed: false },
+  ]);
+  seed(db, [
+    [10, 10, 10],
+    [11, 10, 10],
+  ]);
+  await runDerive(db);
+
+  const row = db
+    .prepare("SELECT seed_ratio, seed_releases FROM label_coverage WHERE label_id = 100")
+    .get() as { seed_ratio: number; seed_releases: number };
+
+  assert.equal(row.seed_ratio, 1);
+  assert.equal(row.seed_releases, 1);
+});
+
 const weightOf = (db: Database.Database, id: number) =>
   db.prepare("SELECT weight FROM release_rank WHERE release_id = ?").pluck().get(id) as number;
 

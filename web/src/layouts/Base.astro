@@ -153,8 +153,23 @@ const jsonLd = JSON.stringify({ "@context": "https://schema.org", "@graph": grap
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <link rel="canonical" href={canonical} />
-    {noindex && <meta name="robots" content="noindex, follow" />}
+    {/*
+     * The two are exclusive, and the reason is what a canonical claims.
+     *
+     * It nominates this URL as the preferred address for what is on the page,
+     * and on a 404 what is on the page is the news that there is nothing here.
+     * So an indexable page nominates itself and an answer to a bad address
+     * nominates nothing, rather than a made-up URL asserting itself as the home
+     * of an absence.
+     *
+     * The directive that takes its place there is about size, not indexing.
+     * Google may shrink a result preview to a small thumbnail unless it is told
+     * it can do otherwise, and this site has exactly one image: a card drawn so
+     * the wordmark survives the 630px square a result thumbnail is cropped to.
+     * Asking for the large preview is what lets that work be seen.
+     */}
+    {!noindex && <link rel="canonical" href={canonical} />}
+    <meta name="robots" content={noindex ? "noindex, follow" : "max-image-preview:large"} />
 
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
@@ -166,6 +181,10 @@ const jsonLd = JSON.stringify({ "@context": "https://schema.org", "@graph": grap
      */}
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Dub Digger" />
+    {/* Open Graph wants language and territory, where `lang` above wants only
+        the language. Not a disagreement: en_GB is the format the spec asks for,
+        and the site counts in it already. */}
+    <meta property="og:locale" content="en_GB" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />

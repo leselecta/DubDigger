@@ -804,14 +804,38 @@ function rankHits(query: string, rows: ScoredRow[]): ScoredRow[] {
 
 /**
  * Every artist matching the term, ranked-pool sized, with the scene work each
- * one accounts for. `seed_releases` is that figure already: releases of theirs
- * inside the cluster the seed measured.
+ * one accounts for. `seed_releases` is that figure for most people: releases of
+ * theirs inside the cluster the seed measured.
+ *
+ * It is not that figure for anyone the seed cannot see, which is the King Tubby
+ * problem arriving one layer along. Lineage exists because the seed measures
+ * dub techno and therefore scores a Jamaican dub engineer, a Detroit originator
+ * or a dubstep producer at nothing. That fixed the grade and left the sort key
+ * reading the same blind measure: 2,820 lineage artists had a score of exactly
+ * zero, Loefah, Silkie and Commodo among them, surviving only on tiebreakers.
+ * `commodo` returned Commodore C 64 first, `scientist` put Scientist third
+ * behind Full Moon Scientist, `atkins` put Martin Atkins above Juan Atkins.
+ *
+ * So a tradition scores on the artist's corpus output instead, halved: one step
+ * of the same rule the grade uses, paid because the corpus cannot tell which
+ * part of that output is the tradition. Floored at `seed_releases`, so it only
+ * ever lifts. Full release count was measured and is too strong: it puts Jan
+ * Delay above Vladislav Delay. Half moves 20 of 105 queries and none the wrong
+ * way: Juan Atkins, Carl Craig, Mike Banks, King Tubby, Scientist and Commodo
+ * all come first, and `delay` and `prince` are untouched.
+ *
+ * Ported from `main` (`1a414be`), where releases were not yet an entity. The
+ * same blindness reaches `release_rank.weight` in `derive`, which inherits this
+ * figure, and fixing only this half would leave the records of every lifted
+ * artist weighted at nothing. Both are done.
  */
 function artistPool(db: Database, term: string): ScoredRow[] {
   return db
     .prepare(
       `SELECT a.id, a.name, coalesce(c.release_count, 0) AS release_count,
-              coalesce(c.seed_releases, 0) AS scene_releases,
+              max(coalesce(c.seed_releases, 0),
+                  CASE WHEN c.lineage IS NOT NULL
+                       THEN coalesce(c.release_count, 0) / 2 ELSE 0 END) AS scene_releases,
               coalesce(m.channel_a, 0) AS channel_a,
               coalesce(m.channel_b, 0) AS channel_b,
               coalesce(c.relevance, 'none') AS relevance
@@ -919,12 +943,28 @@ function releasePool(db: Database, term: string): ScoredRow[] {
    * `c.relevance` is NOT NULL in its table, so only a missing row falls through
    * to the label: an artist genuinely graded `none` keeps `none` and is not
    * quietly regraded on the room they released in.
+   *
+   * **The scene figure inherits the lead artist's LIFTED figure, not the bare
+   * measure, and this is the third reader of that measure rather than the
+   * first.** `artistPool` above and `release_rank.weight` in `derive` are the
+   * other two. The seed cannot see dub, reggae, dubstep, Detroit, afrobeat or
+   * jazz, so reading `seed_releases` here scored every record by a lineage
+   * artist at nothing: `commodo` answered with Commodore Dub and `scientist`
+   * with Full Moon Scientist, while the artists themselves were already fixed
+   * one function up. Same expression in all three, deliberately, because one
+   * measure read three ways is exactly what caused this.
+   *
+   * The paragraph above still holds: a record with no coverage row has no
+   * lineage to lift it either, so the max() is still zero and the label
+   * fallback still moves no order.
    */
   const rows = db
     .prepare(
       `SELECT r.id, r.title AS name, 0 AS release_count, r.year,
               lead_artist.name AS artist,
-              coalesce(c.seed_releases, 0) AS scene_releases,
+              max(coalesce(c.seed_releases, 0),
+                  CASE WHEN c.lineage IS NOT NULL
+                       THEN coalesce(c.release_count, 0) / 2 ELSE 0 END) AS scene_releases,
               coalesce(c.relevance, g.relevance, 'none') AS relevance,
               CASE WHEN c.relevance IS NOT NULL THEN 'artist'
                    WHEN g.relevance IS NOT NULL THEN 'label'

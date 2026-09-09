@@ -24,7 +24,7 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
   db.exec(`
     CREATE TABLE artists (id INTEGER PRIMARY KEY, name TEXT NOT NULL, real_name TEXT, profile TEXT, urls TEXT);
     CREATE TABLE labels  (id INTEGER PRIMARY KEY, name TEXT NOT NULL, profile TEXT, urls TEXT);
-    CREATE TABLE artist_coverage (artist_id INTEGER PRIMARY KEY, release_count INTEGER NOT NULL DEFAULT 0, seed_releases INTEGER NOT NULL DEFAULT 0, relevance TEXT NOT NULL DEFAULT 'none');
+    CREATE TABLE artist_coverage (artist_id INTEGER PRIMARY KEY, release_count INTEGER NOT NULL DEFAULT 0, seed_releases INTEGER NOT NULL DEFAULT 0, relevance TEXT NOT NULL DEFAULT 'none', lineage TEXT);
     CREATE TABLE corpus_artists (artist_id INTEGER PRIMARY KEY, is_seed INTEGER NOT NULL DEFAULT 0, channel_a INTEGER NOT NULL DEFAULT 0, channel_b INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE label_coverage (label_id INTEGER PRIMARY KEY, line_artist_count INTEGER NOT NULL DEFAULT 0, seed_artist_count INTEGER NOT NULL DEFAULT 0, seed_ratio REAL, relevance TEXT NOT NULL DEFAULT 'none');
     CREATE TABLE release_labels (release_id INTEGER NOT NULL, position INTEGER NOT NULL, label_id INTEGER NOT NULL, name TEXT NOT NULL, catno TEXT, PRIMARY KEY (release_id, position)) WITHOUT ROWID;
@@ -37,27 +37,27 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
   `);
 
   const artist = db.prepare("INSERT INTO artists (id, name) VALUES (?, ?)");
-  const cover = db.prepare("INSERT INTO artist_coverage VALUES (?, ?, ?, ?)");
+  const cover = db.prepare("INSERT INTO artist_coverage VALUES (?, ?, ?, ?, ?)");
   const corpus = db.prepare("INSERT INTO corpus_artists VALUES (?, ?, ?, ?)");
   const label = db.prepare("INSERT INTO labels (id, name) VALUES (?, ?)");
   const grade = db.prepare("INSERT INTO label_coverage VALUES (?, ?, ?, ?, ?)");
   const release = db.prepare("INSERT INTO release_labels VALUES (?, 0, ?, ?, NULL)");
 
-  // Columns: release_count, seed_releases, grade. The scene figure and the
-  // grade are set against each other on purpose, since sorting on either alone
-  // is the bug this file exists to catch.
+  // Columns: release_count, seed_releases, grade, lineage. The scene figure and
+  // the grade are set against each other on purpose, since sorting on either
+  // alone is the bug this file exists to catch.
   artist.run(1, "Basic Channel");
-  cover.run(1, 100, 80, "very high");
+  cover.run(1, 100, 80, "very high", null);
   corpus.run(1, 1, 0, 0);
 
   // 5,000 releases and the most raw scene work of the three, on the bottom
   // grade: four steps of halving put it under a smaller, better-graded name.
   artist.run(2, "Bassline Bob");
-  cover.run(2, 5000, 64, "none");
+  cover.run(2, 5000, 64, "none", null);
   corpus.run(2, 0, 1, 0);
 
   artist.run(3, "Basement Jaxx");
-  cover.run(3, 300, 40, "low");
+  cover.run(3, 300, 40, "low", null);
   corpus.run(3, 0, 0, 1);
 
   // A label sharing a name with an artist, which is the case the type column
@@ -75,7 +75,7 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
   // worth that step back, and the "(3)" is Discogs' disambiguator rather than
   // anything anyone types.
   artist.run(4, "Dubplate");
-  cover.run(4, 40, 30, "very high");
+  cover.run(4, 40, 30, "very high", null);
   corpus.run(4, 0, 1, 0);
 
   label.run(12, "Dub (3)");
@@ -140,9 +140,47 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
    */
   for (let i = 0; i < 201; i++) {
     artist.run(1000 + i, `Padded ${i}`);
-    cover.run(1000 + i, 1, 0, "none");
+    cover.run(1000 + i, 1, 0, "none", null);
     corpus.run(1000 + i, 0, 1, 0);
   }
+
+  /*
+   * The lineage family, and the reason it is here rather than on `main` alone.
+   *
+   * The seed measures dub techno, so it scores a Jamaican dub engineer at
+   * nothing however large the catalogue. That is what lineage exists to say,
+   * and reading the bare measure as a sort key put 2,820 lifted artists on a
+   * score of exactly zero. Three readers of that measure feed this file:
+   * `artistPool`, `releasePool` and `release_rank.weight`, and each one had to
+   * be fixed separately.
+   */
+  artist.run(5, "King Tubby");
+  cover.run(5, 220, 0, "medium", "roots dub");
+  corpus.run(5, 0, 1, 0);
+
+  // A tradition never lowers anyone: 18 measured beats the 110 halved to 10.
+  artist.run(6, "Tubby Deep");
+  cover.run(6, 20, 18, "very high", "roots dub");
+  corpus.run(6, 0, 1, 0);
+
+  artist.run(7, "Tubby Isiah");
+  cover.run(7, 30, 6, "high", null);
+  corpus.run(7, 0, 0, 1);
+
+  label.run(14, "Jah Tubbys");
+  grade.run(14, 20, 15, 0.5, "very high");
+  for (let i = 300; i < 328; i++) release.run(i, 14, "Jah Tubbys");
+
+  /*
+   * A record by a lifted artist, which is the third reader. `releasePool` sets
+   * a record's scene figure from its lead artist's coverage row, so a record of
+   * King Tubby's inherited his zero and sorted under every namesake even once
+   * he himself ranked correctly. The weight here is only the pool cut; what
+   * orders the row is the figure `releasePool` reads.
+   */
+  record.run(505, "Tubby Dub", 1975);
+  by.run(505, 5, "King Tubby");
+  weigh.run(505, 27, 1975);
 
   db.exec("INSERT INTO artist_search(artist_search) VALUES('rebuild')");
   db.exec("INSERT INTO label_search(label_search) VALUES('rebuild')");
@@ -194,6 +232,50 @@ test("typing a name exactly is worth one step of the grade", () => {
   assert.deepEqual(
     suggest("dub", 8).names.map((s) => s.name),
     ["Dub (3)", "Dubplate"],
+  );
+});
+
+test("a tradition is scored on work the seed cannot see", () => {
+  // `seed_releases` is blind to dub, reggae, dubstep, Detroit, afrobeat and
+  // jazz by construction, which is why lineage exists at all. Reading it as
+  // the sort key put 2,820 lifted artists on a score of exactly zero and
+  // returned Commodore C 64 above Commodo. So a tradition scores on the
+  // corpus output instead, halved for the fact that the corpus cannot say
+  // which part of it is the tradition, and floored at the measured figure.
+  assert.deepEqual(
+    suggest("tub", 8).names.map((s) => s.name),
+    [
+      // 220 releases halved to 110, then two steps for `medium`: 27.5.
+      "King Tubby",
+      // The floor holding: 18 measured, not the 10 the halving would give.
+      "Tubby Deep",
+      // 28 releases at a 0.5 roster share, undiscounted: 14.
+      "Jah Tubbys",
+      // No tradition, so the measured figure stands: 6 halved for `high`.
+      "Tubby Isiah",
+    ],
+  );
+});
+
+test("a record inherits the lifted figure, not the measure that cannot see it", () => {
+  // The third reader, and the one that actually orders the row: `release_rank`
+  // is only the pool cut, and `artistPool` fixes the artist alone. A record of
+  // King Tubby's took his bare zero and sorted under every namesake even once
+  // he ranked first himself, which is the same bug wearing the same number one
+  // function along.
+  //
+  // 110 lifted, two steps for `medium`, then one more for being a record
+  // rather than the name that made it: 13.75, which lands it between the
+  // label at 14 and Tubby Isiah at 3.
+  assert.deepEqual(
+    suggest("tub", 8).all.map((s) => `${s.kind}:${s.name}`),
+    [
+      "artist:King Tubby",
+      "artist:Tubby Deep",
+      "label:Jah Tubbys",
+      "release:Tubby Dub",
+      "artist:Tubby Isiah",
+    ],
   );
 });
 

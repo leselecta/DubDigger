@@ -601,6 +601,66 @@ test("a tradition needs both the floor and the share", async () => {
   assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 17").pluck().get(), null);
 });
 
+const weightOf = (db: Database.Database, id: number) =>
+  db.prepare("SELECT weight FROM release_rank WHERE release_id = ?").pluck().get(id) as number;
+
+test("a record inherits its lead artist's figure, discounted by their grade", async () => {
+  // Four seed releases at the top step, undiscounted, and the record is worth
+  // what its maker is. The halving that puts a record UNDER its own maker is
+  // the app's, in `score`, not this table's.
+  const db = corpus([1, 2, 3, 4].map((id) => ({ id, artists: [10] })));
+  seed(db, [[10, 20, 20]]);
+  await runDerive(db);
+
+  assert.equal(weightOf(db, 1), 4);
+});
+
+test("a record by a tradition is not weighted at nothing", async () => {
+  // The King Tubby problem, one layer below the one lineage was written for.
+  // The seed scores a Jamaican dub engineer at zero by construction, so his
+  // records inherited that zero and sorted under every namesake: `commodo`
+  // answered with Commodore Dub and `scientist` with Full Moon Scientist.
+  // 18,978 records were weighted zero this way.
+  //
+  // Six releases, none of them seed, lifted to `medium`. Six halved is three,
+  // two steps of the grade divides by four: 0.75, where it used to be 0.
+  const db = corpus(tradition(10, { styles: ["Dub"], genres: ["Reggae"] }));
+  await runDerive(db);
+
+  assert.equal(coverageOf(db, 10).lineage, "roots dub");
+  assert.equal(weightOf(db, 10000), 0.75);
+});
+
+test("a tradition lifts a record's weight and never lowers it", async () => {
+  // The floor, at the layer that reads it. Thirteen releases of which seven are
+  // measured seed work: the halved catalogue is six, so the measurement wins
+  // and the lift does nothing. A tradition says the seed cannot see everything,
+  // never that it is wrong about what it can.
+  const db = corpus([
+    ...tradition(11, { styles: ["Dub"], genres: ["Reggae"] }),
+    ...[500, 501, 502, 503, 504, 505, 506].map((id) => ({ id, artists: [11] })),
+  ]);
+  seed(db, [[11, 61, 77]]);
+  await runDerive(db);
+
+  assert.equal(weightOf(db, 500), 7);
+});
+
+test("the weight is a real, because the app's own scoring is", async () => {
+  // Integer division here against floating point in `sceneScore` made the two
+  // layers disagree about whether a small catalogue was worth ranking at all.
+  // One seed release at `medium` is 1 / 4: zero as an integer, 0.25 as a
+  // number. This is only the pool cut, and it runs first, so the layer saying
+  // "not worth ranking" got the last word over the layer that would have
+  // ranked it.
+  const db = corpus([{ id: 1, artists: [10] }]);
+  seed(db, [[10, 5, 100]]);
+  await runDerive(db);
+
+  assert.equal(coverageOf(db, 10).relevance, "medium");
+  assert.equal(weightOf(db, 1), 0.25);
+});
+
 test("a second run replaces the first rather than layering on top of it", async () => {
   const db = corpus([{ id: 1, artists: [10, 11] }]);
   await runDerive(db);

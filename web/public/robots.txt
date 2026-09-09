@@ -1,8 +1,8 @@
 # Dub Digger — https://dubdigger.com
 #
-# The corpus is 420,575 artists and 113,952 labels, and every one of those
-# pages is a live query against a 928 MB SQLite file on one small VPS. So this
-# file is a load rule as much as an indexing one.
+# The corpus is 444,723 artists, 114,226 labels and 1,095,302 releases, and
+# every one of those pages is a live query against a 1.26 GB SQLite file on one
+# small VPS. So this file is a load rule as much as an indexing one.
 
 User-agent: *
 Allow: /

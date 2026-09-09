@@ -344,13 +344,42 @@ export async function runDerive(
   // The lead name only, matching the release page's headline and the search
   // row: 133,205 releases credit more than one act, and picking the strongest
   // of them would rank a record by someone whose name the row never shows.
+  //
+  // The figure is `seed_releases` EXCEPT where a tradition applies, and that
+  // exception is the whole of the fix here. The seed measures dub techno, so it
+  // scores King Tubby, Burial and Juan Atkins at nothing by construction, which
+  // is why lineage exists at all. Reading the bare measure here inherited that
+  // blindness one layer down: 2,820 lifted artists scored zero and 18,978 of
+  // their records were weighted zero with them, so `commodo` answered with
+  // Commodore Dub and `scientist` with Full Moon Scientist. A tradition
+  // therefore scores on the artist's corpus output halved, floored at
+  // `seed_releases` so it only ever lifts — the same expression `artistPool`
+  // uses in the app, deliberately, because one measure read two ways is what
+  // caused this.
+  //
+  // Do NOT also divide by the artist's release count to make a record worth
+  // their average rather than their total. That idea is real and parked, and it
+  // does not compose with this: the lift makes a lineage artist score
+  // release_count / 2, so dividing by release_count hands all 9,413 of them a
+  // flat 0.5 and catalogue size stops mattering for exactly the people the lift
+  // exists to make visible. Pick one.
+  //
+  // `1.0 *` because the grade step is integer division otherwise, and this
+  // weight is only the pool cut: the app orders the 200 it gets back with
+  // `sceneScore`, which divides in floating point. A lineage artist with five
+  // records at `medium` came to 2 / 4 = 0 here and 0.5 there, so the two
+  // disagreed about whether they were worth ranking at all, and the one that
+  // said no ran first.
   step("ranking releases for search");
   db.exec(`
     DELETE FROM release_rank;
 
     INSERT INTO release_rank (release_id, weight, year)
     SELECT r.id,
-           coalesce(c.seed_releases, 0) / (1 << (CASE coalesce(c.relevance, 'none')
+           1.0 * max(coalesce(c.seed_releases, 0),
+               CASE WHEN c.lineage IS NOT NULL
+                    THEN coalesce(c.release_count, 0) / 2 ELSE 0 END)
+             / (1 << (CASE coalesce(c.relevance, 'none')
              WHEN 'very high' THEN 0
              WHEN 'high'      THEN 1
              WHEN 'medium'    THEN 2

@@ -310,6 +310,68 @@ test("inheriting cannot move the ranking, because the score it divides is zero",
   // Comp Rooms Vol 1 has no seed releases, so `sceneScore` is 0 / 2**step
   // whatever the step. Giving it the label's `very high` changes the divisor
   // and not the quotient: it still sorts below the label that lent it the word.
-  const names = search("comp rooms", 40).hits.map((h) => h.name);
+  // The merged tab, explicitly: `search` now defaults to names, where a record
+  // is not, so the cross-kind order is only visible on "all".
+  const names = search("comp rooms", 40, "all").hits.map((h) => h.name);
   assert.equal(names.indexOf("Comp Rooms") < names.indexOf("Comp Rooms Vol 1"), true);
+});
+
+/*
+ * The results page splits the same ranking into the same three tabs.
+ *
+ * Slices, not filters: a row keeps the position it already had, so the tabs
+ * cannot disagree with the order. The tab is in the URL, and `"auto"` is the
+ * page arriving without one.
+ */
+test("the results page counts every tab, whichever one it answers", () => {
+  const r = search("bas", 40, "names");
+  assert.equal(r.counts.names + r.counts.releases, r.counts.all);
+  assert.equal(r.counts.names > 0 && r.counts.releases > 0, true);
+
+  // The counts do not change with the tab; only what is on the page does.
+  assert.deepEqual(search("bas", 40, "releases").counts, r.counts);
+});
+
+test("a tab answers with its own kind, and its own truncation", () => {
+  assert.equal(
+    search("bas", 40, "names").hits.every((h) => h.kind !== "release"),
+    true,
+  );
+  assert.equal(
+    search("bas", 40, "releases").hits.every((h) => h.kind === "release"),
+    true,
+  );
+
+  // `truncated` is of the open tab, since the heading counts what is on it.
+  const one = search("bas", 1, "releases");
+  assert.equal(one.hits.length, 1);
+  assert.equal(one.truncated, true);
+});
+
+test("auto opens on names, and falls through when names is empty", () => {
+  assert.equal(search("bas", 40).kind, "names");
+
+  // "Comp Rooms Vol 1" is a record; no artist or label matches that phrase, so
+  // the page would open on an empty Artists & Labels without the fallback.
+  const comp = search("comp rooms vol", 40);
+  assert.equal(comp.counts.names, 0);
+  assert.equal(comp.kind, "releases");
+  assert.equal(comp.hits.length > 0, true);
+});
+
+test("an asked-for tab is answered even when it is empty", () => {
+  // Clicking a 0 tab is a real address and has to render, rather than falling
+  // through to a tab the reader did not ask for.
+  const empty = search("comp rooms vol", 40, "names");
+  assert.equal(empty.kind, "names");
+  assert.deepEqual(empty.hits, []);
+  assert.equal(empty.counts.all > 0, true);
+});
+
+test("a tab is a slice of one ranking, so it never reorders", () => {
+  const all = search("bas", 40, "all").hits.map((h) => `${h.kind}:${h.id}`);
+  for (const kind of ["names", "releases"] as const) {
+    const tab = search("bas", 40, kind).hits.map((h) => `${h.kind}:${h.id}`);
+    assert.deepEqual(tab, all.filter((k) => tab.includes(k)));
+  }
 });

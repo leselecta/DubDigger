@@ -191,6 +191,15 @@
           <div>
             <div class="sg-demo">
               <p class="mono-label" style="margin: 0 0 1.5rem">3 found for "chain reaction"</p>
+              <!-- The same three tabs as the dropdown, on the same ranking, as ?tab=
+                   in the URL. Every tab is drawn with its count, a 0 included. -->
+              <div class="spec-tabs" style="margin-bottom: 2.5rem">
+                <nav aria-label="Lists">
+                  <a href="#s" aria-current="page">Artists &amp; Labels <em>3</em></a>
+                  <a href="#s">Releases <em>14</em></a>
+                  <a href="#s">All <em>17</em></a>
+                </nav>
+              </div>
               <div class="spec-listhead" style="grid-template-columns: 1fr 5.5rem 11rem 5rem">
                 <span>Name</span><span>Releases</span><span class="col3">Relevance</span><span class="col3">Type</span>
               </div>
@@ -254,6 +263,21 @@ class:list={["mono-label mb-6", results.hits.length === 0 &amp;&amp; "text-accen
               coverage has no seed releases either and zero divides to zero. It does mean one column
               answers from two places, which is the same known cost above getting bigger:
               <code>gradedOn</code> carries which of the two answered, for a wording to use.
+            </p>
+            <p class="sg-rule">
+              <b>The tabs split the page, they do not filter it.</b> Three slices of one ranking, so
+              a row keeps the position it already had and the tabs cannot disagree with the order.
+              <code>?tab=</code> in the URL like every other tab on the site, and the dropdown's
+              "View all results" carries the open one across, so a shortcut lands where it pointed.
+              The page opens on Artists &amp; Labels unless that tab is empty, which is the
+              dropdown's fallback and lives in <code>search</code> because it needs the counts.
+            </p>
+            <p class="sg-rule">
+              <b>An empty tab is not a miss.</b> Every tab is drawn with its count, a 0 included,
+              because a table has room to answer where four rows at a glance do not. Clicking a 0 is
+              a real address and renders: the heading reads "No releases for …" without the accent,
+              and the corpus paragraph below is withheld, since "legitimately absent" would be false
+              about a query the other tab just answered.
             </p>
             <p class="sg-rule">
               <b>A miss is a real answer, and the copy says why.</b> "This corpus is a slice centred

@@ -296,9 +296,20 @@ const from = c + r * 0.75;
       }
 
       const shown = list!.querySelector<HTMLElement>("[data-suggest-group]:not([hidden])");
+      const out = list!.querySelector<HTMLAnchorElement>("[data-suggest-out]");
+
+      /*
+       * The way out points at the tab you are on. The results page has the same
+       * three, so following the offer at the bottom of Releases has to land on
+       * releases rather than on whatever that page would have opened by itself.
+       * The base is on the element rather than rebuilt here, so the query is
+       * escaped once, by the server, in the one place that knows it.
+       */
+      if (out) out.href = `${out.dataset.outBase}&tab=${key}`;
+
       options = [
         ...(shown ? shown.querySelectorAll<HTMLElement>("[data-suggest-option]") : []),
-        ...list!.querySelectorAll<HTMLElement>("[data-suggest-out]"),
+        ...(out ? [out] : []),
       ];
     }
 

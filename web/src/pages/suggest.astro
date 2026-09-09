@@ -162,10 +162,13 @@ Astro.response.headers.set("X-Robots-Tag", "noindex");
    * because "view all" of nothing is the shortlist offering to show its own
    * emptiness at greater length.
    *
-   * It is outside the three groups and carries no tab, because the results page
-   * has none. The tabs are the shortlist deciding which question to answer in
-   * four rows; a page built for forty answers both at once and does not need to
-   * be told which one the dropdown was on.
+   * It carries the tab you are on, and that reverses the note written here on
+   * 2026-09-09 when the results page had none. It has one now, so a way out
+   * that dropped the tab would land a reader somewhere other than where the
+   * link was pointing: arrowing into Releases and following the offer at the
+   * bottom of them has to arrive at releases. The href below is the opening
+   * tab; the script rewrites it on every switch, since which tab is open is
+   * exactly the thing the server cannot know.
    *
    * The chevron is the tab row's, at the size the tab row draws it. One arrow
    * on the site, pointing the one direction it ever points.
@@ -189,9 +192,10 @@ Astro.response.headers.set("X-Robots-Tag", "noindex");
     <a
       role="option"
       aria-selected="false"
-      href={`/?q=${encodeURIComponent(q)}`}
+      href={`/?q=${encodeURIComponent(q)}&tab=${opens}`}
       data-suggest-option
       data-suggest-out
+      data-out-base={`/?q=${encodeURIComponent(q)}`}
       class="bg-accent text-bg hover:bg-ink hover:text-bg data-[active=true]:bg-ink data-[active=true]:text-bg flex cursor-pointer items-center justify-between gap-3 px-4 py-3 transition-colors"
     >
       <span class="font-mono text-[0.6875rem] font-medium tracking-[0.1em] uppercase">

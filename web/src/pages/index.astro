@@ -4,12 +4,59 @@ import SearchField from "@/components/SearchField.astro";
 import Eyebrow from "@/components/Eyebrow.astro";
 import LabelledBand from "@/components/LabelledBand.astro";
 import { getCorpusStats, getDbPath } from "@/lib/db";
+import Tabs from "@/components/Tabs.astro";
 import { search } from "@/lib/queries";
+import type { SearchKind } from "@/lib/queries";
 import { GRADE_SHADE, gradeWord } from "@/lib/view";
 
 const q = Astro.url.searchParams.get("q") ?? undefined;
 const stats = getCorpusStats();
-const results = q ? search(q) : null;
+
+/*
+ * The same three tabs as the dropdown, on the same three slices of the same
+ * ranking. The dropdown asks which question first in four rows; this asks it
+ * in forty, and the two have to agree or the shortcut lands somewhere other
+ * than where it was pointing.
+ *
+ * Which tab a query opens on depends on what is behind them: `names` unless it
+ * is empty, which is the dropdown's fallback rule and is settled inside
+ * `search` because it needs the counts and the counts need the ranking. So a
+ * title nobody recorded an artist for still answers on arrival, rather than
+ * showing a reader an empty Artists & Labels and leaving them to find the tab
+ * that has it.
+ *
+ * `?tab=` in the URL, like every other tab on the site: a link, a real address,
+ * and no state the server cannot answer for.
+ */
+const asked = Astro.url.searchParams.get("tab") ?? "";
+const wanted =
+  asked === "names" || asked === "releases" || asked === "all" ? asked : ("auto" as const);
+
+const results = q ? search(q, 40, wanted) : null;
+
+const kind: SearchKind = results?.kind ?? "names";
+
+const TAB_LABELS: Record<SearchKind, string> = {
+  names: "Artists & Labels",
+  releases: "Releases",
+  all: "All",
+};
+
+/*
+ * Every tab is drawn, including an empty one, which is the opposite of the
+ * dropdown's rule and right for the opposite reason. Four rows read at a glance
+ * cannot spend one on a tab that is a way in to nothing; a table has a count
+ * beside each word, so an empty tab says "0" and answers the question rather
+ * than raising it. Hiding it here would leave a reader wondering whether the
+ * page had looked.
+ */
+const tabs = results
+  ? (["names", "releases", "all"] as const).map((key) => ({
+      key,
+      label: TAB_LABELS[key],
+      count: results.counts[key],
+    }))
+  : [];
 
 /*
  * A query, and something to answer it with. The second half is what keeps the
@@ -173,12 +220,29 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
                 results.hits.length === 0 && "text-accent",
               ]}
             >
-              {results.hits.length === 0
+              {results.counts.all === 0
                 ? `Nothing found for “${q}”`
-                : results.truncated
-                  ? `Closest ${results.hits.length} for “${q}”`
-                  : `${results.hits.length} found for “${q}”`}
+                : results.hits.length === 0
+                  ? `No ${kind === "releases" ? "releases" : "artists or labels"} for “${q}”`
+                  : results.truncated
+                    ? `Closest ${results.hits.length} for “${q}”`
+                    : `${results.hits.length} found for “${q}”`}
             </h1>
+
+            {/*
+             * The tab row, under the count and above the columns, because the
+             * count is what the page is and the tabs are how it is cut. Every
+             * tab is drawn even at zero: a reader who clicks Releases and finds
+             * none has been answered, and the row is how they get back.
+             *
+             * `basePath` carries the query, which is why `Tabs` works out its
+             * own separator. `?tab=` and nothing else, so a tab is a real
+             * address that can be linked, shared and gone back to, and the
+             * dropdown's way out can point straight at one.
+             */}
+            {results.counts.all > 0 && (
+              <Tabs tabs={tabs} active={kind} basePath={`/?q=${encodeURIComponent(q!)}`} />
+            )}
 
             {/*
              * The paragraph takes no top padding: the heading's own `mb-6` is
@@ -187,7 +251,19 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
              * second gap on top of that and floated the sentence away from the
              * label it belongs to.
              */}
-            {results.hits.length === 0 ? (
+            {results.counts.all > 0 && results.hits.length === 0 ? (
+              /*
+               * An empty tab is not a miss, and the two must not read alike.
+               * The corpus paragraph says a name is legitimately absent from a
+               * slice centred on dub techno, which would be false here: the
+               * query was answered, on another tab, and the row above says by
+               * how many. So this is one line and no argument.
+               */
+              <p class="text-body text-ink-muted max-w-[720px] pb-10">
+                Nothing under this heading, but the other tabs above have{" "}
+                {results.counts.all.toLocaleString("en-GB")}.
+              </p>
+            ) : results.hits.length === 0 ? (
               <p class="text-body text-ink-muted max-w-[720px] pb-10">
                 This corpus is a slice centred on dub techno, not all of Discogs, so plenty of real
                 artists and labels are legitimately absent. That is the boundary working, not a gap.

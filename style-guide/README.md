@@ -154,7 +154,10 @@ Component rules worth not rediscovering:
 - **The dropdown asks which question first.** Three tabs (Artists & Labels · Releases · All),
   four rows each, all three fetched together and switched with left/right — but only once the
   arrows are in the list, since those keys are the caret's until then. A tab shows only when
-  both kinds matched.
+  both kinds matched, and "View all results" carries the open tab into the results page.
+- **The results page has the same three**, as `?tab=` in the URL, drawn with `Tabs` and showing
+  every tab with its count including a 0. Opens on names unless names is empty. An empty tab is
+  not a miss: no accent, no corpus paragraph, one line pointing at the tabs.
 - **The dropdown's last row is the way out**, "View all results" pointing at `/?q=`. A real option,
   so the arrows reach it and the script needs no line for it, and only rendered under names: a miss
   returns nothing and the list stays shut. It carries the accent as a ground at rest, which is why

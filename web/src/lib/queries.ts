@@ -629,9 +629,20 @@ export interface SearchResults {
   /**
    * Whether the ranking had more to show than the page asked for. Reported
    * rather than inferred from the total, because "40 found" would be stating
-   * the cap as if it were a count.
+   * the cap as if it were a count. Of the open tab, not of the ranking: the
+   * heading counts what is on the page.
    */
   truncated: boolean;
+  /**
+   * How many are behind each tab, counted before the slice.
+   *
+   * The tab row shows all three whichever one is open, which is what makes the
+   * split legible: a query answering nothing under Artists & Labels says so
+   * with a 0 beside the word rather than by looking broken.
+   */
+  counts: Record<SearchKind, number>;
+  /** The tab actually answered, which is what `"auto"` resolved to. */
+  kind: SearchKind;
 }
 
 /**
@@ -968,9 +979,40 @@ function oneRowPerRecord(rows: ScoredRow[]): ScoredRow[] {
   });
 }
 
-export function search(query: string, limit = 40): SearchResults {
+/**
+ * Which question the results page is answering, same three as the dropdown.
+ *
+ * The page splits rather than filters: these are slices of one ranking, so a
+ * row keeps the position it already had and the tabs cannot disagree with the
+ * order. `names` is the default because it is the question this tool exists to
+ * answer, and because it is the dropdown's default, and a shortcut that lands
+ * you somewhere other than where it was pointing is not a shortcut.
+ */
+export type SearchKind = "names" | "releases" | "all";
+
+/**
+ * Ranks once and answers one tab.
+ *
+ * `"auto"` is the page arriving without a `?tab=`, and it resolves to the
+ * preferred tab unless that one is empty. It has to be settled in here rather
+ * than by the caller, because the fallback needs the counts and the counts need
+ * the ranking: asking for them first would run both pools twice, which on the
+ * worst two-letter prefix in the corpus is 84 ms paid again for an answer
+ * already in hand. The resolved tab comes back on `kind`.
+ */
+export function search(
+  query: string,
+  limit = 40,
+  want: SearchKind | "auto" = "auto",
+): SearchResults {
   const db = getDb();
-  if (!db || query.trim().length === 0) return { hits: [], truncated: false };
+  const empty = {
+    hits: [],
+    truncated: false,
+    counts: { names: 0, releases: 0, all: 0 },
+    kind: "names" as SearchKind,
+  };
+  if (!db || query.trim().length === 0) return empty;
 
   const term = matchTerm(query);
   const artists = artistPool(db, term);
@@ -987,8 +1029,26 @@ export function search(query: string, limit = 40): SearchResults {
 
   const ranked = oneRowPerRecord(rankHits(query, [...artists, ...labels, ...releases]));
 
+  /*
+   * Counted before the slice, because the tab row has to say how many are
+   * behind each tab and not how many fit on this page. Free, since the pools
+   * had to run to produce the ranking either way.
+   */
+  const names = ranked.filter((r) => r.kind !== "release");
+  const records = ranked.filter((r) => r.kind === "release");
+  const counts = { names: names.length, releases: records.length, all: ranked.length };
+
+  const kind: SearchKind =
+    want !== "auto"
+      ? want
+      : ((["names", "releases", "all"] as const).find((k) => counts[k] > 0) ?? "names");
+
+  const shown = kind === "names" ? names : kind === "releases" ? records : ranked;
+
   return {
-    hits: ranked
+    counts,
+    kind,
+    hits: shown
       .slice(0, limit)
       .map((r) => ({
         id: r.id,
@@ -1000,7 +1060,7 @@ export function search(query: string, limit = 40): SearchResults {
         gradedOn: r.kind === "release" ? (r.graded_on ?? "none") : null,
         connection: connection(r),
       })),
-    truncated: ranked.length > limit,
+    truncated: shown.length > limit,
   };
 }
 

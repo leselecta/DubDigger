@@ -11,7 +11,7 @@
     "build": "npm run build --workspace web",
     "dev": "npm run dev --workspace web",
     "ingest": "npm run --workspace ingest",
-    "preview": "npm run preview --workspace web",
+    "preview": "npm run preview --workspace web --",
     "start": "npm run start --workspace web",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"

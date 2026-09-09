@@ -300,6 +300,16 @@ const mainEntity = {
         }
       </FieldRow>
 
+      {/*
+       * The title again, under the byline that is also above it.
+       *
+       * The block is the record's metadata in full rather than the things the
+       * headline left out, so the field a sleeve leads with belongs in it. Plain
+       * ink, not accent: the two coloured rows are the pivots, and the one thing
+       * on this page that cannot be a link is the page itself.
+       */}
+      <FieldRow label="Title">{release.title}</FieldRow>
+
       <FieldRow label={release.labels.length > 1 ? "Labels" : "Label"}>
         {
           release.labels.length === 0 ? (

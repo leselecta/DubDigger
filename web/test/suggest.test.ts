@@ -112,6 +112,26 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
   by.run(503, 99, "Someone Uncredited");
   weigh.run(503, 1, 2004);
 
+  /*
+   * The inheritance cases, which are three and not one.
+   *
+   * A compilation has no single maker, so it takes its label's grade: `Various`
+   * is a fact about the record rather than a hole in the data. An artist the
+   * corpus graded `none` keeps `none` even on a top-step label, because
+   * `artist_coverage.relevance` is NOT NULL and only a missing row falls
+   * through — regrading a measured artist on the room they released in would be
+   * the fallback quietly overwriting an answer it was only meant to replace.
+   */
+  label.run(13, "Comp Rooms");
+  grade.run(13, 30, 25, 0.83, "very high");
+
+  record.run(504, "Comp Rooms Vol 1", 2010);
+  by.run(504, 97, "Various");
+  weigh.run(504, 0, 2010);
+  release.run(504, 13, "Comp Rooms");
+
+  release.run(502, 13, "Comp Rooms");
+
   db.exec("INSERT INTO artist_search(artist_search) VALUES('rebuild')");
   db.exec("INSERT INTO label_search(label_search) VALUES('rebuild')");
   db.exec("INSERT INTO release_search(release_search) VALUES('rebuild')");
@@ -119,7 +139,7 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
 }
 
 process.env.DUBDIGGER_DB = file;
-const { suggest, matchTerm, SUGGEST_MIN_CHARS } = await import("../src/lib/queries.ts");
+const { suggest, search, matchTerm, SUGGEST_MIN_CHARS } = await import("../src/lib/queries.ts");
 
 test("quotes the term and gives it a trailing wildcard", () => {
   assert.equal(matchTerm("basic"), '"basic"*');
@@ -242,4 +262,54 @@ test("shows four a tab, because a dropdown is read at a glance", () => {
   // Asking for more than there are gives what there is, not four.
   assert.equal(suggest("bas", 8).names.length, 5);
   assert.equal(suggest("bas", 8).releases.length, 3);
+});
+
+/*
+ * The results column, and where each row's word comes from.
+ *
+ * The grade was never a new claim on a record: `rankHits` halves a record's
+ * weight by the lead artist's grade and always has, so the order was already
+ * built on the inherited word. These pin which of the two answered, because one
+ * column now reads from two places.
+ */
+const graded = (query: string, name: string) => search(query, 40).hits.find((h) => h.name === name)!;
+
+test("a name answers for its own grade, and carries no source", () => {
+  const hit = graded("basic", "Basic Channel");
+  assert.equal(hit.relevance, "very high");
+  assert.equal(hit.gradedOn, null);
+});
+
+test("a record inherits the lead artist's grade", () => {
+  const hit = graded("basic sound", "Basic Sound");
+  assert.equal(hit.relevance, "very high");
+  assert.equal(hit.gradedOn, "artist");
+});
+
+test("a compilation with no maker inherits the label's instead", () => {
+  const hit = graded("comp rooms vol", "Comp Rooms Vol 1");
+  assert.equal(hit.relevance, "very high");
+  assert.equal(hit.gradedOn, "label");
+});
+
+test("an artist graded none keeps none, whatever label they released on", () => {
+  // Bassline Trak is on Comp Rooms, which is `very high`. Its maker is measured
+  // at `none`, and a measured answer is not replaced by a fallback.
+  const hit = graded("bassline trak", "Bassline Trak");
+  assert.equal(hit.relevance, "none");
+  assert.equal(hit.gradedOn, "artist");
+});
+
+test("a record with neither has neither, rather than a borrowed word", () => {
+  const hit = graded("basement dub", "Basement Dub");
+  assert.equal(hit.relevance, "none");
+  assert.equal(hit.gradedOn, "none");
+});
+
+test("inheriting cannot move the ranking, because the score it divides is zero", () => {
+  // Comp Rooms Vol 1 has no seed releases, so `sceneScore` is 0 / 2**step
+  // whatever the step. Giving it the label's `very high` changes the divisor
+  // and not the quotient: it still sorts below the label that lent it the word.
+  const names = search("comp rooms", 40).hits.map((h) => h.name);
+  assert.equal(names.indexOf("Comp Rooms") < names.indexOf("Comp Rooms Vol 1"), true);
 });

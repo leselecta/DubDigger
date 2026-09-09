@@ -145,8 +145,12 @@ Component rules worth not rediscovering:
 - **`FieldRow last` is a prop**, not a wrapper: a `<dl>`'s grouping `<div>` is the component itself.
 - **A grade never appears as a bare word** except in the results column, which is a known cost,
   and in the suggestion dropdown's Artists & Labels tab, which is the same cost on the same
-  ranking. A record has no grade and is never given a borrowed one: its row prints the lead
-  artist where a name's row prints the grade.
+  ranking.
+- **A record inherits its grade** in the results column, from the lead artist (97.1% of release
+  rows) and from the label on a compilation, which has no single maker. Not a new claim: the
+  ranking already halves a record by that same figure. It cannot move the order, because a record
+  with no artist coverage has no seed releases either and zero divides to zero. In the dropdown a
+  record still prints the lead artist where a name prints the grade.
 - **The dropdown asks which question first.** Three tabs (Artists & Labels · Releases · All),
   four rows each, all three fetched together and switched with left/right — but only once the
   arrows are in the list, since those keys are the caret's until then. A tab shows only when
@@ -188,7 +192,7 @@ skip link → SiteHeader → <main id="content"> page bands </main> → SiteFoot
 |---|---|
 | `column` | 1200px, 1.5rem gutter, 3rem from md |
 | `LIST_GRID` | `1fr 5rem` → `1fr 6rem 10rem` at md |
-| `RESULT_GRID` | `1fr 4.5rem` → `1fr 5.5rem 5rem` at md (`index.astro` only); the relevance column went when records joined the search |
+| `RESULT_GRID` | `1fr 4.5rem` → `1fr 5.5rem 11rem 5rem` at md (`index.astro` only); a record inherits its grade, from the lead artist and from the label on a compilation the search |
 | Grid gap-x | 22px |
 | List row | `py-[18px]` · identity row `py-2` · band `py-14` |
 | Header height | 76px · hero field 64px · header field 44px |

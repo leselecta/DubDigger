@@ -5,6 +5,7 @@ import Eyebrow from "@/components/Eyebrow.astro";
 import LabelledBand from "@/components/LabelledBand.astro";
 import { getCorpusStats, getDbPath } from "@/lib/db";
 import { search } from "@/lib/queries";
+import { GRADE_SHADE, gradeWord } from "@/lib/view";
 
 const q = Astro.url.searchParams.get("q") ?? undefined;
 const stats = getCorpusStats();
@@ -27,31 +28,38 @@ const columns: [string, number][] = stats
   : [];
 
 /** The column widths, shared by the header row and every result, so they line up. */
-const RESULT_GRID = "grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_5rem]";
+const RESULT_GRID = "grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_11rem_5rem]";
 
 /**
- * The relevance column is gone, and it went at the root rather than by patch.
+ * The relevance column is back, and a record inherits its grade.
  *
  * It carried the grade in five words, and the argument for it was that breadth
  * is only an asset when a distant act looks distant: Mozart is genuinely in
  * this corpus, on 85 releases that really do credit someone here, and saying so
- * is honest where hiding him would not be. That still holds on a page about a
- * name, and the artist and label pages still say it in full, with the reason
- * beside it.
+ * is honest where hiding him would not be.
  *
- * What broke it was records becoming searchable on 2026-09-08. A grade measures
- * a body of work against the cluster and one pressing is not a body of work, so
- * a third of the rows had no word to show. Every way of filling the cell was
- * worse than the cell: the lead artist's grade would put a word about a person
- * in a row about a record, and a blank would leave the one column on the site
- * that is scanned forty rows at a time reading as broken data.
+ * It came out on 2026-09-08, when records became searchable and a third of the
+ * rows had nothing to show, and the objection recorded then was that the lead
+ * artist's grade would put a word about a person in a row about a record.
+ * **What put it back on 2026-09-09 is that the ranking was already doing
+ * exactly that.** `rankHits` halves a record's weight by the lead artist's
+ * grade and always has, so the order was built on the inherited word and the
+ * column was the one part of the page not saying so. Showing it is the page
+ * agreeing with its own sort rather than making a new claim, and the artist's
+ * name is already on the line below the title, so the word sits beside the name
+ * it describes.
  *
- * So the column that could not answer for every row stopped being asked. What
- * is left is what a result list is for: the name, what it is, and how much work
- * stands behind it.
+ * Measured: 97.1% of release rows across 50 queries have an artist grade to
+ * inherit. The rest are compilations, every one, and they take the label's
+ * grade instead — a `Various` record has no single maker, which is a fact about
+ * the record rather than a hole in the data, and the room it came out on is the
+ * next honest thing to ask. Simone took the label fallback on 2026-09-09 with
+ * the objection on the table: one column now answers from two places, which is
+ * a second provenance in the one column on the site where the word already
+ * stands alone. `gradedOn` carries which, so the wording can own it.
  */
 
-const rows = results?.hits ?? [];
+const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.relevance) }));
 ---
 
 {/*
@@ -195,11 +203,12 @@ const rows = results?.hits ?? [];
                 >
                   <span>Name</span>
                   <span>Releases</span>
+                  <span class="hidden md:block">Relevance</span>
                   <span class="hidden md:block">Type</span>
                 </div>
 
                 <ul>
-                  {rows.map((hit) => (
+                  {rows.map(({ hit, grade }) => (
                     <li
                       class:list={[
                         "border-hairline-soft grid items-baseline gap-x-[22px] border-b py-[18px]",
@@ -266,7 +275,35 @@ const rows = results?.hits ?? [];
                        * out "Basic Channel, 47, high, artist". Out of flow and
                        * still spoken, every value keeps the word for what it is.
                        */}
-                      <span class="text-ink col-start-1 mt-2 font-mono text-xs tracking-[0.1em] uppercase md:row-start-1 md:col-start-3 md:mt-0">
+                      {/*
+                       * The grade, and on a record the grade it inherits.
+                       *
+                       * A name answers for itself. A record has no body of work
+                       * to measure, so it takes its lead artist's word — which
+                       * is not a new claim, because `rankHits` has always halved
+                       * a record's weight by exactly that figure. The order was
+                       * already built on it. What changed is the column saying
+                       * so, and the artist's name is on the line above, so the
+                       * word sits beside the name it belongs to.
+                       *
+                       * A compilation takes its label's instead: `Various` is a
+                       * record with no single maker rather than a missing one,
+                       * and the room it came out on is the next honest thing to
+                       * ask. Both are the same five steps, which is what lets
+                       * one column hold them; `gradedOn` is what a wording can
+                       * use to say which answered, and nothing reads it yet.
+                       */}
+                      <span
+                        class:list={[
+                          "col-start-1 mt-2 font-mono text-xs tracking-[0.1em] uppercase md:row-start-1 md:col-start-3 md:mt-0",
+                          GRADE_SHADE[grade],
+                        ]}
+                      >
+                        <span class="text-ink-faint md:sr-only">Relevance:</span>
+                        {grade}
+                      </span>
+
+                      <span class="text-ink col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:row-start-1 md:col-start-4 md:mt-0">
                         <span class="text-ink-faint md:sr-only">Type:</span>
                         {hit.kind}
                       </span>

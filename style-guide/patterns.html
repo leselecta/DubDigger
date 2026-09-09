@@ -207,6 +207,27 @@
                   <span class="col3 spec-grades"><span class="g-verylow" style="min-width: 0">very low</span></span>
                   <span class="col3" style="color: var(--color-ink); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase">artist</span>
                 </li>
+                <!-- A record: N/A for a count, and a grade inherited from the lead
+                     artist named on the line below the title. -->
+                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 11rem 5rem">
+                  <div>
+                    <a href="#s" class="spec-row-name">Chain Reaction EP</a>
+                    <div class="spec-row-sub">SND &amp; RTN &middot; 2013</div>
+                  </div>
+                  <span class="count">N/A</span>
+                  <span class="col3 spec-grades"><span class="g-veryhigh" style="min-width: 0">very high</span></span>
+                  <span class="col3" style="color: var(--color-ink); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase">release</span>
+                </li>
+                <!-- A compilation: no single maker, so the grade is the label's. -->
+                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 11rem 5rem">
+                  <div>
+                    <a href="#s" class="spec-row-name">Echocord &middot; Jubilee Comp.</a>
+                    <div class="spec-row-sub">Various &middot; 2011</div>
+                  </div>
+                  <span class="count">N/A</span>
+                  <span class="col3 spec-grades"><span class="g-veryhigh" style="min-width: 0">very high</span></span>
+                  <span class="col3" style="color: var(--color-ink); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase">release</span>
+                </li>
               </ul>
             </div>
             <pre class="sg-code">const RESULT_GRID = "<b>grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_11rem_5rem]</b>";
@@ -218,6 +239,21 @@ class:list={["mono-label mb-6", results.hits.length === 0 &amp;&amp; "text-accen
               <b>The search results column is the one place a grade stands alone</b>, with no room
               to say what it stands on. That is a known cost of merging the two axes into one
               scale, not a licence to do it elsewhere.
+            </p>
+            <p class="sg-rule">
+              <b>A record has no grade of its own and inherits one.</b> Not a new claim: the ranking
+              already halves a record's weight by the lead artist's grade, so the order was built on
+              that word and the column was the one part of the page not saying so. 97.1% of release
+              rows have an artist grade to inherit, and the artist is named on the line under the
+              title, so the word sits beside the name it describes.
+            </p>
+            <p class="sg-rule">
+              <b>A compilation takes its label's grade instead.</b> <code>Various</code> is a record
+              with no single maker rather than a hole in the data, so the room it came out on is the
+              next honest thing to ask. It cannot move the order, because a record with no artist
+              coverage has no seed releases either and zero divides to zero. It does mean one column
+              answers from two places, which is the same known cost above getting bigger:
+              <code>gradedOn</code> carries which of the two answered, for a wording to use.
             </p>
             <p class="sg-rule">
               <b>A miss is a real answer, and the copy says why.</b> "This corpus is a slice centred

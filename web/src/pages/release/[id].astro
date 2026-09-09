@@ -188,6 +188,40 @@ const mainEntity = {
     </h1>
 
     {/*
+     * The label page's stat line, on a record: same accent, same white
+     * separator, same place under the title.
+     *
+     * The room and the year, which is the pair a digger reads off a sleeve
+     * first and the shortest true answer to what this is. Both appear again in
+     * the block below at full precision, every label with its catalogue number
+     * and the date to the day where the dump has one, so this is the summary
+     * and that is the record. The sibling page took its scene share OUT of this
+     * line for repeating the row beneath it, and the difference is that a
+     * percentage printed twice is one fact twice over, where a year and a date
+     * are the glance and the detail.
+     *
+     * First label only, for the reason the byline above takes only the first
+     * name: this line is an identity, not a list.
+     *
+     * Nothing renders when the dump has neither, rather than a lone separator
+     * on an empty accent line. The separator carries one hard space each side
+     * and the newlines around it supply the other, which is the sibling's
+     * spelling and therefore its exact spacing: `compressHTML` is off, so a
+     * newline between two expressions renders as the space it looks like.
+     */}
+    {
+      (release.labels[0] || release.year) && (
+        <p class="text-accent mt-10 font-mono text-[0.8125rem] tracking-[0.06em] uppercase">
+          {release.labels[0]?.name}
+          {release.labels[0] && release.year && (
+            <span class="text-ink-strong">&nbsp;·&nbsp;</span>
+          )}
+          {release.year}
+        </p>
+      )
+    }
+
+    {/*
      * The one link that leaves, as a button rather than a row, and it sits
      * under the title rather than under the record.
      *

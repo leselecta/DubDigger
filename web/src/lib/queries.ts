@@ -1182,12 +1182,14 @@ export function getArtistReleases(
   }));
 }
 
-/** A label's releases, newest first. `exclude` as above. */
-export function getLabelReleases(
-  labelId: number,
-  limit = 300,
-  exclude: number | null = null,
-): ArtistRelease[] {
+/**
+ * A label's releases, newest first.
+ *
+ * No `exclude` here, unlike the artist's: the release page's "more from label"
+ * tab was the only caller that needed to drop the record you are on, and that
+ * tab is gone.
+ */
+export function getLabelReleases(labelId: number, limit = 300): ArtistRelease[] {
   const db = getDb();
   if (!db) return [];
 
@@ -1205,12 +1207,12 @@ export function getLabelReleases(
                 WHERE ra.release_id = r.id) AS by_line
          FROM release_labels rl
          JOIN releases r ON r.id = rl.release_id
-        WHERE rl.label_id = ? AND r.id <> ?
+        WHERE rl.label_id = ?
         GROUP BY r.id
         ORDER BY r.year IS NULL, r.year DESC, r.title
         LIMIT ?`,
     )
-    .all(labelId, exclude ?? -1, limit) as {
+    .all(labelId, limit) as {
     id: number;
     title: string;
     year: number | null;

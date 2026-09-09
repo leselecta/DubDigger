@@ -277,6 +277,13 @@ const jsonLd = JSON.stringify({ "@context": "https://schema.org", "@graph": grap
        * hint rather than written down twice: it is a design decision that has
        * already changed once, and a copy here would have gone stale silently.
        *
+       * The nudge stops at the tab's own left edge, which matters once a tab
+       * is wider than the row it sits in: the release page's "More releases by
+       * this artist" is 32 characters against a 342px phone, and bringing its
+       * right edge into view opened the row reading "E RELEASES BY THIS
+       * ARTIST". Where the whole tab cannot fit, the start of it is the half
+       * worth showing.
+       *
        * Called at parse time as well as after a swap, so it also catches a tab
        * opened cold from a shared URL, where there is no swap to listen for.
        * Both run before paint, so the row is never seen moving.
@@ -289,7 +296,7 @@ const jsonLd = JSON.stringify({ "@context": "https://schema.org", "@graph": grap
         const seen = row.getBoundingClientRect();
         const here = tab.getBoundingClientRect();
         const clear = row.querySelector(".scroll-hint")?.clientWidth ?? 0;
-        const past = here.right + clear - seen.right;
+        const past = Math.min(here.right + clear - seen.right, here.left - seen.left);
 
         if (past > 0) row.scrollLeft += past;
         else if (here.left < seen.left) row.scrollLeft -= seen.left - here.left;

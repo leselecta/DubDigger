@@ -10,8 +10,6 @@ import {
   getArtist,
   getArtistReleases,
   getFormats,
-  getLabel,
-  getLabelReleases,
   getRelease,
   getReleaseCredits,
 } from "@/lib/queries";
@@ -37,60 +35,80 @@ const format = formatLine(release.formats);
 const date = releasedOn(release.released);
 
 /*
- * Where "more from" goes: the first name on the line, and the first label.
+ * Where "more from" goes: the first name on the line.
  *
  * First rather than best, because the line is ordered by the record itself and
- * the first name is the one the headline shows. Both are skipped when the
- * corpus holds no page to pivot to, which for a credited name is the common
- * case rather than the exception.
+ * the first name is the one the headline shows. Skipped when the corpus holds
+ * no page to pivot to, which for a credited name is the common case rather
+ * than the exception.
+ *
+ * The label had a tab of its own here and lost it. It was the widest of the
+ * three and the least about this record: a catalogue in release order, where
+ * the label's own page already ranks the same records and its roster besides.
+ * The pivot is not gone, it is one row up in the identity block, which is
+ * where a reader looking for the room goes anyway. The cost is 49,255
+ * releases, 4.5%, that had the label tab as their only one and now carry no
+ * tabs at all: no credits entered and a lead name with no page. Those pages
+ * were already answering "what else is on this label" instead of anything
+ * about the record.
  */
 const lead = line[0] ?? null;
 const artist = lead?.inCorpus ? getArtist(lead.id) : null;
-const label = release.labels[0] ? getLabel(release.labels[0].id) : null;
 
 /* Everything they have except this one, which is not more of anything. */
 const fromArtist = artist ? Math.max(artist.releaseCount - 1, 0) : 0;
-const fromLabel = label ? Math.max(label.releaseCount - 1, 0) : 0;
 
 /*
- * Credits last, and they used to be a band of their own above all three.
+ * Credits last, and they used to be a band of their own above the rest.
  *
  * The argument for the band was that credits are what the record IS, where the
- * other two lists are only where to go next, and that filing the answer with
- * the follow-up questions buries it. What settled it the other way is the
- * phone: the band pushed the first list two screens down, so a reader had to
- * scroll past every credit on a well-entered record to find out there was
- * anything else on the page at all.
+ * other list is only where to go next, and that filing the answer with the
+ * follow-up questions buries it. What settled it the other way is the phone:
+ * the band pushed the first list two screens down, so a reader had to scroll
+ * past every credit on a well-entered record to find out there was anything
+ * else on the page at all.
  *
- * Third rather than first, which means the page opens on more from the artist.
- * The record itself is already above: the artist line, the label, the pressing
- * and the tracklist are the identity block, so what the tabs are for is where
- * to go next, and the credits are the deepest of the three rather than the
- * headline.
+ * Second rather than first, which means the page opens on more from the
+ * artist. The record itself is already above: the artist line, the label, the
+ * pressing and the tracklist are the identity block, so what the tabs are for
+ * is where to go next, and the credits are the deeper of the two rather than
+ * the headline.
  *
  * No tab when the corpus holds no credits, because a tab is a way in and there
  * is nothing behind that one. The record still says so, in the identity block
  * above, where a missing thing is reported next to the things that are there.
  */
 const tabs = [
-  ...(fromArtist > 0 ? [{ key: "artist", label: "More from artist", count: fromArtist }] : []),
-  ...(fromLabel > 0 ? [{ key: "label", label: "More from label", count: fromLabel }] : []),
+  /*
+   * "This artist" rather than the artist's name, which was tried and put a
+   * 48-character tab on Grandmaster Melle Mel & The Furious Five: 718px of row
+   * in a 342px viewport, which pushed Credits off the phone entirely. A name
+   * cannot be truncated to fit, since that is the interface editing the thing
+   * it points at, so the way to keep the row honest is not to put a name in
+   * it. The name is already the byline above, two lines up.
+   *
+   * Four words rather than five, and the word that went is what buys the
+   * phone. Counted with the row's own arithmetic against all 927,311 release
+   * pages that carry this tab, "More by this artist" fits a 390px viewport on
+   * 917,263 of them, 98.9%, where "More releases by this artist" fits 389,017,
+   * 42.0%: at 29 characters before the count it is over the row on any page
+   * that also has credits. The 1.1% left over are the pages with four-figure
+   * counts, and they scroll and say so.
+   */
+  ...(fromArtist > 0
+    ? [{ key: "artist", label: "More by this artist", count: fromArtist }]
+    : []),
   ...(count > 0 ? [{ key: "credits", label: "Credits", count }] : []),
 ];
 const asked = params.get("tab") ?? "";
 const active = tabs.some((t) => t.key === asked) ? asked : (tabs[0]?.key ?? "");
 
-const more =
-  active === "artist" && artist
-    ? getArtistReleases(artist.id, limit, release.id)
-    : active === "label" && label
-      ? getLabelReleases(label.id, limit, release.id)
-      : [];
+const more = active === "artist" && artist ? getArtistReleases(artist.id, limit, release.id) : [];
 
 /* One query for the whole page of rows, since the sentence is written here. */
 const formats = getFormats(more.map((r) => r.id));
 
-const total = active === "artist" ? fromArtist : fromLabel;
+const total = fromArtist;
 
 /*
  * One `show` for whichever tab is open, and it can be one because only one list
@@ -186,12 +204,43 @@ const mainEntity = {
       href={`https://www.discogs.com/release/${release.id}`}
       target="_blank"
       rel="noreferrer"
-      class="border-edge-strong hover:bg-ink hover:text-bg mt-9 inline-block border px-8 py-[15px] font-mono text-xs tracking-[0.2em] uppercase transition-colors"
+      class="border-edge-strong hover:bg-ink hover:text-bg group mt-9 inline-block border px-8 py-[15px] font-mono text-xs tracking-[0.2em] uppercase transition-colors"
     >
       View on Discogs<span class="sr-only"> (opens in a new tab)</span>
-      <span class="text-ink-faint ml-3" aria-hidden="true">↗</span>
+      {/*
+       * Half again the size of the label beside it and wearing the accent,
+       * since it is the one mark saying this link leaves the site.
+       *
+       * `leading-[0]` is what keeps the button at the 48px it already was.
+       * Anything over 14px in this row grows it otherwise, measured: 16px
+       * takes it to 48.9 and 18px to 50, because the glyph's line box is
+       * taller than the 12px label's and the tallest one on the line wins. A
+       * zero line box contributes nothing to that measurement.
+       *
+       * Sitting on the baseline is the alignment, not `align-middle`, which
+       * dropped it 2.4px and read as low against an uppercase label. Middle
+       * centres on the x-height, and there is no x-height in VIEW ON DISCOGS:
+       * the band to centre in runs baseline to cap. Measured in the page, the
+       * arrow's ink is 7.6px tall and rests on the baseline, so its centre
+       * lands 3.8px up against the caps' 4.26px, half a pixel out.
+       *
+       * It inverts with the ground on hover rather than staying accent, which
+       * on the ink ground would be a wash at 1.7:1.
+       */}
+      <span
+        class="text-accent group-hover:text-bg ml-3 align-baseline text-lg leading-[0]"
+        aria-hidden="true">↗</span
+      >
     </a>
 
+    {/*
+     * The two pivots in this block wear the accent. A record is the people and
+     * the room behind it, so those are the links a digger reaches for, and the
+     * rest of the block is carrier detail nobody clicks. Hover inverts to
+     * `ink-strong` instead of turning accent, the way the dropdown's "View all
+     * results" row does: a link that is already accent cannot say it is being
+     * reached for by becoming accent.
+     */}
     <dl class="mt-12 max-w-[760px]">
       <FieldRow label={line.length > 1 ? "Artists" : "Artist"}>
         {
@@ -207,7 +256,7 @@ const mainEntity = {
                  * the same reason, or `link-rule` underlines a trailing space.
                  */}
                 {a.inCorpus ? (
-                  <a href={`/artist/${a.id}`} class="link-rule">{a.name}</a>
+                  <a href={`/artist/${a.id}`} class="link-rule text-accent hover:text-ink-strong">{a.name}</a>
                 ) : (
                   <span class="text-ink-dim">{a.name}</span>
                 )}{a.separator}
@@ -231,7 +280,7 @@ const mainEntity = {
             <span class="flex flex-wrap gap-x-4 gap-y-1">
               {release.labels.map((l) => (
                 <span>
-                  <a href={`/label/${l.id}`} class="link-rule">{l.name}</a>
+                  <a href={`/label/${l.id}`} class="link-rule text-accent hover:text-ink-strong">{l.name}</a>
                   {l.catno && <span class="text-ink-faint"> – {l.catno}</span>}
                 </span>
               ))}
@@ -352,11 +401,6 @@ const mainEntity = {
               ))}
             </ul>
 
-            {/*
-             * Inside this branch rather than beside it, because `total` reads
-             * the label's count for any tab that is not the artist's: left
-             * outside, the button for the label list sat under the credits.
-             */}
             {limit < total && <LoadMore href={moreHref} remaining={total - limit} />}
           </>
         )}

@@ -273,6 +273,14 @@ class:list={["mono-label mb-6", results.hits.length === 0 &amp;&amp; "text-accen
               dropdown's fallback and lives in <code>search</code> because it needs the counts.
             </p>
             <p class="sg-rule">
+              <b>It pages with <code>?show=</code> and <code>LoadMore</code>,</b> like every tab
+              list on the site. <code>show</code> carries the tab, so a longer list cannot drop you
+              back onto another one; a tab link carries no <code>show</code>, so switching question
+              starts at forty again. The heading counts the tab rather than the page, and says
+              "Closest N" instead of "N found" where the 200-a-kind pool came back full, because a
+              cap is not a count.
+            </p>
+            <p class="sg-rule">
               <b>An empty tab is not a miss.</b> Every tab is drawn with its count, a 0 included,
               because a table has room to answer where four rows at a glance do not. Clicking a 0 is
               a real address and renders: the heading reads "No releases for …" without the accent,

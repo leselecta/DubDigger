@@ -7,7 +7,8 @@ import { getCorpusStats, getDbPath } from "@/lib/db";
 import Tabs from "@/components/Tabs.astro";
 import { search } from "@/lib/queries";
 import type { SearchKind } from "@/lib/queries";
-import { GRADE_SHADE, gradeWord } from "@/lib/view";
+import LoadMore from "@/components/LoadMore.astro";
+import { GRADE_SHADE, gradeWord, PAGE_SIZE, pageSize } from "@/lib/view";
 
 const q = Astro.url.searchParams.get("q") ?? undefined;
 const stats = getCorpusStats();
@@ -32,7 +33,17 @@ const asked = Astro.url.searchParams.get("tab") ?? "";
 const wanted =
   asked === "names" || asked === "releases" || asked === "all" ? asked : ("auto" as const);
 
-const results = q ? search(q, 40, wanted) : null;
+/*
+ * The same `?show=` the tab lists use, so the results page pages the way every
+ * other list on the site does: a link, a real address, and the hold script
+ * keeping the reader where they were when the longer list swaps in.
+ *
+ * A tab link carries no `show`, which is what resets the page length when you
+ * switch: forty of the next question rather than two hundred of it.
+ */
+const limit = pageSize(Astro.url.searchParams.get("show") ?? undefined);
+
+const results = q ? search(q, limit, wanted) : null;
 
 const kind: SearchKind = results?.kind ?? "names";
 
@@ -217,16 +228,27 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
             <h1
               class:list={[
                 "mono-label border-hairline mb-6 border-t pt-10 md:border-t-0 md:pt-0",
-                results.hits.length === 0 && "text-accent",
+                results.counts.all === 0 && "text-accent",
               ]}
             >
+              {/*
+               * The count is the tab's, not the page's, now that the page can
+               * be lengthened: "Closest 40" was true of a list that stopped
+               * there and is not true of one with a button under it.
+               *
+               * "Closest" survives for the case it was written for. The pools
+               * are 200 a kind, so a broad query fills them and the number
+               * stops being a total; saying "200 found" there would state the
+               * cap as if it were a count, which is the one thing this heading
+               * has always refused to do.
+               */}
               {results.counts.all === 0
                 ? `Nothing found for “${q}”`
-                : results.hits.length === 0
+                : results.counts[kind] === 0
                   ? `No ${kind === "releases" ? "releases" : "artists or labels"} for “${q}”`
-                  : results.truncated
-                    ? `Closest ${results.hits.length} for “${q}”`
-                    : `${results.hits.length} found for “${q}”`}
+                  : results.capped[kind]
+                    ? `Closest ${results.counts[kind].toLocaleString("en-GB")} for “${q}”`
+                    : `${results.counts[kind].toLocaleString("en-GB")} found for “${q}”`}
             </h1>
 
             {/*
@@ -251,7 +273,7 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
              * second gap on top of that and floated the sentence away from the
              * label it belongs to.
              */}
-            {results.counts.all > 0 && results.hits.length === 0 ? (
+            {results.counts.all > 0 && results.counts[kind] === 0 ? (
               /*
                * An empty tab is not a miss, and the two must not read alike.
                * The corpus paragraph says a name is legitimately absent from a
@@ -263,7 +285,7 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
                 Nothing under this heading, but the other tabs above have{" "}
                 {results.counts.all.toLocaleString("en-GB")}.
               </p>
-            ) : results.hits.length === 0 ? (
+            ) : results.counts.all === 0 ? (
               <p class="text-body text-ink-muted max-w-[720px] pb-10">
                 This corpus is a slice centred on dub techno, not all of Discogs, so plenty of real
                 artists and labels are legitimately absent. That is the boundary working, not a gap.
@@ -386,6 +408,19 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
                     </li>
                   ))}
                 </ul>
+
+                {/*
+                 * `show` carries the tab with it, so lengthening a list cannot
+                 * quietly drop you back onto the one the page would have opened
+                 * by itself. A tab link carries no `show` for the mirror of the
+                 * same reason: switching question starts at forty again.
+                 */}
+                {results.truncated && (
+                  <LoadMore
+                    href={`/?q=${encodeURIComponent(q!)}&tab=${kind}&show=${limit + PAGE_SIZE}`}
+                    remaining={results.counts[kind] - limit}
+                  />
+                )}
               </>
             )}
           </div>

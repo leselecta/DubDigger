@@ -132,6 +132,18 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
 
   release.run(502, 13, "Comp Rooms");
 
+  /*
+   * Enough of one name to fill a pool, so `capped` has something to be true
+   * about. RANK_POOL is 200 a kind, and the point of the flag is that a count
+   * measured under a cap is not a total: the heading has to say "Closest 200"
+   * rather than claim it counted them.
+   */
+  for (let i = 0; i < 201; i++) {
+    artist.run(1000 + i, `Padded ${i}`);
+    cover.run(1000 + i, 1, 0, "none");
+    corpus.run(1000 + i, 0, 1, 0);
+  }
+
   db.exec("INSERT INTO artist_search(artist_search) VALUES('rebuild')");
   db.exec("INSERT INTO label_search(label_search) VALUES('rebuild')");
   db.exec("INSERT INTO release_search(release_search) VALUES('rebuild')");
@@ -374,4 +386,47 @@ test("a tab is a slice of one ranking, so it never reorders", () => {
     const tab = search("bas", 40, kind).hits.map((h) => `${h.kind}:${h.id}`);
     assert.deepEqual(tab, all.filter((k) => tab.includes(k)));
   }
+});
+
+/*
+ * Paging, and the one number the heading must never invent.
+ */
+test("a tab pages with ?show=, and says how many are left", () => {
+  const first = search("padded", 40, "names");
+  assert.equal(first.hits.length, 40);
+  assert.equal(first.truncated, true);
+
+  const more = search("padded", 80, "names");
+  assert.equal(more.hits.length, 80);
+  assert.equal(more.truncated, true);
+
+  // The count does not move as the page lengthens; only the rows do.
+  assert.equal(more.counts.names, first.counts.names);
+});
+
+test("a count measured under the cap is reported as a cap, not a total", () => {
+  // 201 artists match, the pool takes 200, and the heading must not claim to
+  // have counted them: "Closest 200" rather than "200 found".
+  const capped = search("padded", 40, "names");
+  assert.equal(capped.counts.names, 200);
+  assert.equal(capped.capped.names, true);
+
+  // A query the pool did not clip reports an honest total.
+  const real = search("echocord vainqueur bas", 40, "names");
+  assert.equal(real.capped.names, false);
+  assert.equal(search("bas", 40, "names").capped.names, false);
+});
+
+test("capped is per kind, so a full names pool does not mislabel releases", () => {
+  const r = search("padded", 40, "names");
+  assert.equal(r.capped.names, true);
+  assert.equal(r.capped.releases, false);
+  // The merged tab is capped if either half was.
+  assert.equal(r.capped.all, true);
+});
+
+test("paging past the end gives what there is, and stops offering more", () => {
+  const all = search("bas", 1000, "names");
+  assert.equal(all.truncated, false);
+  assert.equal(all.hits.length, all.counts.names);
 });

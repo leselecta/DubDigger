@@ -641,6 +641,17 @@ export interface SearchResults {
    * with a 0 beside the word rather than by looking broken.
    */
   counts: Record<SearchKind, number>;
+  /**
+   * Whether a tab's count is really the cap it was measured under.
+   *
+   * The pools are 200 a kind, so a broad query fills them and `counts` stops
+   * being a total: it becomes RANK_POOL wearing a total's clothes. The heading
+   * says "Closest 200" there and "57 found" where the number is real, which is
+   * the same rule `truncated` was written for — never state the cap as if it
+   * were a count. Per kind, because a query can saturate the names pool and
+   * still have four records behind the other tab.
+   */
+  capped: Record<SearchKind, boolean>;
   /** The tab actually answered, which is what `"auto"` resolved to. */
   kind: SearchKind;
 }
@@ -1010,6 +1021,7 @@ export function search(
     hits: [],
     truncated: false,
     counts: { names: 0, releases: 0, all: 0 },
+    capped: { names: false, releases: false, all: false },
     kind: "names" as SearchKind,
   };
   if (!db || query.trim().length === 0) return empty;
@@ -1038,6 +1050,19 @@ export function search(
   const records = ranked.filter((r) => r.kind === "release");
   const counts = { names: names.length, releases: records.length, all: ranked.length };
 
+  /*
+   * A pool that came back exactly full is a pool that was cut short. Read off
+   * the pools rather than off `counts`, since the record collapse can take a
+   * saturated 200 down to 180 and hide that it was ever clipped.
+   */
+  const fullNames = artists.length === RANK_POOL || labels.length === RANK_POOL;
+  const fullRecords = releases.length === RANK_POOL;
+  const capped = {
+    names: fullNames,
+    releases: fullRecords,
+    all: fullNames || fullRecords,
+  };
+
   const kind: SearchKind =
     want !== "auto"
       ? want
@@ -1047,6 +1072,7 @@ export function search(
 
   return {
     counts,
+    capped,
     kind,
     hits: shown
       .slice(0, limit)

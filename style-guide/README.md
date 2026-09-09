@@ -158,6 +158,9 @@ Component rules worth not rediscovering:
 - **The results page has the same three**, as `?tab=` in the URL, drawn with `Tabs` and showing
   every tab with its count including a 0. Opens on names unless names is empty. An empty tab is
   not a miss: no accent, no corpus paragraph, one line pointing at the tabs.
+- **It pages with `?show=`** and `LoadMore`, like every tab list. `show` carries the tab; a tab
+  link carries no `show`. The heading counts the tab, and says "Closest N" instead of "N found"
+  when the 200-a-kind pool was full, since a cap is not a count.
 - **The dropdown's last row is the way out**, "View all results" pointing at `/?q=`. A real option,
   so the arrows reach it and the script needs no line for it, and only rendered under names: a miss
   returns nothing and the list stays shut. It carries the accent as a ground at rest, which is why

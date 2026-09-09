@@ -171,6 +171,13 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
      *
      * So the results page takes the shape every other page has: left-aligned in
      * the column, an eyebrow, and a title naming what you are looking at. The
+     * eyebrow carries the query rather than the bare word "Search", which is
+     * the one thing on this page that no other page's eyebrow does: everywhere
+     * else it names a kind and the `<h1>` under it names the thing, where here
+     * the title is a fixed phrase and the query is the only part that varies.
+     * Unquoted, since the count line below already sets it in curly quotes and
+     * two sets of them in eight lines reads as punctuation rather than as a
+     * query. The
      * count moves under it and stops being the `<h1>`, which is a change to a
      * decision recorded in CLAUDE.md — the count was the heading because the
      * page had no other, and now it has one. Still exactly one `<h1>`, which is
@@ -180,7 +187,7 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
      * The miss heading below spends the accent on this page, and a stop would
      * be competing with it in the one case it has to be read.
      */}
-    <Eyebrow>{searching ? "Search" : "The Dub Techno Index"}</Eyebrow>
+    <Eyebrow>{searching ? `Search for ${q}` : "The Dub Techno Index"}</Eyebrow>
 
     {
       searching ? (

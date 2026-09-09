@@ -135,7 +135,8 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
  * somebody who had not yet decided whether to click.
  */}
 <Base
-  search={false}
+  search={searching}
+  query={q}
   description="A map of the dub techno scene and its neighbours, built from Discogs credit data."
 >
   {/*
@@ -153,29 +154,56 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
    * the air is the point.
    */}
   <div
-    class:list={[
-      "column text-center",
-      searching ? "pt-14 pb-10 md:pb-12" : "pt-16 pb-10 md:pt-[130px] md:pb-24",
-    ]}
+    class:list={
+      searching
+        ? "column pt-16 pb-16 md:pt-24"
+        : "column pt-16 pb-10 text-center md:pt-[130px] md:pb-24"
+    }
   >
-    <Eyebrow>The Dub Techno Index</Eyebrow>
+    {/*
+     * Two pages share this file, and once there is a query it stops being the
+     * home page. The hero field goes with the headline it belonged to: the box
+     * is why the home page exists, and on an answer it is a thing you reach for
+     * while reading something else, which is what the header field already is
+     * everywhere else on the site. Keeping both would be the page asking twice
+     * for the same thing, which is the rule `search={false}` was written for,
+     * read the other way round.
+     *
+     * So the results page takes the shape every other page has: left-aligned in
+     * the column, an eyebrow, and a title naming what you are looking at. The
+     * count moves under it and stops being the `<h1>`, which is a change to a
+     * decision recorded in CLAUDE.md — the count was the heading because the
+     * page had no other, and now it has one. Still exactly one `<h1>`, which is
+     * the half of that rule the footer's WCAG claim rests on.
+     *
+     * No accent stop after "results", though `/info` has one after its title.
+     * The miss heading below spends the accent on this page, and a stop would
+     * be competing with it in the one case it has to be read.
+     */}
+    <Eyebrow>{searching ? "Search" : "The Dub Techno Index"}</Eyebrow>
 
     {
-      !searching && (
-        <h1 class="text-hero text-ink-strong mt-3 leading-[0.92] font-bold tracking-[-0.04em] md:mt-9">
-          Dig the Extended Scene<span class="text-accent">.</span>
-          <br />
-          Dub Techno First<span class="text-accent">.</span>
+      searching ? (
+        <h1 class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]">
+          Search results
         </h1>
+      ) : (
+        <>
+          <h1 class="text-hero text-ink-strong mt-3 leading-[0.92] font-bold tracking-[-0.04em] md:mt-9">
+            Dig the Extended Scene<span class="text-accent">.</span>
+            <br />
+            Dub Techno First<span class="text-accent">.</span>
+          </h1>
+
+          <div class="mx-auto mt-16 max-w-[640px]">
+            <SearchField size="hero" value={q} />
+          </div>
+          <p class="mt-[18px] font-mono text-xs tracking-[0.14em] text-ink-faint uppercase">
+            Search artists · labels · releases
+          </p>
+        </>
       )
     }
-
-    <div class:list={["mx-auto max-w-[640px]", searching ? "mt-8" : "mt-16"]}>
-      <SearchField size="hero" value={q} />
-    </div>
-    <p class="mt-[18px] font-mono text-xs tracking-[0.14em] text-ink-faint uppercase">
-      Search artists · labels · releases
-    </p>
   </div>
 
   {
@@ -203,33 +231,30 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
         {searching && results && (
           <div class="column pb-20 md:pb-24">
             {/*
-             * The count is the heading, because on a results page it is what
-             * the page is: the headline above it has done its job by the time
-             * someone has typed, and dropping it left the document with no
-             * `<h1>` on it at all. Same classes, so nothing moves — it was
-             * already the one line saying what you are looking at.
+             * The count, which used to be this page's `<h1>` and is not any
+             * more. It was the heading because the page had no other: the
+             * headline belonged to the home page and went once someone typed,
+             * and dropping the count as well left the document with no `<h1>`
+             * on it at all. The page has a title of its own now, so the count
+             * goes back to being what it always read as, the line saying what
+             * you are looking at under the thing you are looking at. Same
+             * classes, so nothing moves, and still exactly one `<h1>`.
              *
-             * A miss takes the accent, a hit does not. It is the one heading
-             * here that has to be read rather than counted past: the answer is
-             * that there is no answer, and the paragraph under it is the part
-             * that matters. The headline's two accent stops are not on the page
-             * once someone has typed, so this spends the colour that just came
-             * free rather than adding to it.
+             * A miss takes the accent, a hit does not. It is the one line here
+             * that has to be read rather than counted past: the answer is that
+             * there is no answer, and the paragraph under it is the part that
+             * matters. The headline's two accent stops are not on the page once
+             * someone has typed, and the title above deliberately took no stop
+             * of its own, so this still spends colour that came free.
              *
-             * On a phone it carries a rule above it, because there the field
-             * and its answer are a single column of text and nothing says where
-             * the searching stops and the results start. At `md` the band above
-             * is wide and obviously a header, so the rule would be drawing a
-             * boundary that is already visible. Inside the column, so it insets
-             * to the gutters like the figures band rather than running edge to
-             * edge like the footer, and 40px under it: a figures cell's `py-10`
-             * is what a hairline is followed by everywhere else on a phone.
+             * The phone rule above it went with the hero. It was drawing the
+             * line between a search field and its answer, in the one place they
+             * were a single column of text; the field is in the header now and
+             * there is a title between them, so the boundary is drawn by the
+             * page rather than by a hairline.
              */}
-            <h1
-              class:list={[
-                "mono-label border-hairline mb-6 border-t pt-10 md:border-t-0 md:pt-0",
-                results.counts.all === 0 && "text-accent",
-              ]}
+            <p
+              class:list={["mono-label mb-6", results.counts.all === 0 && "text-accent"]}
             >
               {/*
                * The count is the tab's, not the page's, now that the page can
@@ -249,7 +274,7 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
                   : results.capped[kind]
                     ? `Closest ${results.counts[kind].toLocaleString("en-GB")} for “${q}”`
                     : `${results.counts[kind].toLocaleString("en-GB")} found for “${q}”`}
-            </h1>
+            </p>
 
             {/*
              * The tab row, under the count and above the columns, because the

@@ -29,9 +29,17 @@ interface Props {
   /**
    * Show the header's search field. The home page carries its own in the hero,
    * so it is the one page that asks for this off rather than asking twice for
-   * the same thing.
+   * the same thing. It asks for it back the moment there is a query, since by
+   * then the hero is gone and the results are what the page is.
    */
   search?: boolean;
+  /**
+   * What to put in the header field. Only the results page has anything to
+   * say here: a reader who lands on an answer and wants to change it should
+   * find what they typed still in the box, rather than an empty field and the
+   * query only in the address bar.
+   */
+  query?: string;
 }
 
 const {
@@ -50,6 +58,7 @@ const {
   breadcrumbs = [],
   noindex = false,
   search = true,
+  query,
 } = Astro.props;
 
 /*
@@ -205,7 +214,7 @@ const jsonLd = JSON.stringify({ "@context": "https://schema.org", "@graph": grap
      * answer the same on every page, including the next one written.
      */}
     <div class="flex-1">
-      <SiteHeader search={search} />
+      <SiteHeader search={search} query={query} />
       <main id="content"><slot /></main>
     </div>
     <SiteFooter />

@@ -131,7 +131,7 @@ All in `web/src/components/`, all `.astro`.
 | `ProfileText` | `text`, `names?` | renders Discogs bio markup; links `underline underline-offset-2` |
 | `SearchField` | `size` ("hero" \| "header"), `value?` | `h-16`/`h-11`; hero `border-accent` + inset-shadow focus, header `border-edge-strong` + accent focus; combobox, panel `-mt-px border-edge-strong z-40`, listbox `max-h-[60vh]`, tab row beside it (`tabindex="-1"` buttons, `aria-current` = `text-ink-strong border-ink-strong`), 4 rows a tab `px-4 py-2.5` then a "View all results" row `px-4 py-3 bg-accent text-bg`, active `bg-accent text-bg` (that row inverts to `bg-ink`) |
 | `SiteFooter` | — | `py-11 font-mono text-xs md:grid-cols-2` |
-| `SiteHeader` | `search?` | 76px row; cells `px-5 py-3 text-[0.6875rem] tracking-[0.14em]`; drawer `w-[min(20rem,82vw)]` |
+| `SiteHeader` | `search?`, `query?` | 76px row; cells `px-5 py-3 text-[0.6875rem] tracking-[0.14em]`; drawer `w-[min(20rem,82vw)]` |
 | `SortBy` | `basePath`, `active` | `flex justify-end gap-5`; cells from `LIST_SORTS` (ranking · A–Z), live on both Core pages |
 | `Tabs` | `tabs[]`, `active`, `basePath` | `mb-10`, active `border-b-[1.5px] border-ink-strong`; scroll hint `w-16` sticky, only on rows that overflow |
 | `list-grid.ts` | — | `LIST_GRID = "grid-cols-[1fr_5rem] md:grid-cols-[1fr_6rem_10rem]"` |
@@ -275,6 +275,8 @@ browser). Never give the drawer `inert`.
 ## New page checklist
 
 1. `<Base title description pageType breadcrumbs>` — never render `SiteHeader` yourself.
+   `search={false}` only while the hero carries a field, which on `/` means only while there is
+   no `?q=`; pass `query` alongside `search` so the header field shows what was typed.
 2. Page head band: `column pt-16 pb-16 md:pt-24` → `Eyebrow` → one `h1` → `text-lead`.
 3. Content bands: `LabelledBand` for prose, the list band for data.
 4. Lists: `ListHeader` + `CreditRow` + `LIST_GRID`; `Absence` when empty; `LoadMore` past 40.

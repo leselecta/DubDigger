@@ -198,7 +198,7 @@ skip link → SiteHeader → <main id="content"> page bands </main> → SiteFoot
 |---|---|
 | `column` | 1200px, 1.5rem gutter, 3rem from md |
 | `LIST_GRID` | `1fr 5rem` → `1fr 6rem 10rem` at md |
-| `RESULT_GRID` | `1fr 4.5rem` → `1fr 5.5rem 11rem 5rem` at md (`index.astro` only); a record inherits its grade, from the lead artist and from the label on a compilation the search |
+| `RESULT_GRID` | `1fr 4.5rem` → `1fr 5.5rem 5rem 11rem` at md (Relevance last) (`index.astro` only); a record inherits its grade, from the lead artist and from the label on a compilation the search |
 | Grid gap-x | 22px |
 | List row | `py-[18px]` · identity row `py-2` · band `py-14` |
 | Header height | 76px · hero field 64px · header field 44px |

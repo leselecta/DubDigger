@@ -200,46 +200,46 @@
                   <a href="#s">All <em>17</em></a>
                 </nav>
               </div>
-              <div class="spec-listhead" style="grid-template-columns: 1fr 5.5rem 11rem 5rem">
-                <span>Name</span><span>Releases</span><span class="col3">Relevance</span><span class="col3">Type</span>
+              <div class="spec-listhead" style="grid-template-columns: 1fr 5.5rem 5rem 11rem">
+                <span>Name</span><span>Releases</span><span class="col3">Type</span><span class="col3">Relevance</span>
               </div>
               <ul class="spec-list">
-                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 11rem 5rem">
+                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 5rem 11rem">
                   <div><a href="#s" class="spec-row-name">Chain Reaction</a></div>
                   <span class="count">204</span>
-                  <span class="col3 spec-grades"><span class="g-veryhigh" style="min-width: 0">very high</span></span>
                   <span class="col3" style="color: var(--color-ink); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase">label</span>
+                  <span class="col3 spec-grades"><span class="g-veryhigh" style="min-width: 0">very high</span></span>
                 </li>
-                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 11rem 5rem">
+                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 5rem 11rem">
                   <div><a href="#s" class="spec-row-name">Chain Reaction</a></div>
                   <span class="count">6</span>
-                  <span class="col3 spec-grades"><span class="g-verylow" style="min-width: 0">very low</span></span>
                   <span class="col3" style="color: var(--color-ink); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase">artist</span>
+                  <span class="col3 spec-grades"><span class="g-verylow" style="min-width: 0">very low</span></span>
                 </li>
                 <!-- A record: N/A for a count, and a grade inherited from the lead
                      artist named on the line below the title. -->
-                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 11rem 5rem">
+                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 5rem 11rem">
                   <div>
                     <a href="#s" class="spec-row-name">Chain Reaction EP</a>
                     <div class="spec-row-sub">SND &amp; RTN &middot; 2013</div>
                   </div>
                   <span class="count">N/A</span>
-                  <span class="col3 spec-grades"><span class="g-veryhigh" style="min-width: 0">very high</span></span>
                   <span class="col3" style="color: var(--color-ink); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase">release</span>
+                  <span class="col3 spec-grades"><span class="g-veryhigh" style="min-width: 0">very high</span></span>
                 </li>
                 <!-- A compilation: no single maker, so the grade is the label's. -->
-                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 11rem 5rem">
+                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 5rem 11rem">
                   <div>
                     <a href="#s" class="spec-row-name">Echocord &middot; Jubilee Comp.</a>
                     <div class="spec-row-sub">Various &middot; 2011</div>
                   </div>
                   <span class="count">N/A</span>
-                  <span class="col3 spec-grades"><span class="g-veryhigh" style="min-width: 0">very high</span></span>
                   <span class="col3" style="color: var(--color-ink); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase">release</span>
+                  <span class="col3 spec-grades"><span class="g-veryhigh" style="min-width: 0">very high</span></span>
                 </li>
               </ul>
             </div>
-            <pre class="sg-code">const RESULT_GRID = "<b>grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_11rem_5rem]</b>";
+            <pre class="sg-code">const RESULT_GRID = "<b>grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_5rem_11rem]</b>";
 <i>// index.astro only. The tab lists use LIST_GRID, which is a different shape.</i>
 
 <i>h1 on a results page is the count, and a miss takes the accent:</i>
@@ -390,7 +390,7 @@ class:list={["mono-label mb-6", results.hits.length === 0 &amp;&amp; "text-accen
                 <tbody>
                   <tr><td class="key">column</td><td class="num">1200px / 1.5rem / 3rem md</td><td class="note">The content column utility. Never respell it.</td></tr>
                   <tr><td class="key">LIST_GRID</td><td class="num">1fr 5rem → 1fr 6rem 10rem</td><td class="note">Tab lists, Core pages. From <code>components/list-grid.ts</code>.</td></tr>
-                  <tr><td class="key">RESULT_GRID</td><td class="num">1fr 4.5rem → 1fr 5.5rem 11rem 5rem</td><td class="note">Search results, in <code>index.astro</code>.</td></tr>
+                  <tr><td class="key">RESULT_GRID</td><td class="num">1fr 4.5rem → 1fr 5.5rem 5rem 11rem</td><td class="note">Search results, in <code>index.astro</code>.</td></tr>
                   <tr><td class="key">grid gap-x</td><td class="num">22px</td><td class="note">Both grids, head and rows.</td></tr>
                   <tr><td class="key">page head</td><td class="num">pt-16 pb-16 md:pt-24</td><td class="note">Every page's first band.</td></tr>
                   <tr><td class="key">labelled band</td><td class="num">py-14</td><td class="note">With <code>border-t border-hairline</code>.</td></tr>

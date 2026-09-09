@@ -86,7 +86,7 @@ const columns: [string, number][] = stats
   : [];
 
 /** The column widths, shared by the header row and every result, so they line up. */
-const RESULT_GRID = "grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_11rem_5rem]";
+const RESULT_GRID = "grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_5rem_11rem]";
 
 /**
  * The relevance column is back, and a record inherits its grade.
@@ -355,8 +355,8 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
                 >
                   <span>Name</span>
                   <span>Releases</span>
-                  <span class="hidden md:block">Relevance</span>
                   <span class="hidden md:block">Type</span>
+                  <span class="hidden md:block">Relevance</span>
                 </div>
 
                 <ul>
@@ -426,6 +426,17 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
                        * way to say which column it names. A row read aloud came
                        * out "Basic Channel, 47, high, artist". Out of flow and
                        * still spoken, every value keeps the word for what it is.
+                       *
+                       * Which is also what lets these two sit in a different
+                       * order from the one they are written in. Relevance is
+                       * last on the desktop grid and first in the markup, so it
+                       * stays first in the stack a phone reads, where the change
+                       * was not asked for; `md:col-start-` places them both
+                       * explicitly, the same way it already lifts them out of
+                       * that stack and into a row. The mismatch is safe because
+                       * each cell names itself: a reader hears "Relevance: high,
+                       * Type: label" whichever side of `md` they are on, rather
+                       * than two bare words whose meaning is their position.
                        */}
                       {/*
                        * The grade, and on a record the grade it inherits.
@@ -447,7 +458,7 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
                        */}
                       <span
                         class:list={[
-                          "col-start-1 mt-2 font-mono text-xs tracking-[0.1em] uppercase md:row-start-1 md:col-start-3 md:mt-0",
+                          "col-start-1 mt-2 font-mono text-xs tracking-[0.1em] uppercase md:row-start-1 md:col-start-4 md:mt-0",
                           GRADE_SHADE[grade],
                         ]}
                       >
@@ -455,7 +466,7 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
                         {grade}
                       </span>
 
-                      <span class="text-ink col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:row-start-1 md:col-start-4 md:mt-0">
+                      <span class="text-ink col-start-1 font-mono text-xs tracking-[0.1em] uppercase md:row-start-1 md:col-start-3 md:mt-0">
                         <span class="text-ink-faint md:sr-only">Type:</span>
                         {hit.kind}
                       </span>

@@ -83,7 +83,7 @@ export const NAMED_ARTISTS = [
 ];
 
 /**
- * The labels the scene records for.
+ * The labels closest to the scene.
  *
  * Two from Simone's list are absent from this corpus and are left out rather
  * than carried as dead ids: nCompass (181470) and Know Thyself (370582).

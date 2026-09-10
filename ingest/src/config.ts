@@ -814,7 +814,7 @@ export const overrides = {
     {
       id: 1094730,
       name: "The Dub Sync",
-      grade: "very high",
+      grade: "high",
       reason: "dub techno throughout, on a catalogue the dump tags Reggae",
     },
   ] as ArtistOverride[],

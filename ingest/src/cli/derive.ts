@@ -6,7 +6,7 @@
  *   npm run derive --workspace ingest -- --max-people 30
  */
 import fs from "node:fs";
-import { paths, derive as deriveConfig } from "../config.ts";
+import { paths, derive as deriveConfig, overrides } from "../config.ts";
 import { openDb } from "../db/open.ts";
 import { runDerive } from "../steps/derive.ts";
 
@@ -26,6 +26,9 @@ console.log(`  max people per release   ${maxPeople}  (above this, no collaborat
 const started = Date.now();
 const stats = await runDerive(db, {
   maxPeoplePerRelease: maxPeople,
+  // The editorial list, supplied here because it is policy rather than
+  // mechanism: `runDerive` overrules nobody unless told who.
+  overrides,
   onStep: (name) => console.log(`    ${name}...`),
 });
 
@@ -37,6 +40,7 @@ console.log(`
   artist_coverage        ${n(stats.artistCoverage)}
   label_coverage         ${n(stats.labelGrades.reduce((t, g) => t + g.labels, 0))}
   compilations unpaired  ${n(stats.releasesSkippedForPairs)}
+  overridden by hand     ${n(stats.overrides.artists)} artists, ${n(stats.overrides.labels)} labels
 
 ${stats.lineage
   .map((t) => `  ${t.name.padEnd(23)}${n(t.tagged)} tagged, ${n(t.lifted)} lifted to the floor`)

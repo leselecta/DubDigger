@@ -741,6 +741,86 @@ export const lineage = {
 };
 
 /**
+ * Named exceptions to the grade, decided by hand.
+ *
+ * The grades are ratios, and a ratio is right about a population and wrong
+ * about particular members of it. This is where the particular members are
+ * written down, in the same spirit as `lineage`: everything else in this corpus
+ * is derived, and these are judgements recorded rather than hidden in a dial.
+ *
+ * **This is not a dial and must not become one.** Moving `minSeedArtistRatio`
+ * to catch one named label is fitting the dial to the answer, which is why
+ * Metroplex has been allowed to miss the floor by two artists since 2026-08-30.
+ * Naming the label instead leaves the rule measuring what it measures and puts
+ * the exception where a reader can see it.
+ *
+ * **The bar for adding one**, and the second half matters more than the first:
+ *
+ * - Past roughly 100 entries this has stopped being an editorial position and
+ *   become a second grading system nobody can audit. Reconsider then.
+ * - **If three entries in a row share a reason, that is a rule asking to be
+ *   written, not three more rows.** Three labels held down for "big catalogue,
+ *   thin actual output" means the measure is wrong, and the fix belongs in the
+ *   measure. This is the trigger that fires long before the count does.
+ *
+ * Every entry carries a `reason`, and it is not a comment: it is published, in
+ * the slot where the computed reason would otherwise go. A grade with no stated
+ * reason is the one thing the interface does not ship, and an override has no
+ * ratio behind it to fall back on. `name` is checked against the database by
+ * `check-corpus`, so an id that drifts or a label that gets renamed is caught
+ * rather than silently regrading a stranger.
+ */
+export const overrides = {
+  /**
+   * Labels, applied after the grade is computed and before anything reads it.
+   *
+   * Planet Rhythm is the case that prompted this on 2026-09-10. It clears the
+   * broad seed gate honestly at 190 seed artists of 396, 48%, which is what the
+   * gate was written to admit: a big roster with a third of the scene on it.
+   * But that gate was aimed at Ghostly and PAN, rooms the scene treats as a
+   * reference, and it cannot tell them from a straight hard techno label with a
+   * very long catalogue. 126 of its 1,593 releases are in the seed. The ratio
+   * is measuring who passed through, and what a reader wants to know is what
+   * the label is for.
+   */
+  labels: [
+    {
+      id: 347,
+      name: "Planet Rhythm Records",
+      grade: "medium",
+      reason: "a hard techno label its roster share overstates",
+    },
+  ] as LabelOverride[],
+
+  /**
+   * Artists, applied after the lineage floor, so a tradition cannot undo one.
+   *
+   * Empty on purpose. The obvious first entries are the misses this project has
+   * already accepted in writing rather than bent a dial for, and each one should
+   * be argued on its own before it goes in.
+   */
+  artists: [] as ArtistOverride[],
+};
+
+/**
+ * The five steps, spelled here rather than imported: `web` has its own copy and
+ * the two workspaces do not share types on purpose, since ingest writes the
+ * database and the app only reads it.
+ */
+export type Grade = "very high" | "high" | "medium" | "low" | "none";
+
+export interface LabelOverride {
+  id: number;
+  /** Checked against the database, so a drifting id is a failure and not a regrade. */
+  name: string;
+  grade: Grade;
+  /** Published, in the slot the computed reason would have filled. */
+  reason: string;
+}
+
+export interface ArtistOverride extends LabelOverride {}
+
+/**
  * Building the derived tables.
  */
 export const derive = {

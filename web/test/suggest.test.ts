@@ -24,7 +24,7 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
   db.exec(`
     CREATE TABLE artists (id INTEGER PRIMARY KEY, name TEXT NOT NULL, real_name TEXT, profile TEXT, urls TEXT);
     CREATE TABLE labels  (id INTEGER PRIMARY KEY, name TEXT NOT NULL, profile TEXT, urls TEXT);
-    CREATE TABLE artist_coverage (artist_id INTEGER PRIMARY KEY, release_count INTEGER NOT NULL DEFAULT 0, seed_releases INTEGER NOT NULL DEFAULT 0, relevance TEXT NOT NULL DEFAULT 'none', lineage TEXT);
+    CREATE TABLE artist_coverage (artist_id INTEGER PRIMARY KEY, release_count INTEGER NOT NULL DEFAULT 0, seed_releases INTEGER NOT NULL DEFAULT 0, relevance TEXT NOT NULL DEFAULT 'none', lineage TEXT, override_reason TEXT);
     CREATE TABLE corpus_artists (artist_id INTEGER PRIMARY KEY, is_seed INTEGER NOT NULL DEFAULT 0, channel_a INTEGER NOT NULL DEFAULT 0, channel_b INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE label_coverage (label_id INTEGER PRIMARY KEY, line_artist_count INTEGER NOT NULL DEFAULT 0, seed_artist_count INTEGER NOT NULL DEFAULT 0, seed_ratio REAL, relevance TEXT NOT NULL DEFAULT 'none');
     CREATE TABLE release_labels (release_id INTEGER NOT NULL, position INTEGER NOT NULL, label_id INTEGER NOT NULL, name TEXT NOT NULL, catno TEXT, PRIMARY KEY (release_id, position)) WITHOUT ROWID;
@@ -33,7 +33,7 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
   `);
 
   const artist = db.prepare("INSERT INTO artists (id, name) VALUES (?, ?)");
-  const cover = db.prepare("INSERT INTO artist_coverage VALUES (?, ?, ?, ?, ?)");
+  const cover = db.prepare("INSERT INTO artist_coverage VALUES (?, ?, ?, ?, ?, ?)");
   const corpus = db.prepare("INSERT INTO corpus_artists VALUES (?, ?, ?, ?)");
   const label = db.prepare("INSERT INTO labels (id, name) VALUES (?, ?)");
   const grade = db.prepare("INSERT INTO label_coverage VALUES (?, ?, ?, ?, ?)");
@@ -43,17 +43,17 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
   // the grade are set against each other on purpose, since sorting on either
   // alone is the bug this file exists to catch.
   artist.run(1, "Basic Channel");
-  cover.run(1, 100, 80, "very high", null);
+  cover.run(1, 100, 80, "very high", null, null);
   corpus.run(1, 1, 0, 0);
 
   // 5,000 releases and the most raw scene work of the three, on the bottom
   // grade: four steps of halving put it under a smaller, better-graded name.
   artist.run(2, "Bassline Bob");
-  cover.run(2, 5000, 64, "none", null);
+  cover.run(2, 5000, 64, "none", null, null);
   corpus.run(2, 0, 1, 0);
 
   artist.run(3, "Basement Jaxx");
-  cover.run(3, 300, 40, "low", null);
+  cover.run(3, 300, 40, "low", null, null);
   corpus.run(3, 0, 0, 1);
 
   // A label sharing a name with an artist, which is the case the type column
@@ -71,7 +71,7 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
   // worth that step back, and the "(3)" is Discogs' disambiguator rather than
   // anything anyone types.
   artist.run(4, "Dubplate");
-  cover.run(4, 40, 30, "very high", null);
+  cover.run(4, 40, 30, "very high", null, null);
   corpus.run(4, 0, 1, 0);
 
   label.run(12, "Dub (3)");
@@ -82,21 +82,37 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
   // dub engineer at nothing however large the catalogue: on `seed_releases`
   // alone King Tubby sorts last here, which is the failure this set pins.
   artist.run(5, "King Tubby");
-  cover.run(5, 220, 0, "medium", "roots dub");
+  cover.run(5, 220, 0, "medium", "roots dub", null);
   corpus.run(5, 0, 1, 0);
 
   // A tradition never lowers anyone: 18 measured beats the 110 halved to 10.
   artist.run(6, "Tubby Deep");
-  cover.run(6, 20, 18, "very high", "roots dub");
+  cover.run(6, 20, 18, "very high", "roots dub", null);
   corpus.run(6, 0, 1, 0);
 
   artist.run(7, "Tubby Isiah");
-  cover.run(7, 30, 6, "high", null);
+  cover.run(7, 30, 6, "high", null, null);
   corpus.run(7, 0, 0, 1);
 
   label.run(13, "Jah Tubbys");
   grade.run(13, 20, 15, 0.5, "very high");
   for (let i = 300; i < 328; i++) release.run(i, 13, "Jah Tubbys");
+
+  /*
+   * Someone named by hand, whom the seed scores at nothing.
+   *
+   * This is the case an override exists for and also the case that quietly
+   * fails: the grade is only a discount on `seed_releases`, so promoting an
+   * artist on zero leaves zero, and the word moves on the page while the search
+   * order does not. Floored on the corpus count the way a tradition is.
+   */
+  artist.run(20, "Vertex Hand");
+  cover.run(20, 60, 0, "high", null, "named by hand");
+  corpus.run(20, 0, 1, 0);
+
+  artist.run(21, "Vertex Measured");
+  cover.run(21, 10, 8, "high", null, null);
+  corpus.run(21, 0, 1, 0);
 
   db.exec("INSERT INTO artist_search(artist_search) VALUES('rebuild')");
   db.exec("INSERT INTO label_search(label_search) VALUES('rebuild')");
@@ -169,6 +185,20 @@ test("a tradition is scored on work the seed cannot see", () => {
       // No tradition, so the measured figure stands: 6 halved for `high`.
       "Tubby Isiah",
     ],
+  );
+});
+
+test("a hand-written promotion has to survive the sort, not just the page", () => {
+  // Vertex Hand has no seed work at all and is named in the config; Vertex
+  // Measured has 8 measured releases. Both read `high`, so the grade discounts
+  // them identically and only the figure separates them.
+  //
+  // On `seed_releases` alone the named artist scores zero and loses to anyone,
+  // which is the lineage bug of 2026-09-08 arriving on a name somebody chose
+  // deliberately. Floored at half the corpus count, 30 beats 8.
+  assert.deepEqual(
+    suggest("vertex", 8).map((s) => s.name),
+    ["Vertex Hand", "Vertex Measured"],
   );
 });
 

@@ -6,7 +6,6 @@ import {
   relevance,
   seedLabel,
 } from "../config.ts";
-import type { ArtistOverride, LabelOverride } from "../config.ts";
 import { startRun } from "../db/open.ts";
 
 const { veryHigh, high, medium } = relevance;
@@ -80,14 +79,6 @@ const grade = `CASE
 export interface DeriveOptions {
   maxPeoplePerRelease?: number;
   onStep?: (name: string) => void;
-  /**
-   * The named exceptions, defaulting to the ones in config.
-   *
-   * Injectable for the same reason `maxPeoplePerRelease` is: a test needs to
-   * name an artist that exists in its own six-release corpus, and the real list
-   * names Planet Rhythm.
-   */
-  overrides?: { artists: ArtistOverride[]; labels: LabelOverride[] };
 }
 
 export interface DeriveStats {
@@ -101,8 +92,6 @@ export interface DeriveStats {
   labelGrades: { relevance: string; labels: number }[];
   /** Compilations too large to imply collaboration. Kept, but not paired. */
   releasesSkippedForPairs: number;
-  /** Named exceptions applied by hand. Reported so a run says what it overruled. */
-  overrides: { artists: number; labels: number };
 }
 
 export async function runDerive(
@@ -110,18 +99,6 @@ export async function runDerive(
   options: DeriveOptions = {},
 ): Promise<DeriveStats> {
   const maxPeople = options.maxPeoplePerRelease ?? deriveDefaults.maxPeoplePerRelease;
-  /*
-   * No overrides unless a caller supplies them, and the real list lives in the
-   * CLI rather than defaulting in here.
-   *
-   * Defaulting to the config list made every fixture in derive.test.ts inherit
-   * it, and the list names Planet Rhythm, which no six-release fixture holds:
-   * 35 tests failed at once on the missing-id guard below, which was the guard
-   * working and the default being wrong. An editorial list is policy, and
-   * policy belongs with the command that runs the pipeline, not inside the step
-   * that does the work.
-   */
-  const named = options.overrides ?? { artists: [], labels: [] };
   const step = (name: string) => options.onStep?.(name);
 
   const run = startRun(db, "derive", null, { maxPeoplePerRelease: maxPeople });
@@ -360,32 +337,6 @@ export async function runDerive(
     ).run(t.floor, t.name, ...below);
   }
 
-  // Then the named exceptions, which run LAST of the three so nothing can undo
-  // one: the measurement sets the grade, a tradition may lift it, and a person
-  // may overrule both. `scene_relevance` is untouched either way, so the page
-  // can still show what the seed actually measured next to the grade a human
-  // gave it — the same split that lets a lifted grade say it was lifted.
-  //
-  // A grade is written unconditionally rather than only downward or only
-  // upward. Which direction is right is the editorial judgement itself, and a
-  // mechanism that could only demote would have quietly decided half of it.
-  step("applying editorial overrides to artists");
-  const overrideStats = { artists: 0, labels: 0 };
-  for (const o of named.artists) {
-    const done = db
-      .prepare(`UPDATE artist_coverage SET relevance = ?, override_reason = ? WHERE artist_id = ?`)
-      .run(o.grade, o.reason, o.id);
-    // Silence here would be the worst outcome: a hand-written list slowly
-    // aiming at ids that are not there any more, and a corpus that looks
-    // curated because a file says so. check-corpus asserts the names too.
-    if (done.changes === 0) {
-      throw new Error(
-        `Override names artist ${o.id} ("${o.name}"), which has no artist_coverage row.`,
-      );
-    }
-    overrideStats.artists += done.changes;
-  }
-
   // Labels, on the same five steps, from the same measure the seed-label rule
   // uses: every act on the artist line across the whole dump, and how many of
   // them are seed artists. `very high` is that rule exactly, so a label the
@@ -440,20 +391,6 @@ export async function runDerive(
       ) p ON p.label_id = l.id;
   `);
 
-  // The label half of the same list, here rather than beside the artist half
-  // because it has to run after the grade it overrules.
-  for (const o of named.labels) {
-    const done = db
-      .prepare(`UPDATE label_coverage SET relevance = ?, override_reason = ? WHERE label_id = ?`)
-      .run(o.grade, o.reason, o.id);
-    if (done.changes === 0) {
-      throw new Error(
-        `Override names label ${o.id} ("${o.name}"), which has no label_coverage row.`,
-      );
-    }
-    overrideStats.labels += done.changes;
-  }
-
   db.exec(`DROP TABLE IF EXISTS temp.release_people;
             DROP TABLE IF EXISTS temp.pairable;
             DROP TABLE IF EXISTS temp.pair_counts;
@@ -501,7 +438,6 @@ export async function runDerive(
     lineage: perTradition,
     labelGrades,
     releasesSkippedForPairs,
-    overrides: overrideStats,
   };
 
   run.finish(stats);

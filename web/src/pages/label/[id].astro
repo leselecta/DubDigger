@@ -74,23 +74,11 @@ const mainEntity = {
 
 const grade = gradeTitle(label.relevance);
 
-/*
- * Why the grade beside it says what it says.
- *
- * A named exception comes first, because when one applies the ratio below is
- * still true and no longer the reason: printing `48% of everyone it released is
- * in the dub techno cluster` next to a grade that ignores the 48% would be the
- * page contradicting itself in the same row. The clause is written in the
- * config and published verbatim, the same way a lifted grade always says it was
- * lifted rather than quietly reading as measured.
- */
-const reason = label.overrideReason
-  ? label.overrideReason
-  : label.isImprint
-    ? "artist-run imprint, one artist on every release"
-    : label.seedRatio !== null
-      ? `${percent(label.seedRatio)} of everyone it released is in the dub techno cluster`
-      : "no named artist on its releases, so there is nothing to measure";
+const reason = label.isImprint
+  ? "artist-run imprint, one artist on every release"
+  : label.seedRatio !== null
+    ? `${percent(label.seedRatio)} of everyone it released is in the dub techno cluster`
+    : "no named artist on its releases, so there is nothing to measure";
 ---
 
 <Base

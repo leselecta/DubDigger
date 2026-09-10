@@ -41,13 +41,6 @@ export interface Artist {
    * page has to say so instead of claiming work that is not there.
    */
   sceneRelevance: Relevance;
-  /**
-   * Why this grade, when a person set it rather than the measure or a tradition.
-   *
-   * NULL for all but a handful. When set, `overrides.artists` named them and
-   * this is the clause the page prints in place of the measured one.
-   */
-  overrideReason: string | null;
   /** Releases of theirs inside the style seed. */
   seedReleases: number;
   /** That as a share of their whole output, or null if never measured. */
@@ -99,15 +92,6 @@ export interface Label {
    * the label released, across the whole dump.
    */
   seedRatio: number | null;
-  /**
-   * Why this grade, when a person set it rather than the ratio.
-   *
-   * NULL for almost every label. When it is set, the grade above came from
-   * `overrides.labels` in the ingest config, and this replaces the ratio clause
-   * the page would otherwise print — which would then be describing a
-   * measurement the grade no longer follows.
-   */
-  overrideReason: string | null;
   firstYear: number | null;
   lastYear: number | null;
 }
@@ -158,7 +142,6 @@ interface ArtistRow {
   channel_b: number;
   relevance: Relevance;
   scene_relevance: Relevance;
-  override_reason: string | null;
   seed_releases: number;
   seed_share: number | null;
   lineage: string | null;
@@ -188,7 +171,6 @@ interface LabelRow {
   release_count: number;
   seed_ratio: number | null;
   relevance: Relevance | null;
-  override_reason: string | null;
   top_artist_releases: number | null;
   first_year: number | null;
   last_year: number | null;
@@ -220,7 +202,6 @@ export function getArtist(id: number): Artist | null {
               coalesce(m.channel_b, 0) AS channel_b,
               coalesce(c.relevance, 'none') AS relevance,
               coalesce(c.scene_relevance, 'none') AS scene_relevance,
-              c.override_reason,
               coalesce(c.seed_releases, 0)  AS seed_releases,
               c.seed_share,
               c.lineage
@@ -249,7 +230,6 @@ export function getArtist(id: number): Artist | null {
     channelB: row.channel_b === 1,
     relevance: row.relevance,
     sceneRelevance: row.scene_relevance,
-    overrideReason: row.override_reason,
     seedReleases: row.seed_releases,
     seedShare: row.seed_share,
     lineage: row.lineage,
@@ -314,7 +294,6 @@ export function getLabel(id: number): Label | null {
                 AS release_count,
               g.seed_ratio,
               g.relevance,
-              g.override_reason,
               (SELECT max(release_count) FROM label_roster r WHERE r.label_id = l.id)
                 AS top_artist_releases,
               (SELECT min(first_year) FROM label_roster r WHERE r.label_id = l.id) AS first_year,
@@ -335,7 +314,6 @@ export function getLabel(id: number): Label | null {
     releaseCount: row.release_count,
     relevance: row.relevance ?? "none",
     seedRatio: row.seed_ratio,
-    overrideReason: row.override_reason,
     isImprint: row.release_count > 1 && row.top_artist_releases === row.release_count,
     firstYear: row.first_year,
     lastYear: row.last_year,
@@ -769,15 +747,7 @@ function rankHits(query: string, rows: ScoredRow[]): ScoredRow[] {
  * So a tradition scores on the artist's corpus output instead, halved: one step
  * of the same rule the grade uses, paid because the corpus cannot tell which
  * part of that output is the tradition. Floored at `seed_releases`, so it only
- * ever lifts.
- *
- * **A hand-written override is floored the same way, and for the same reason.**
- * Naming someone in `overrides.artists` sets the grade, and the grade is only a
- * discount on this figure: promote an artist the seed scores at zero and zero
- * is what stays, so the word on the page moves and the search order does not.
- * That is this exact bug a third time, on names picked deliberately — which
- * would be the worst version of it, since the whole point of naming someone is
- * that you want them found. Full release count was measured and is too strong: it puts Jan
+ * ever lifts. Full release count was measured and is too strong: it puts Jan
  * Delay above Vladislav Delay. Half moves 20 of 105 queries and none the wrong
  * way: Juan Atkins, Carl Craig, Mike Banks, King Tubby, Scientist and Commodo
  * all come first, and `delay` and `prince` are untouched.
@@ -787,7 +757,7 @@ function artistPool(db: Database, term: string): ScoredRow[] {
     .prepare(
       `SELECT a.id, a.name, coalesce(c.release_count, 0) AS release_count,
               max(coalesce(c.seed_releases, 0),
-                  CASE WHEN c.lineage IS NOT NULL OR c.override_reason IS NOT NULL
+                  CASE WHEN c.lineage IS NOT NULL
                        THEN coalesce(c.release_count, 0) / 2 ELSE 0 END) AS scene_releases,
               coalesce(m.channel_a, 0) AS channel_a,
               coalesce(m.channel_b, 0) AS channel_b,

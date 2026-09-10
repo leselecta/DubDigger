@@ -12,7 +12,6 @@
  * regress the scene while the counts still look plausible.
  */
 import { openDbReadOnly } from "../db/open.ts";
-import { overrides } from "../config.ts";
 
 /** Labels that define the scene, or are close enough that losing them is a bug. */
 const LABELS_IN = [
@@ -282,57 +281,17 @@ for (const name of LABELS_OUT) check("label", name, false, isSeedLabel.pluck().g
 // these two counts ever part, the display has quietly forked from the
 // definition. The step was called `high` until 2026-08-25 and the invariant is
 // the same one: it asserts the top step by name, whatever the name is.
-//
-// The named exceptions are subtracted rather than exempted, and that is the
-// point of counting them here: a label held down by hand is still a seed label,
-// so the two sides only agree once the list is taken off one of them. That
-// turns this from an invariant the override breaks into one that pins the
-// override list as well.
 const seedLabelCount = db.prepare("SELECT count(*) FROM seed_labels").pluck().get() as number;
-const heldDown = db
-  .prepare(
-    `SELECT count(*) FROM label_coverage c
-       JOIN seed_labels s ON s.label_id = c.label_id
-      WHERE c.override_reason IS NOT NULL AND c.relevance <> 'very high'`,
-  )
-  .pluck()
-  .get() as number;
 const highLabelCount = db
   .prepare("SELECT count(*) FROM label_coverage WHERE relevance = 'very high'")
   .pluck()
   .get() as number;
-const agree = seedLabelCount - heldDown === highLabelCount;
+const agree = seedLabelCount === highLabelCount;
 if (!agree) failures++;
 console.log(
   `\n  ${agree ? "ok  " : "FAIL"}  label  ${"very high = seed labels".padEnd(26)}` +
-    `${highLabelCount.toLocaleString("en-GB")} of ${seedLabelCount.toLocaleString("en-GB")}` +
-    (heldDown > 0 ? `, less ${heldDown} held down by hand` : ""),
+    `${highLabelCount.toLocaleString("en-GB")} of ${seedLabelCount.toLocaleString("en-GB")}`,
 );
-
-// The hand-written list, checked against the database rather than trusted.
-//
-// Two ways it rots and both are silent: an id that no longer resolves, and an
-// id that now belongs to something else after a Discogs merge. The name in the
-// config is what catches the second, which is why entries carry one.
-console.log("\nNamed exceptions\n");
-const overrideName = {
-  artist: db.prepare("SELECT name FROM artists WHERE id = ?").pluck(),
-  label: db.prepare("SELECT name FROM labels WHERE id = ?").pluck(),
-};
-for (const [kind, list] of [
-  ["artist", overrides.artists],
-  ["label", overrides.labels],
-] as const) {
-  for (const o of list) {
-    const actual = overrideName[kind].get(o.id) as string | undefined;
-    const ok = actual === o.name;
-    if (!ok) failures++;
-    console.log(
-      `  ${ok ? "ok  " : "FAIL"}  ${kind.padEnd(6)} ${o.name.padEnd(26)}` +
-        `${ok ? `${o.grade}` : `id ${o.id} is ${actual === undefined ? "not in the corpus" : `"${actual}"`}`}`,
-    );
-  }
-}
 
 console.log("\nCorpus artists\n");
 for (const name of ARTISTS_IN) check("artist", name, true, inCorpus.pluck().get(name) as number);

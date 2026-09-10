@@ -2,7 +2,7 @@ import type { Database } from "better-sqlite3";
 
 import { getDb } from "./db";
 import { rankCredits } from "./roles";
-import { ALIAS_BAND_FLOOR, CORE_ARTISTS, NAMED_ARTISTS, SCENE_LABELS } from "./scene";
+import { ALIAS_BAND_FLOOR, ALIAS_BAND_KEEP, CORE_ARTISTS, NAMED_ARTISTS, SCENE_LABELS } from "./scene";
 
 /**
  * Every query here reads a precomputed table. Nothing is aggregated at request
@@ -473,6 +473,16 @@ function build(): { artists: TopArtist[]; labels: TopLabel[] } {
   };
   const coreAliases = aliasesOf(CORE_ARTISTS);
   const namedAliases = aliasesOf(NAMED_ARTISTS);
+
+  // The recording names held out of their artist's band, per `ALIAS_BAND_KEEP`.
+  // Read off the same relations, so a name added to the dump is capped with the
+  // rest rather than arriving in the core band on its own.
+  const capped = new Set<number>();
+  for (const [anchor, keep] of Object.entries(ALIAS_BAND_KEEP)) {
+    for (const row of alias.all(Number(anchor), Number(anchor)) as { id: number }[]) {
+      if (!keep.includes(row.id)) capped.add(row.id);
+    }
+  }
   const anchors = [
     ...new Set([...CORE_ARTISTS, ...NAMED_ARTISTS, ...coreAliases, ...namedAliases]),
   ];
@@ -530,6 +540,7 @@ function build(): { artists: TopArtist[]; labels: TopLabel[] } {
     if (CORE_ARTISTS.includes(id)) return "core";
     if (NAMED_ARTISTS.includes(id)) return "named";
     if (scene < ALIAS_BAND_FLOOR) return "found";
+    if (capped.has(id)) return "named";
     if (coreAliases.has(id)) return "core";
     if (namedAliases.has(id)) return "named";
     return "found";

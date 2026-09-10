@@ -117,3 +117,35 @@ export const SCENE_LABELS = [
  * artist is never subject to it: they were chosen by name and stay.
  */
 export const ALIAS_BAND_FLOOR = 10;
+
+/**
+ * The one discography the alias rule cannot carry, named rather than measured.
+ *
+ * Alias expansion hands every recording name a core artist holds the core band,
+ * which is right for the five or six most of them carry. Wolfgang Voigt carries
+ * 74. Thirteen cleared `ALIAS_BAND_FLOOR`, so one man held 13 of the 44 rows in
+ * the core band and 12 of the 40 on the first page, three of them consecutive.
+ * He is exactly as central as the list says; the crowding is what costs every
+ * other artist their place on the page.
+ *
+ * So he keeps two rows, himself and Gas, the name the records are filed under,
+ * and the other eleven fall to the named band. Measured, they land between 51
+ * and 118 rather than leaving the list: still relevant, no longer the page.
+ * Mike Ink is the one that stings, at 84 releases against Gas's 78, and Gas is
+ * kept anyway because this is a rule about what a reader recognises rather than
+ * about which name is longest.
+ *
+ * A general cap was measured and rejected. Basic Channel holds five rows and
+ * Vladislav Delay six, and both read as one act's body of work rather than as
+ * crowding, so capping everyone to fix one person would cost four rows that
+ * belong. Keyed by anchor, so an artist absent from here keeps every alias.
+ *
+ * It changes standing and nothing else: the capped names still count toward the
+ * scene releases the whole ranking is built on, because they are still him.
+ * That is also why Kompakt moves from 4th to 8th on Core Labels, its core-artist
+ * count falling from 6 to 2 — those six were one person under six names, which
+ * was a bug in the label ranking rather than a fact about the label.
+ */
+export const ALIAS_BAND_KEEP: Record<number, number[]> = {
+  16162: [4986], // Wolfgang Voigt keeps Gas
+};

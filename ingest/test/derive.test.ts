@@ -755,6 +755,28 @@ test("an override runs last, so a tradition cannot undo one", async () => {
   assert.equal(row.relevance, "high");
 });
 
+test("a record by an overridden artist is floored like a tradition's", async () => {
+  // The third reader of the scene figure, and it was missed for a day when the
+  // override was ported into `artistPool` alone: the artist scored 1 and every
+  // record of theirs scored a quarter of it. Naming someone the seed scores at
+  // nothing and leaving their records on that nothing is the same bug with a
+  // different cause.
+  //
+  // Six releases, none in the seed, named at `high`. Six halved is three, one
+  // step of the grade halves it: 1.5, where the bare measure gives 0.
+  const db = corpus(
+    Array.from({ length: 6 }, (_, i) => ({ id: 700 + i, artists: [10], seed: false })),
+  );
+  await runDerive(db, {
+    overrides: {
+      artists: [{ id: 10, name: "Artist 10", grade: "high", reason: "named by hand" }],
+      labels: [],
+    },
+  });
+
+  assert.equal(weightOf(db, 700), 1.5);
+});
+
 test("an override aimed at nobody is a failure, not a silence", async () => {
   // A hand-written list rots: an id drifts, a label is merged away, and the
   // corpus goes on looking curated because a file says it is. Better to stop.

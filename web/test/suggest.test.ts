@@ -215,6 +215,10 @@ const file = path.join(mkdtempSync(path.join(tmpdir(), "dubdigger-")), "test.sql
   cover.run(21, 10, 8, "high", null, null);
   corpus.run(21, 0, 1, 0);
 
+  record.run(506, "Vertex Hand Dub", 1999);
+  by.run(506, 20, "Vertex Hand");
+  weigh.run(506, 15, 1999);
+
   db.exec("INSERT INTO artist_search(artist_search) VALUES('rebuild')");
   db.exec("INSERT INTO label_search(label_search) VALUES('rebuild')");
   db.exec("INSERT INTO release_search(release_search) VALUES('rebuild')");
@@ -340,6 +344,23 @@ test("a hand-written promotion has to survive the sort, not just the page", () =
     suggest("vertex", 8).names.map((s) => s.name),
     ["Vertex Hand", "Vertex Measured"],
   );
+});
+
+test("a record by an overridden artist inherits the floored figure", () => {
+  // `releasePool` is the reader that actually orders the row, and it was left
+  // on the bare measure for a day after `artistPool` was fixed.
+  //
+  // Vertex Hand has no seed work and is named at `high`: 60 halved is 30, one
+  // step of the grade is 15. Its record takes one step more for being a record,
+  // 7.5, which is enough to come between it and Vertex Measured's 8 measured
+  // releases halved to 4. On the bare measure the record would score 0 and sort
+  // under everything, which is what makes this row the assertion.
+  const all = suggest("vertex", 8).all.map((s) => `${s.kind}:${s.name}`);
+  assert.deepEqual(all, [
+    "artist:Vertex Hand",
+    "release:Vertex Hand Dub",
+    "artist:Vertex Measured",
+  ]);
 });
 
 test("carries the grade and the kind, which is what a row has to say", () => {

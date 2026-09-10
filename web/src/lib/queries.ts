@@ -1013,13 +1013,19 @@ function releasePool(db: Database, term: string): ScoredRow[] {
    * The paragraph above still holds: a record with no coverage row has no
    * lineage to lift it either, so the max() is still zero and the label
    * fallback still moves no order.
+   *
+   * A hand-written override floors it the same way a tradition does, and that
+   * clause was missing here for a day: `artistPool` got it and these two did
+   * not, so The Dub Sync scored 1 while every record of its own scored 0.25.
+   * Third time this measure has been patched in one reader and left in the
+   * others. All three now spell it identically, which is the only defence.
    */
   const rows = db
     .prepare(
       `SELECT r.id, r.title AS name, 0 AS release_count, r.year,
               lead_artist.name AS artist,
               max(coalesce(c.seed_releases, 0),
-                  CASE WHEN c.lineage IS NOT NULL
+                  CASE WHEN c.lineage IS NOT NULL OR c.override_reason IS NOT NULL
                        THEN coalesce(c.release_count, 0) / 2 ELSE 0 END) AS scene_releases,
               coalesce(c.relevance, g.relevance, 'none') AS relevance,
               CASE WHEN c.relevance IS NOT NULL THEN 'artist'

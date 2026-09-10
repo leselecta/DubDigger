@@ -402,8 +402,10 @@ export async function runDerive(
   // Commodore Dub and `scientist` with Full Moon Scientist. A tradition
   // therefore scores on the artist's corpus output halved, floored at
   // `seed_releases` so it only ever lifts — the same expression `artistPool`
-  // uses in the app, deliberately, because one measure read two ways is what
-  // caused this.
+  // and `releasePool` use in the app, deliberately, because one measure read
+  // three ways is what caused this. A hand-written override floors it too, for
+  // the same reason: naming someone the seed scores at nothing and then leaving
+  // their records on that nothing is the bug with a different cause.
   //
   // Do NOT also divide by the artist's release count to make a record worth
   // their average rather than their total. That idea is real and parked, and it
@@ -425,7 +427,7 @@ export async function runDerive(
     INSERT INTO release_rank (release_id, weight, year)
     SELECT r.id,
            1.0 * max(coalesce(c.seed_releases, 0),
-               CASE WHEN c.lineage IS NOT NULL
+               CASE WHEN c.lineage IS NOT NULL OR c.override_reason IS NOT NULL
                     THEN coalesce(c.release_count, 0) / 2 ELSE 0 END)
              / (1 << (CASE coalesce(c.relevance, 'none')
              WHEN 'very high' THEN 0

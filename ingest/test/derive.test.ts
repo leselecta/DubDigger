@@ -297,6 +297,9 @@ test("coverage tells 'no credits recorded' apart from 'worked solo'", async () =
     scene_relevance: "none",
     relevance: "none",
     lineage: null,
+    // Nobody has been named by hand, which is the ordinary case and the reason
+    // this reads as an absence rather than a default.
+    override_reason: null,
   } as never);
 
   const solo = db.prepare("SELECT credited_releases, collaborator_count FROM artist_coverage WHERE artist_id = 11").get();
@@ -417,7 +420,13 @@ const coverageOf = (db: Database.Database, id: number) =>
     .prepare(
       "SELECT seed_releases, seed_share, scene_relevance, relevance, lineage FROM artist_coverage WHERE artist_id = ?",
     )
-    .get(id);
+    .get(id) as {
+    seed_releases: number;
+    seed_share: number | null;
+    scene_relevance: string;
+    relevance: string;
+    lineage: string | null;
+  };
 
 test("seed releases are counted for artists the ratio rejected", async () => {
   // King Tubby: on real seed releases, but 0.51% of a reissue-inflated
@@ -690,6 +699,76 @@ test("the weight is a real, because the app's own scoring is", async () => {
 
   assert.equal(coverageOf(db, 10).relevance, "medium");
   assert.equal(weightOf(db, 1), 0.25);
+});
+
+test("a named exception overrules the grade, and says so", async () => {
+  // The grade is a ratio, and a ratio is right about a population and wrong
+  // about particular members of it. Planet Rhythm clears the broad seed gate
+  // honestly at 48% of its artist line and is still a hard techno label, which
+  // no dial can express without bending the dial to one answer.
+  const db = corpus([
+    { id: 1, artists: [10], labels: [100] },
+    { id: 2, artists: [11], labels: [100] },
+  ]);
+  seed(db, [
+    [10, 10, 10],
+    [11, 10, 10],
+  ]);
+  await runDerive(db, {
+    overrides: {
+      labels: [{ id: 100, name: "Label 100", grade: "medium", reason: "held down by hand" }],
+      artists: [],
+    },
+  });
+
+  const row = db
+    .prepare("SELECT relevance, override_reason, seed_ratio FROM label_coverage WHERE label_id = 100")
+    .get() as { relevance: string; override_reason: string; seed_ratio: number };
+
+  // The measure is untouched underneath: the ratio still says what it said, and
+  // the reason is what the page prints in place of it.
+  assert.equal(row.seed_ratio, 1);
+  assert.equal(row.relevance, "medium");
+  assert.equal(row.override_reason, "held down by hand");
+});
+
+test("an override runs last, so a tradition cannot undo one", async () => {
+  // Three things can set an artist's grade and they are ordered: the seed
+  // measures, a tradition lifts to its floor, a person overrules both. King
+  // Tubby lifts to medium off `roots dub`; naming him puts him where he was
+  // named, and scene_relevance still reports the nothing the seed measured.
+  const db = corpus(tradition(10, { styles: ["Dub"], genres: ["Reggae"] }));
+  await runDerive(db, {
+    overrides: {
+      artists: [{ id: 10, name: "Artist 10", grade: "high", reason: "named by hand" }],
+      labels: [],
+    },
+  });
+
+  const row = coverageOf(db, 10) as {
+    scene_relevance: string;
+    relevance: string;
+    lineage: string;
+  };
+  assert.equal(row.lineage, "roots dub");
+  assert.equal(row.scene_relevance, "none");
+  assert.equal(row.relevance, "high");
+});
+
+test("an override aimed at nobody is a failure, not a silence", async () => {
+  // A hand-written list rots: an id drifts, a label is merged away, and the
+  // corpus goes on looking curated because a file says it is. Better to stop.
+  const db = corpus([{ id: 1, artists: [10] }]);
+  await assert.rejects(
+    () =>
+      runDerive(db, {
+        overrides: {
+          artists: [{ id: 999, name: "Nobody", grade: "high", reason: "x" }],
+          labels: [],
+        },
+      }),
+    /999/,
+  );
 });
 
 test("a second run replaces the first rather than layering on top of it", async () => {

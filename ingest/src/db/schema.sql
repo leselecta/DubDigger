@@ -294,7 +294,17 @@ CREATE TABLE IF NOT EXISTS artist_coverage (
   relevance          TEXT NOT NULL DEFAULT 'none',
   -- The tradition that raised it, or NULL: 'roots dub', 'afrobeat',
   -- 'detroit techno'. The editorial rules of the corpus, argued in config.ts.
-  lineage            TEXT
+  lineage            TEXT,
+  -- Set only where `overrides.artists` names this artist. Same job as the label
+  -- column: the grade above was set by hand and this is the published reason.
+  --
+  -- It is also read by the SORT, not only by the page, and that is the whole
+  -- reason it is a column rather than a lookup in the app. `seed_releases` is
+  -- what search ranks on, so promoting the grade of someone the seed scores at
+  -- zero moves the word on the page and nothing else — which is the lineage bug
+  -- of 2026-09-08 exactly, on names picked by hand. `artistPool` floors an
+  -- overridden artist the same way it floors a lineage one.
+  override_reason    TEXT
 );
 
 -- The label grade, on the same five steps as an artist so one word means one
@@ -324,7 +334,12 @@ CREATE TABLE IF NOT EXISTS label_coverage (
   -- and outranked Rhythm & Sound, whose 160 is measured the strict way because
   -- an artist's always was. The grade still reads the ratio; only the sort
   -- reads this.
-  seed_releases     INTEGER NOT NULL DEFAULT 0
+  seed_releases     INTEGER NOT NULL DEFAULT 0,
+  -- Set only where `overrides.labels` names this label: the grade above was
+  -- decided by hand and this says why, in the slot the computed ratio clause
+  -- would otherwise fill. A graded label with no stated reason is the one thing
+  -- the interface does not ship, and an override has no ratio to fall back on.
+  override_reason   TEXT
 );
 
 -- What a record is worth to a search, precomputed because the search cannot

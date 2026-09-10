@@ -52,6 +52,8 @@ function addMissingColumns(db: Database.Database): void {
     ["artist_coverage", "lineage", "TEXT"],
     ["artist_coverage", "scene_relevance", "TEXT NOT NULL DEFAULT 'none'"],
     ["label_coverage", "seed_releases", "INTEGER NOT NULL DEFAULT 0"],
+    ["artist_coverage", "override_reason", "TEXT"],
+    ["label_coverage", "override_reason", "TEXT"],
     ["releases", "released", "TEXT"],
     ["releases", "country", "TEXT"],
   ];

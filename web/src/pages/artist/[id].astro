@@ -199,7 +199,24 @@ const route =
       <FieldRow label="Date active">{years(artist.firstYear, artist.lastYear) || "—"}</FieldRow>
       <FieldRow label="Relevance" accent={artist.relevance !== "none"}>
         {
-          lifted ? (
+          /*
+           * A named exception is read first, and it still shows the measurement.
+           *
+           * The order below is the order the grades are set in: the seed
+           * measures, a tradition lifts, a person overrules. So the clause a
+           * reader gets is the last thing that touched the grade, and the
+           * measured half stays alongside it — the same shape as a lifted
+           * grade, which never lets the word read as though the seed had found
+           * that much work.
+           */
+          artist.overrideReason ? (
+            <>
+              {grade}
+              <span class="text-ink-faint">
+                , {SCENE_REASON[artist.sceneRelevance]}, {artist.overrideReason}
+              </span>
+            </>
+          ) : lifted ? (
             <>
               {grade}
               <span class="text-ink-faint">

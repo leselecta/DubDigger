@@ -76,17 +76,26 @@ const mainEntity = {
 const grade = gradeTitle(label.relevance);
 
 /*
- * Why the grade beside it says what it says.
+ * Why the grade beside it says what it says, or nothing at all.
  *
- * A named exception comes first, because when one applies the ratio below is
- * still true and no longer the reason: printing `48% of everyone it released is
- * in the dub techno cluster` next to a grade that ignores the 48% would be the
- * page contradicting itself in the same row. The clause is written in the
- * config and published verbatim, the same way a lifted grade always says it was
- * lifted rather than quietly reading as measured.
+ * A named exception prints NO clause, which is the second place on the site
+ * where the grade stands as a bare word and the only one where something could
+ * have been said. Simone took that on 2026-09-10, with the cost stated: an
+ * override is the least self-explanatory grade on the site and now the least
+ * explained. What it buys is a row a reader takes in at a glance, against a
+ * sentence that reads as an apology for the number beside it.
+ *
+ * The alternative was not "print the ratio": that is the one thing this must
+ * never do, since `48% of everyone it released is in the dub techno cluster`
+ * beside a grade that ignores the 48% is the page contradicting itself in a
+ * single row. So the choice was the editorial clause or silence, and silence
+ * won on legibility.
+ *
+ * The reason is not lost, only unpublished. It is still in `config.ts` where it
+ * is argued, still in the database, and still printed by `check-corpus`.
  */
 const reason = label.overrideReason
-  ? label.overrideReason
+  ? null
   : label.isImprint
     ? "artist-run imprint, one artist on every release"
     : label.seedRatio !== null
@@ -129,7 +138,7 @@ const reason = label.overrideReason
       <FieldRow label="Date active">{years(label.firstYear, label.lastYear) || "—"}</FieldRow>
       <FieldRow label="Relevance" accent={label.relevance !== "none"}>
         {grade}
-        <span class="text-ink-faint">, {reason}</span>
+        {reason && <span class="text-ink-faint">, {reason}</span>}
       </FieldRow>
       <FieldRow label="View on" last>
         <OutboundLinks kind="label" id={label.id} urls={label.urls} />

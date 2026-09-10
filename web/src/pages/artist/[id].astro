@@ -200,43 +200,40 @@ const route =
       <FieldRow label="Relevance" accent={artist.relevance !== "none"}>
         {
           /*
-           * A named exception is read first, and it still shows the measurement.
+           * A named exception is read first, and it prints the grade alone.
            *
-           * The order below is the order the grades are set in: the seed
-           * measures, a tradition lifts, a person overrules. So the clause a
-           * reader gets is the last thing that touched the grade, and the
-           * measured half stays alongside it — the same shape as a lifted
-           * grade, which never lets the word read as though the seed had found
-           * that much work.
+           * Every other branch here says what the word stands on, because two
+           * different things can put an artist on a step and a bare word claims
+           * cluster work that may not exist. An override is the one case where
+           * the honest clause is editorial rather than measured, and Simone
+           * chose legibility over it on 2026-09-10: the row reads `Very High`
+           * and stops. See the label page for the full argument, which is the
+           * same one.
+           *
+           * The measured half goes with it. Showing `scene_relevance` here
+           * without the reason beside it would be worse than either option —
+           * two grades in a row and nothing saying why they differ.
            */
           artist.overrideReason ? (
-            <>
-              {grade}
-              <span class="text-ink-faint">
-                , {SCENE_REASON[artist.sceneRelevance]}, {artist.overrideReason}
-              </span>
-            </>
+            grade
           ) : lifted ? (
             <>
-              {grade}
-              <span class="text-ink-faint">
-                , {SCENE_REASON[artist.sceneRelevance]}, here because linked to {artist.lineage},{" "}
+              {grade}<span class="text-ink-faint"
+                >, {SCENE_REASON[artist.sceneRelevance]}, here because linked to {artist.lineage},{" "}
                 {LINEAGE_REASON[artist.lineage!]}
               </span>
             </>
           ) : artist.relevance !== "none" ? (
             <>
-              {grade}
-              <span class="text-ink-faint">
-                , {SCENE_REASON[artist.relevance]}
-                {artist.lineage && `, and linked to the ${artist.lineage} sound`}
+              {grade}<span class="text-ink-faint"
+                >, {SCENE_REASON[artist.relevance]}{artist.lineage &&
+                  `, and linked to the ${artist.lineage} sound`}
               </span>
             </>
           ) : (
             <>
-              {grade}
-              <span class="text-ink-faint">
-                , {SCENE_REASON.none} (here as {route})
+              {grade}<span class="text-ink-faint"
+                >, {SCENE_REASON.none} (here as {route})
               </span>
             </>
           )

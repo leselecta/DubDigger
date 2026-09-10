@@ -795,11 +795,29 @@ export const overrides = {
   /**
    * Artists, applied after the lineage floor, so a tradition cannot undo one.
    *
-   * Empty on purpose. The obvious first entries are the misses this project has
-   * already accepted in writing rather than bent a dial for, and each one should
-   * be argued on its own before it goes in.
+   * The Dub Sync is the first, on 2026-09-10, and it is the King Tubby problem
+   * on a project small enough that no rule can reach it. Madaski's dub techno
+   * side project, out of Africa Unite, and the sound is dub techno throughout.
+   * The corpus holds five records and scores one: `Dub Ex Machina` twice and
+   * `What We Need` are tagged on genre `Reggae`, which the seed admits `Dub` on
+   * only when the genre is `Electronic` — the exclusion that exists to keep the
+   * whole Jamaican catalogue out, doing its job on a record that belongs in.
+   *
+   * `roots dub` cannot rescue it either: that rule wants 5 releases and this has
+   * 2, and lowering the floor to catch a five-record project would tag half of
+   * Jamaica. So it is named instead, which is what this list is for.
+   *
+   * Note the name: the corpus spells it `The Dub Sync`, without the h, and
+   * `check-corpus` compares that string.
    */
-  artists: [] as ArtistOverride[],
+  artists: [
+    {
+      id: 1094730,
+      name: "The Dub Sync",
+      grade: "very high",
+      reason: "dub techno throughout, on a catalogue the dump tags Reggae",
+    },
+  ] as ArtistOverride[],
 };
 
 /**

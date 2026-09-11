@@ -226,13 +226,14 @@ export function rankCredits<T extends { roles: string[] }>(rows: readonly T[]): 
  * calls Timothy Saccenti an artist beside Pole is not wrong about either and is
  * unhelpful about both, so the eyebrow says which.
  *
- * The markers are the seed rule's own `packagingRoles` in `ingest/src/config.ts`,
- * spelled again here rather than imported, for the reason the rest of this file
- * is not imported by ingest: the two workspaces do not share types, ingest
- * writes the database and the app only reads it. Keep the two lists in step.
- * They exist because of the sentence that rule already makes — a photographer is
- * not a musician — and this is that sentence said on the page instead of at the
- * corpus boundary.
+ * The markers start from the seed rule's own `packagingRoles` in
+ * `ingest/src/config.ts`, spelled again here rather than imported, for the
+ * reason the rest of this file is not imported by ingest: the two workspaces do
+ * not share types, ingest writes the database and the app only reads it. They
+ * exist because of the sentence that rule already makes — a photographer is not
+ * a musician — and this is that sentence said on the page instead of at the
+ * corpus boundary. The list here is now the longer of the two; see the note
+ * inside it.
  *
  * Two gates, both measured on 2026-09-11 against the published file:
  *
@@ -259,6 +260,26 @@ const VISUAL_MARKERS = [
   "layout",
   "sleeve",
   "liner notes",
+  // The six below are NOT in ingest's list, and the divergence is deliberate.
+  // Found 2026-09-11 by reading the commonest unmatched roles held by people
+  // who are mostly visual and never on an artist line: Cover 4,633, Art
+  // Direction 4,214, Graphics 1,468, Painting 418, Typography 308, Creative
+  // Director 210. "Cover" is always the artwork here and never a cover version
+  // — 17,278 bare, and every variant beneath it reads "Design [Cover]",
+  // "Artwork [Cover Art]", "Photography By [Front Cover]".
+  //
+  // They are not added to `seedArtist.packagingRoles`, because that list gates
+  // who becomes a seed artist and changing it moves the corpus: it needs a
+  // pass 1 re-run and a re-measure, not an edit. So ingest's list is currently
+  // the narrower one, which means some sleeve designers still qualify as seed
+  // artists on a "Cover" credit. Worth fixing at the next re-ingest, and worth
+  // knowing until then.
+  "cover",
+  "art direction",
+  "graphic",
+  "painting",
+  "typography",
+  "creative director",
 ];
 
 /** Below this there is nothing to be a majority of. */

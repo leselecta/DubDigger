@@ -60,3 +60,30 @@ test("too few credits to tell is not an answer", () => {
   assert.equal(visualCraft(["Design", "Design"], 0), null);
   assert.equal(visualCraft([], 0), null);
 });
+
+test("the sleeve words the seed rule's list misses are visual too", () => {
+  // Found by reading the commonest unmatched roles on mostly-visual people.
+  assert.equal(visualCraft(three("Cover"), 0), "designer");
+  assert.equal(visualCraft(three("Art Direction"), 0), "designer");
+  assert.equal(visualCraft(three("Graphics"), 0), "designer");
+  assert.equal(visualCraft(three("Painting"), 0), "designer");
+  assert.equal(visualCraft(three("Typography"), 0), "designer");
+  assert.equal(visualCraft(three("Creative Director"), 0), "designer");
+});
+
+test("John Harten, the case that found them", () => {
+  /*
+   * 64 credits, 49 matched by the seed rule's list alone, which is 76.6% and
+   * just under the floor. Cover and Graphics are the difference, and he is a
+   * sleeve designer either way.
+   */
+  const harten = [
+    ...Array(20).fill("Artwork"), ...Array(11).fill("Design"),
+    ...Array(5).fill("Layout"), ...Array(5).fill("Cover"),
+    ...Array(4).fill("Artwork, Photography By"), "Layout, Design",
+    ...Array(2).fill("Graphics"),
+    ...Array(3).fill("Written-By"), ...Array(3).fill("Performer"),
+    ...Array(2).fill("Band [Cologne Tape]"),
+  ];
+  assert.equal(visualCraft(harten, 0), "designer");
+});

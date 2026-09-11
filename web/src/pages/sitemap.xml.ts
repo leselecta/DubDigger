@@ -13,10 +13,14 @@ import { getTopArtists, getTopLabels } from "@/lib/queries";
  * already memoised for the life of the process.
  *
  * What it lists is the top thousand artists and the top thousand labels, which
- * is the same set the Core pages rank. The other half million pages stay
+ * is the same set the Core pages rank. The other 1.6 million pages stay
  * reachable — every one is linked from a page in here, and a crawler that
  * follows links will find them — but nothing in this file invites a bot to walk
- * 534,527 SQLite queries on a one-core VPS. Discovery, not exhaustiveness.
+ * that many SQLite queries on a one-core VPS. Discovery, not exhaustiveness.
+ *
+ * Release pages are the newest reason to hold that line and the strongest: they
+ * are 1,095,302 of those URLs on their own, two in five of them carrying a
+ * title and nothing else.
  *
  * The build-time path API above is described rather than named on purpose.
  * Astro decides whether to warn that the export is being ignored by testing

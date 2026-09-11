@@ -131,3 +131,118 @@ export function gradeWord(relevance: string): string {
 export function gradeTitle(relevance: string): string {
   return gradeWord(relevance).replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+export interface LineArtist {
+  id: number;
+  name: string;
+  /** The phrase that joins this name to the next, as the dump stores it. */
+  joinPhrase: string | null;
+  /** Whether there is a page to pivot to. */
+  inCorpus: boolean;
+}
+
+/**
+ * What joins two names on a release's artist line.
+ *
+ * The dump stores the phrase trimmed, on the artist it follows, so the spacing
+ * is ours to put back and it is not one rule: "Maurizio, Vainqueur" hugs the
+ * name before it where "Rhythm & Sound" does not. Only a comma and a semicolon
+ * behave that way; "/" and "+" are read as words here and take air on both
+ * sides, which is how Discogs prints them too.
+ *
+ * An empty phrase still separates two names, so it comes back as a space
+ * rather than as nothing: two names run together are a third name.
+ */
+function separator(phrase: string | null): string {
+  const joint = (phrase ?? "").trim();
+  if (joint === "") return " ";
+  return /^[,;]$/.test(joint) ? `${joint} ` : ` ${joint} `;
+}
+
+/**
+ * A release's artist line, with the text between the names worked out.
+ *
+ * Separate from the rendering because each name is a link or a chip depending
+ * on whether the corpus holds a page for it, so the page needs the parts rather
+ * than a finished string.
+ *
+ * The last name never carries a separator, whatever the dump says. A trailing
+ * phrase is in the data, and printing it ends the line on a dangling "&".
+ */
+export function artistLine<T extends LineArtist>(artists: readonly T[]): (T & { separator: string })[] {
+  return artists.map((artist, i) => ({
+    ...artist,
+    separator: i === artists.length - 1 ? "" : separator(artist.joinPhrase),
+  }));
+}
+
+export interface ReleaseFormat {
+  name: string;
+  qty: number;
+  text: string | null;
+  descriptions: string[];
+}
+
+/**
+ * The carrier as a line: "2× Vinyl, 12\", 45 RPM + CD, Album".
+ *
+ * Ingest stores the parts and this writes the sentence, so the wording is a
+ * code change rather than a re-ingest — the same split the role vocabulary
+ * runs on. The order is Discogs' own and it is also the order a digger reads
+ * in: what it is, how big and how fast, then anything odd about the pressing.
+ *
+ * A record issued on two carriers at once is one release with two formats, so
+ * the two are joined rather than one of them being picked.
+ */
+export function formatLine(formats: readonly ReleaseFormat[]): string | null {
+  const lines = formats
+    .map((f) => {
+      const head = f.name.trim();
+      if (!head) return "";
+      const parts = [f.qty > 1 ? `${f.qty}× ${head}` : head, ...f.descriptions];
+      if (f.text) parts.push(f.text);
+      return parts.filter(Boolean).join(", ");
+    })
+    .filter(Boolean);
+
+  return lines.length > 0 ? lines.join(" + ") : null;
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/**
+ * As much of the release date as the dump actually has.
+ *
+ * Discogs writes "2019-01-25", "1994-03-00" and "1996", and on the sample only
+ * 31% of dated records carry a full date. So each shape prints as itself and
+ * nothing is padded: a record dated 1996 must never read "1 Jan 1996", which
+ * would be the interface inventing a day nobody entered.
+ *
+ * The month and day are checked rather than trusted. The field is
+ * contributor-entered and "2019-13-01" is in there; falling back to the part
+ * that is still true says less and says nothing wrong.
+ */
+export function releasedOn(raw: string | null): string | null {
+  const value = (raw ?? "").trim();
+  const match = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?/.exec(value);
+  if (!match) return null;
+
+  const year = match[1]!;
+
+  /*
+   * `0000` is the dump's way of saying it does not know, and it reaches here on
+   * 3 releases. Pass 1 already reads it that way: `year` is NULL on all three,
+   * so printing "Released 0000" was the formatter siding against the parser
+   * about the same field. A zero month or day needs no such guard, since the
+   * two tests below already fall back to the month and the year: 4,106 records
+   * carry a zero month and 92,193 a zero day, and all of them read correctly.
+   */
+  if (year === "0000") return null;
+
+  const month = Number(match[2] ?? 0);
+  const day = Number(match[3] ?? 0);
+
+  if (month < 1 || month > 12) return year;
+  if (day < 1 || day > 31) return `${MONTHS[month - 1]} ${year}`;
+  return `${day} ${MONTHS[month - 1]} ${year}`;
+}

@@ -16,9 +16,11 @@ import SearchField from "./SearchField.astro";
  */
 interface Props {
   search?: boolean;
+  /** Prefills both fields, so a results page shows what was typed. */
+  query?: string;
 }
 
-const { search = true } = Astro.props;
+const { search = true, query } = Astro.props;
 
 /*
  * Which section is being read. Trailing slashes are stripped so "/core-labels/"
@@ -107,7 +109,7 @@ const info = [{ href: "/info", label: "Info" }];
     {
       search ? (
         <div class="hidden max-w-[420px] flex-1 sm:block">
-          <SearchField size="header" />
+          <SearchField size="header" value={query} />
         </div>
       ) : (
         <span class="flex-1" />
@@ -293,7 +295,7 @@ const info = [{ href: "/info", label: "Info" }];
       class="border-hairline bg-bg fixed inset-y-0 left-0 z-50 w-[min(20rem,82vw)] overflow-y-auto border-r px-6 py-5"
     >
       <div class="mb-6 sm:hidden">
-        <SearchField size="header" />
+        <SearchField size="header" value={query} />
       </div>
 
       {

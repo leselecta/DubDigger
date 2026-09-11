@@ -1,0 +1,455 @@
+---
+import Base from "@/layouts/Base.astro";
+import Eyebrow from "@/components/Eyebrow.astro";
+import FieldRow from "@/components/FieldRow.astro";
+import ListHeader from "@/components/ListHeader.astro";
+import CreditRow from "@/components/CreditRow.astro";
+import LoadMore from "@/components/LoadMore.astro";
+import Tabs from "@/components/Tabs.astro";
+import {
+  getArtist,
+  getArtistReleases,
+  getCatnos,
+  getRelease,
+  getReleaseCredits,
+} from "@/lib/queries";
+import { opticalLeft } from "@/lib/optical";
+import { creditLine } from "@/lib/roles";
+import { PAGE_SIZE, artistLine, formatLine, pageSize, releasedOn } from "@/lib/view";
+
+const release = getRelease(Number(Astro.params.id));
+if (!release) return Astro.rewrite("/404");
+
+const params = Astro.url.searchParams;
+const limit = pageSize(params.get("show") ?? undefined);
+const base = `/release/${release.id}`;
+
+const credits = getReleaseCredits(release.id);
+const count = credits.length;
+const shown = credits.slice(0, limit);
+const line = artistLine(release.artists);
+
+/* The same line as plain text, for the places markup cannot go. */
+const by = line.map((a) => `${a.name}${a.separator}`).join("");
+const format = formatLine(release.formats);
+const date = releasedOn(release.released);
+
+/*
+ * Where "more from" goes: the first name on the line.
+ *
+ * First rather than best, because the line is ordered by the record itself and
+ * the first name is the one the headline shows. Skipped when the corpus holds
+ * no page to pivot to, which for a credited name is the common case rather
+ * than the exception.
+ *
+ * The label had a tab of its own here and lost it. It was the widest of the
+ * three and the least about this record: a catalogue in release order, where
+ * the label's own page already ranks the same records and its roster besides.
+ * The pivot is not gone, it is one row up in the identity block, which is
+ * where a reader looking for the room goes anyway. The cost is 49,255
+ * releases, 4.5%, that had the label tab as their only one and now carry no
+ * tabs at all: no credits entered and a lead name with no page. Those pages
+ * were already answering "what else is on this label" instead of anything
+ * about the record.
+ */
+const lead = line[0] ?? null;
+const artist = lead?.inCorpus ? getArtist(lead.id) : null;
+
+/* Everything they have except this one, which is not more of anything. */
+const fromArtist = artist ? Math.max(artist.releaseCount - 1, 0) : 0;
+
+/*
+ * Credits last, and they used to be a band of their own above the rest.
+ *
+ * The argument for the band was that credits are what the record IS, where the
+ * other list is only where to go next, and that filing the answer with the
+ * follow-up questions buries it. What settled it the other way is the phone:
+ * the band pushed the first list two screens down, so a reader had to scroll
+ * past every credit on a well-entered record to find out there was anything
+ * else on the page at all.
+ *
+ * Second rather than first, which means the page opens on more from the
+ * artist. The record itself is already above: the artist line, the label, the
+ * pressing and the tracklist are the identity block, so what the tabs are for
+ * is where to go next, and the credits are the deeper of the two rather than
+ * the headline.
+ *
+ * No tab when the corpus holds no credits, because a tab is a way in and there
+ * is nothing behind that one. The record still says so, in the identity block
+ * above, where a missing thing is reported next to the things that are there.
+ */
+const tabs = [
+  /*
+   * "This artist" rather than the artist's name, which was tried and put a
+   * 48-character tab on Grandmaster Melle Mel & The Furious Five: 718px of row
+   * in a 342px viewport, which pushed Credits off the phone entirely. A name
+   * cannot be truncated to fit, since that is the interface editing the thing
+   * it points at, so the way to keep the row honest is not to put a name in
+   * it. The name is already the byline above, two lines up.
+   *
+   * Four words rather than five, and the word that went is what buys the
+   * phone. Counted with the row's own arithmetic against all 927,311 release
+   * pages that carry this tab, "More by this artist" fits a 390px viewport on
+   * 917,263 of them, 98.9%, where "More releases by this artist" fits 389,017,
+   * 42.0%: at 29 characters before the count it is over the row on any page
+   * that also has credits. The 1.1% left over are the pages with four-figure
+   * counts, and they scroll and say so.
+   */
+  ...(fromArtist > 0
+    ? [{ key: "artist", label: "More by this artist", count: fromArtist }]
+    : []),
+  ...(count > 0 ? [{ key: "credits", label: "Credits", count }] : []),
+];
+const asked = params.get("tab") ?? "";
+const active = tabs.some((t) => t.key === asked) ? asked : (tabs[0]?.key ?? "");
+
+const more = active === "artist" && artist ? getArtistReleases(artist.id, limit, release.id) : [];
+
+/* One query for the whole page of rows, rather than one per row. */
+const catnos = getCatnos(more.map((r) => r.id));
+
+const total = fromArtist;
+
+/*
+ * One `show` for whichever tab is open, and it can be one because only one list
+ * is ever on the page. It used to stop at ten rows and hand the rest to the
+ * artist page, which was a link out of a list rather than more of it: every
+ * other list on the site lengthens where it stands and holds the reader's
+ * place, and there is no reason this one should be the exception.
+ */
+const moreHref = `${base}?tab=${active}&show=${limit + PAGE_SIZE}`;
+
+const description = count
+  ? `${release.title}${by ? ` by ${by}` : ""}${release.year ? `, ${release.year}` : ""} on Dub Digger: ${count.toLocaleString("en-GB")} credit${count === 1 ? "" : "s"}, from the Discogs credit dumps.`
+  : `${release.title}${by ? ` by ${by}` : ""} is in this corpus, but no credits are recorded for it.`;
+
+/*
+ * MusicRelease rather than MusicAlbum: this is one pressing with a catalogue
+ * number, which is the thing Discogs ids and the thing the page is about.
+ * `creditedTo` takes the artist line as the record prints it, join phrases and
+ * all, because that string is what the sleeve says and splitting it into
+ * separate acts would assert a reading of "Presents" the dump does not make.
+ */
+const mainEntity = {
+  "@type": "MusicRelease",
+  name: release.title,
+  url: `${Astro.site}release/${release.id}`,
+  sameAs: `https://www.discogs.com/release/${release.id}`,
+  ...(by ? { creditedTo: by } : {}),
+  ...(release.released ? { datePublished: release.released } : {}),
+  ...(release.labels[0] ? { recordLabel: release.labels[0].name } : {}),
+  ...(release.labels[0]?.catno ? { catalogNumber: release.labels[0].catno } : {}),
+  ...(format ? { musicReleaseFormat: format } : {}),
+  ...(release.tracks.length ? { numTracks: release.tracks.length } : {}),
+};
+---
+
+<Base
+  title={`${release.title} — Dub Digger`}
+  description={description}
+  pageType="ItemPage"
+  mainEntity={mainEntity}
+  breadcrumbs={[{ name: release.title, href: base }]}
+>
+  <div class="column pt-16 pb-16 md:pt-24">
+    <Eyebrow icon="release">Release</Eyebrow>
+
+    {/*
+     * Two lines, and the grey one is the record's own hierarchy: a sleeve says
+     * who and then what. Only the first name goes up here, however many the
+     * line has, because the headline is a name rather than a sentence and
+     * "Mark Ernestus Presents Jeri-Jeri" above a long title is a paragraph in
+     * 60px type. The whole line, join phrases and links, is the row below.
+     *
+     * It is inside the h1, so the page still has exactly one, and a screen
+     * reader gets "Substance, Rise And Shine" the way the design reads it.
+     */}
+    <h1 class="text-name-label text-ink-strong mt-6 leading-[0.9] font-bold tracking-[-0.045em]">
+      {
+        lead && (
+          /*
+           * A third of the title's size, and its own tracking with it: the
+           * headline's -0.045em is drawn for 120px type and closes up a 38px
+           * line. `--text-byline` carries the reasoning.
+           *
+           * Both lines are pulled flush by their own first letter's side
+           * bearing, which is what makes them share a left edge at two
+           * different sizes. See `opticalLeft`.
+           */
+          <span
+            class="text-byline text-ink-dim block pb-3 tracking-[-0.02em]"
+            style={opticalLeft(lead.name)}
+          >
+            {lead.name}
+          </span>
+        )
+      }
+      <span class="block" style={opticalLeft(release.title)}>{release.title}</span>
+    </h1>
+
+    {/*
+     * The label page's stat line, on a record: same accent, same white
+     * separator, same place under the title.
+     *
+     * The room and the year, which is the pair a digger reads off a sleeve
+     * first and the shortest true answer to what this is. Both appear again in
+     * the block below at full precision, every label with its catalogue number
+     * and the date to the day where the dump has one, so this is the summary
+     * and that is the record. The sibling page took its scene share OUT of this
+     * line for repeating the row beneath it, and the difference is that a
+     * percentage printed twice is one fact twice over, where a year and a date
+     * are the glance and the detail.
+     *
+     * First label only, for the reason the byline above takes only the first
+     * name: this line is an identity, not a list.
+     *
+     * Nothing renders when the dump has neither, rather than a lone separator
+     * on an empty accent line. The separator carries one hard space each side
+     * and the newlines around it supply the other, which is the sibling's
+     * spelling and therefore its exact spacing: `compressHTML` is off, so a
+     * newline between two expressions renders as the space it looks like.
+     */}
+    {
+      (release.labels[0] || release.year) && (
+        <p class="text-accent mt-10 font-mono text-[0.8125rem] tracking-[0.06em] uppercase">
+          {release.labels[0]?.name}
+          {release.labels[0] && release.year && (
+            <span class="text-ink-strong">&nbsp;·&nbsp;</span>
+          )}
+          {release.year}
+        </p>
+      )
+    }
+
+    {/*
+     * The one link that leaves, as a button rather than a row, and it sits
+     * under the title rather than under the record.
+     *
+     * Its siblings carry a "View on" row because an artist or a label lists
+     * sites of its own; a release has none, so the row would be a label in
+     * front of a single link. Pure id substitution, no licensing exposure.
+     *
+     * It was below the identity block, which put the sleeve, the pressing and
+     * a full tracklist between the title and the one thing a digger reaches
+     * for when the corpus runs out. Here it is the first thing under the name,
+     * where a reader deciding this is the record can act on it.
+     */}
+    <a
+      href={`https://www.discogs.com/release/${release.id}`}
+      target="_blank"
+      rel="noreferrer"
+      class="border-edge-strong hover:bg-ink hover:text-bg group mt-9 inline-block border px-8 py-[15px] font-mono text-xs tracking-[0.2em] uppercase transition-colors"
+    >
+      View on Discogs<span class="sr-only"> (opens in a new tab)</span>
+      {/*
+       * Half again the size of the label beside it and wearing the accent,
+       * since it is the one mark saying this link leaves the site.
+       *
+       * `leading-[0]` is what keeps the button at the 48px it already was.
+       * Anything over 14px in this row grows it otherwise, measured: 16px
+       * takes it to 48.9 and 18px to 50, because the glyph's line box is
+       * taller than the 12px label's and the tallest one on the line wins. A
+       * zero line box contributes nothing to that measurement.
+       *
+       * Sitting on the baseline is the alignment, not `align-middle`, which
+       * dropped it 2.4px and read as low against an uppercase label. Middle
+       * centres on the x-height, and there is no x-height in VIEW ON DISCOGS:
+       * the band to centre in runs baseline to cap. Measured in the page, the
+       * arrow's ink is 7.6px tall and rests on the baseline, so its centre
+       * lands 3.8px up against the caps' 4.26px, half a pixel out.
+       *
+       * It inverts with the ground on hover rather than staying accent, which
+       * on the ink ground would be a wash at 1.7:1.
+       */}
+      <span
+        class="text-accent group-hover:text-bg ml-3 align-baseline text-lg leading-[0]"
+        aria-hidden="true">↗</span
+      >
+    </a>
+
+    {/*
+     * The two pivots in this block wear the accent. A record is the people and
+     * the room behind it, so those are the links a digger reaches for, and the
+     * rest of the block is carrier detail nobody clicks. Hover inverts to
+     * `ink-strong` instead of turning accent, the way the dropdown's "View all
+     * results" row does: a link that is already accent cannot say it is being
+     * reached for by becoming accent.
+     */}
+    <dl class="mt-12 max-w-[760px]">
+      <FieldRow label={line.length > 1 ? "Artists" : "Artist"}>
+        {
+          line.length === 0 ? (
+            <span class="text-ink-faint">None recorded</span>
+          ) : (
+            line.map((a) => (
+              <>
+                {/*
+                 * Closed up on purpose: `compressHTML` is off, so a newline
+                 * between these two renders as a space, and 41,335 join phrases
+                 * are a comma. The name sits tight inside its own anchor for
+                 * the same reason, or `link-rule` underlines a trailing space.
+                 */}
+                {a.inCorpus ? (
+                  <a href={`/artist/${a.id}`} class="link-rule text-accent hover:text-ink-strong">{a.name}</a>
+                ) : (
+                  <span class="text-ink-dim">{a.name}</span>
+                )}{a.separator}
+              </>
+            ))
+          )
+        }
+      </FieldRow>
+
+      {/*
+       * The title again, under the byline that is also above it.
+       *
+       * The block is the record's metadata in full rather than the things the
+       * headline left out, so the field a sleeve leads with belongs in it. Plain
+       * ink, not accent: the two coloured rows are the pivots, and the one thing
+       * on this page that cannot be a link is the page itself.
+       */}
+      <FieldRow label="Title">{release.title}</FieldRow>
+
+      <FieldRow label={release.labels.length > 1 ? "Labels" : "Label"}>
+        {
+          release.labels.length === 0 ? (
+            /*
+             * Never a reason, because the corpus cannot tell them apart: every
+             * label id on a corpus release has a page, so an empty list means
+             * the dump named no label at all or named the "Not On Label"
+             * placeholder, which is filtered at ingest.
+             */
+            <span class="text-ink-faint">None recorded</span>
+          ) : (
+            <span class="flex flex-wrap gap-x-4 gap-y-1">
+              {release.labels.map((l) => (
+                <span>
+                  <a href={`/label/${l.id}`} class="link-rule text-accent hover:text-ink-strong">{l.name}</a>
+                  {l.catno && <span class="text-ink-faint"> – {l.catno}</span>}
+                </span>
+              ))}
+            </span>
+          )
+        }
+      </FieldRow>
+
+      {/*
+       * Format and country are shown only when the dump has them. A row reading
+       * "—" would be the page reporting an absence it has no opinion about:
+       * unlike a missing credit, a missing carrier says nothing about the
+       * record, only about the entry.
+       */}
+      {format && <FieldRow label="Format">{format}</FieldRow>}
+      {release.country && <FieldRow label="Country">{release.country}</FieldRow>}
+
+      <FieldRow label="Released" last={count > 0 && release.tracks.length === 0}>
+        {date ?? <span class="text-ink-faint">Not recorded</span>}
+      </FieldRow>
+
+      {/*
+       * Why this record is in the corpus used to be a row here, seed styles or
+       * channel A or channel B. It came out because it answers a question about
+       * the corpus rather than about the record: the three flags describe how
+       * the boundary reached this release, which is the sort of thing an artist
+       * page carries as a grade and a sleeve never carries at all.
+       *
+       * What replaced it is the absence that used to be a band. 443,005 of
+       * 1,095,302 releases carry no credits, so this is the page for two in
+       * five of them, and with the Credits tab gone on those pages the record
+       * would otherwise say nothing about credits at all — which reads as a
+       * page that does not do credits rather than a record nobody has finished
+       * entering. It cannot say "worked alone" either: one name on the line and
+       * nobody in the credits is either a solo record or an unfinished entry,
+       * and the dump does not say which.
+       */}
+      {
+        count === 0 && (
+          <FieldRow label="Credits" last={release.tracks.length === 0}>
+            <span class="text-ink-faint">None recorded for this release</span>
+          </FieldRow>
+        )
+      }
+
+      {
+        release.tracks.length > 0 && (
+          <FieldRow label="Tracklist" last>
+            {/*
+             * Titles and positions, and no cap. It is the contents of the
+             * record, so stopping early would be answering a question nobody
+             * asked — the same reason a credit row shows all of its roles.
+             *
+             * A track is not an entity and nothing here is a link: the dump's
+             * track-level artists are dropped at parse time, so there is
+             * nobody to pivot to and the interface must not imply there is.
+             */}
+            <ul class="space-y-[6px]">
+              {release.tracks.map((t) => (
+                <li class="grid grid-cols-[2.5rem_1fr] gap-x-3">
+                  <span class="text-ink-faint">{t.position}</span>
+                  <span>{t.title}</span>
+                </li>
+              ))}
+            </ul>
+          </FieldRow>
+        )
+      }
+    </dl>
+  </div>
+
+  {
+    tabs.length > 0 && (
+      <div class="column pt-14 pb-20 md:pb-32">
+        <Tabs tabs={tabs} active={active} basePath={base} />
+
+        {active === "credits" && (
+          <>
+            {/*
+             * One column and no count beside it: a credit is a name and the
+             * work they did, and the work wraps under the name where a long
+             * row of roles has somewhere to go.
+             */}
+            <ListHeader name="Name" />
+            <ul>
+              {shown.map((c) => (
+                <CreditRow
+                  href={c.inCorpus ? `/artist/${c.id}` : undefined}
+                  name={c.name}
+                  detail={creditLine(c.roles)}
+                />
+              ))}
+            </ul>
+
+            {limit < count && <LoadMore href={moreHref} remaining={count - limit} />}
+          </>
+        )}
+
+        {more.length > 0 && (
+          <>
+            {/*
+             * Year in the middle column and the catalogue number in the wide
+             * one, the same three columns the label page's list carries. The
+             * format was here first and said the least: it describes the object
+             * rather than the record, and a column of "2× Vinyl, 12\"" repeated
+             * down the page is not what anyone is scanning a discography for.
+             * A number is what a digger writes down.
+             */}
+            <ListHeader name="Release" count="Year" meta="Cat no." />
+            <ul>
+              {more.map((r) => (
+                <CreditRow
+                  count={r.year ?? "—"}
+                  href={`/release/${r.id}`}
+                  name={r.title}
+                  meta={catnos.get(r.id) ?? null}
+                  metaLabel="Cat no."
+                />
+              ))}
+            </ul>
+
+            {limit < total && <LoadMore href={moreHref} remaining={total - limit} />}
+          </>
+        )}
+      </div>
+    )
+  }
+</Base>

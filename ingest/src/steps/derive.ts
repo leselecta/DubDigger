@@ -6,6 +6,7 @@ import {
   relevance,
   seedLabel,
 } from "../config.ts";
+import type { ArtistOverride, LabelOverride } from "../config.ts";
 import { startRun } from "../db/open.ts";
 
 const { veryHigh, high, medium } = relevance;
@@ -79,6 +80,14 @@ const grade = `CASE
 export interface DeriveOptions {
   maxPeoplePerRelease?: number;
   onStep?: (name: string) => void;
+  /**
+   * The named exceptions, defaulting to the ones in config.
+   *
+   * Injectable for the same reason `maxPeoplePerRelease` is: a test needs to
+   * name an artist that exists in its own six-release corpus, and the real list
+   * names Planet Rhythm.
+   */
+  overrides?: { artists: ArtistOverride[]; labels: LabelOverride[] };
 }
 
 export interface DeriveStats {
@@ -92,6 +101,8 @@ export interface DeriveStats {
   labelGrades: { relevance: string; labels: number }[];
   /** Compilations too large to imply collaboration. Kept, but not paired. */
   releasesSkippedForPairs: number;
+  /** Named exceptions applied by hand. Reported so a run says what it overruled. */
+  overrides: { artists: number; labels: number };
 }
 
 export async function runDerive(
@@ -99,6 +110,18 @@ export async function runDerive(
   options: DeriveOptions = {},
 ): Promise<DeriveStats> {
   const maxPeople = options.maxPeoplePerRelease ?? deriveDefaults.maxPeoplePerRelease;
+  /*
+   * No overrides unless a caller supplies them, and the real list lives in the
+   * CLI rather than defaulting in here.
+   *
+   * Defaulting to the config list made every fixture in derive.test.ts inherit
+   * it, and the list names Planet Rhythm, which no six-release fixture holds:
+   * 35 tests failed at once on the missing-id guard below, which was the guard
+   * working and the default being wrong. An editorial list is policy, and
+   * policy belongs with the command that runs the pipeline, not inside the step
+   * that does the work.
+   */
+  const named = options.overrides ?? { artists: [], labels: [] };
   const step = (name: string) => options.onStep?.(name);
 
   const run = startRun(db, "derive", null, { maxPeoplePerRelease: maxPeople });
@@ -337,6 +360,87 @@ export async function runDerive(
     ).run(t.floor, t.name, ...below);
   }
 
+  // Then the named exceptions, which run LAST of the three so nothing can undo
+  // one: the measurement sets the grade, a tradition may lift it, and a person
+  // may overrule both. `scene_relevance` is untouched either way, so the page
+  // can still show what the seed actually measured next to the grade a human
+  // gave it — the same split that lets a lifted grade say it was lifted.
+  //
+  // A grade is written unconditionally rather than only downward or only
+  // upward. Which direction is right is the editorial judgement itself, and a
+  // mechanism that could only demote would have quietly decided half of it.
+  step("applying editorial overrides to artists");
+  const overrideStats = { artists: 0, labels: 0 };
+  for (const o of named.artists) {
+    const done = db
+      .prepare(`UPDATE artist_coverage SET relevance = ?, override_reason = ? WHERE artist_id = ?`)
+      .run(o.grade, o.reason, o.id);
+    // Silence here would be the worst outcome: a hand-written list slowly
+    // aiming at ids that are not there any more, and a corpus that looks
+    // curated because a file says so. check-corpus asserts the names too.
+    if (done.changes === 0) {
+      throw new Error(
+        `Override names artist ${o.id} ("${o.name}"), which has no artist_coverage row.`,
+      );
+    }
+    overrideStats.artists += done.changes;
+  }
+  // What a record is worth to a search: the lead artist's figure, discounted by
+  // the lead artist's grade. Last, because it reads artist_coverage and so has
+  // to run after the grades and the lineage floor are settled.
+  //
+  // The lead name only, matching the release page's headline and the search
+  // row: 133,205 releases credit more than one act, and picking the strongest
+  // of them would rank a record by someone whose name the row never shows.
+  //
+  // The figure is `seed_releases` EXCEPT where a tradition applies, and that
+  // exception is the whole of the fix here. The seed measures dub techno, so it
+  // scores King Tubby, Burial and Juan Atkins at nothing by construction, which
+  // is why lineage exists at all. Reading the bare measure here inherited that
+  // blindness one layer down: 2,820 lifted artists scored zero and 18,978 of
+  // their records were weighted zero with them, so `commodo` answered with
+  // Commodore Dub and `scientist` with Full Moon Scientist. A tradition
+  // therefore scores on the artist's corpus output halved, floored at
+  // `seed_releases` so it only ever lifts — the same expression `artistPool`
+  // and `releasePool` use in the app, deliberately, because one measure read
+  // three ways is what caused this. A hand-written override floors it too, for
+  // the same reason: naming someone the seed scores at nothing and then leaving
+  // their records on that nothing is the bug with a different cause.
+  //
+  // Do NOT also divide by the artist's release count to make a record worth
+  // their average rather than their total. That idea is real and parked, and it
+  // does not compose with this: the lift makes a lineage artist score
+  // release_count / 2, so dividing by release_count hands all 9,413 of them a
+  // flat 0.5 and catalogue size stops mattering for exactly the people the lift
+  // exists to make visible. Pick one.
+  //
+  // `1.0 *` because the grade step is integer division otherwise, and this
+  // weight is only the pool cut: the app orders the 200 it gets back with
+  // `sceneScore`, which divides in floating point. A lineage artist with five
+  // records at `medium` came to 2 / 4 = 0 here and 0.5 there, so the two
+  // disagreed about whether they were worth ranking at all, and the one that
+  // said no ran first.
+  step("ranking releases for search");
+  db.exec(`
+    DELETE FROM release_rank;
+
+    INSERT INTO release_rank (release_id, weight, year)
+    SELECT r.id,
+           1.0 * max(coalesce(c.seed_releases, 0),
+               CASE WHEN c.lineage IS NOT NULL OR c.override_reason IS NOT NULL
+                    THEN coalesce(c.release_count, 0) / 2 ELSE 0 END)
+             / (1 << (CASE coalesce(c.relevance, 'none')
+             WHEN 'very high' THEN 0
+             WHEN 'high'      THEN 1
+             WHEN 'medium'    THEN 2
+             WHEN 'low'       THEN 3
+             ELSE 4 END)),
+           r.year
+      FROM releases r
+      LEFT JOIN release_artists la ON la.release_id = r.id AND la.position = 0
+      LEFT JOIN artist_coverage c ON c.artist_id = la.artist_id;
+  `);
+
   // Labels, on the same five steps, from the same measure the seed-label rule
   // uses: every act on the artist line across the whole dump, and how many of
   // them are seed artists. `very high` is that rule exactly, so a label the
@@ -360,7 +464,7 @@ export async function runDerive(
     );
   }
   db.exec(`
-    INSERT INTO label_coverage (label_id, line_artist_count, seed_artist_count, seed_ratio, relevance)
+    INSERT INTO label_coverage (label_id, line_artist_count, seed_artist_count, seed_ratio, relevance, seed_releases)
     SELECT l.id,
            coalesce(p.total, 0),
            coalesce(p.seeds, 0),
@@ -379,7 +483,8 @@ export async function runDerive(
               AND 1.0 * p.seeds / p.total
                   >= ${labelRelevance.medium.minSeedArtistRatio}          THEN 'medium'
              ELSE 'low'
-           END
+           END,
+           coalesce(sr.seed_rels, 0)
       FROM labels l
       LEFT JOIN (
         SELECT p.label_id,
@@ -388,8 +493,31 @@ export async function runDerive(
           FROM label_artist_pairs p
           LEFT JOIN seed_artists s ON s.artist_id = p.artist_id
          GROUP BY p.label_id
-      ) p ON p.label_id = l.id;
+      ) p ON p.label_id = l.id
+      -- Grouped rather than correlated: one pass over release_labels for all
+      -- 114,226 labels instead of a scan each.
+      LEFT JOIN (
+        SELECT rl.label_id, count(DISTINCT rl.release_id) AS seed_rels
+          FROM release_labels rl
+          JOIN releases r ON r.id = rl.release_id
+         WHERE r.is_seed = 1
+         GROUP BY rl.label_id
+      ) sr ON sr.label_id = l.id;
   `);
+
+  // The label half of the same list, here rather than beside the artist half
+  // because it has to run after the grade it overrules.
+  for (const o of named.labels) {
+    const done = db
+      .prepare(`UPDATE label_coverage SET relevance = ?, override_reason = ? WHERE label_id = ?`)
+      .run(o.grade, o.reason, o.id);
+    if (done.changes === 0) {
+      throw new Error(
+        `Override names label ${o.id} ("${o.name}"), which has no label_coverage row.`,
+      );
+    }
+    overrideStats.labels += done.changes;
+  }
 
   db.exec(`DROP TABLE IF EXISTS temp.release_people;
             DROP TABLE IF EXISTS temp.pairable;
@@ -438,6 +566,7 @@ export async function runDerive(
     lineage: perTradition,
     labelGrades,
     releasesSkippedForPairs,
+    overrides: overrideStats,
   };
 
   run.finish(stats);

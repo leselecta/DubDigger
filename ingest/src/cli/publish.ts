@@ -25,11 +25,17 @@ import { openDb } from "../db/open.ts";
  * Raw tables the ingest needs and the app does not.
  *
  * release_artists and release_credits are served because the app needs them to
- * work out which releases an artist appears on, and with what role. Styles and
- * genres were only ever read by the release page, which v1 does not have:
- * release rows link straight to Discogs, which holds the fuller picture
- * including images, and avoids presenting a mostly empty credits list as
- * though it were an answer.
+ * work out which releases an artist appears on, and with what role.
+ *
+ * Styles and genres stay behind, and the reason changed on the v2 branch. It
+ * used to be that no page could show them, since a release row linked straight
+ * out to Discogs; there is a release page now, and it still does not show them.
+ * That is a design decision rather than an architectural one, so it is cheap to
+ * revisit: the columns are in the working database and reversing this costs a
+ * publish and a larger file, not a re-parse.
+ *
+ * release_formats and release_tracks ARE served, which is what the release page
+ * prints, and they are the largest thing this file has ever carried.
  */
 const NOT_SERVED = [
   "release_styles",

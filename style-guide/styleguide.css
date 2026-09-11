@@ -705,6 +705,17 @@ code {
   border-bottom: 1px solid rgb(255 255 255 / 0.25);
 }
 
+/* Records only, under the title: who made it and when. "Biokinetics" matches 15
+   pressings, so a column of bare titles answers the same question fifteen
+   times. It is also what the inherited grade in the same row belongs to. */
+.spec-row-sub {
+  margin-top: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: var(--color-ink-faint);
+}
+
 .spec-lead {
   max-width: 760px;
   color: var(--color-ink-muted);
@@ -1186,13 +1197,42 @@ code {
 
 .spec-suggest a {
   display: grid;
-  grid-template-columns: 1fr 3.5rem 5.5rem;
+  grid-template-columns: 1fr auto;
   gap: 0 0.75rem;
   align-items: baseline;
   padding: 0.625rem 1rem;
   border-bottom: 1px solid var(--color-hairline-soft);
   color: var(--color-ink);
   text-decoration: none;
+}
+
+/* The tab row is a sibling of the listbox, never inside it: a listbox may hold
+   options and nothing else. Deliberately not the accent — "View all results" is
+   already an accent ground three rows below, and two in one panel each stop
+   marking. This is the page tabs' vocabulary at the dropdown's size. */
+.spec-suggest-tabs {
+  display: flex;
+  gap: 1.25rem;
+  padding: 0.75rem 1rem 0;
+  border-bottom: 1px solid var(--color-hairline-soft);
+}
+
+.spec-suggest-tabs button {
+  padding: 0 0 0.5rem;
+  border: 0;
+  border-bottom: 1.5px solid transparent;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink-dim);
+  cursor: pointer;
+}
+
+.spec-suggest-tabs button[aria-current] {
+  color: var(--color-ink-strong);
+  border-bottom-color: var(--color-ink-strong);
 }
 
 .spec-suggest a:last-child {
@@ -1205,10 +1245,14 @@ code {
   letter-spacing: -0.01em;
 }
 
+/* One right-hand cell, not two columns: a record has no grade, and a column of
+   its own would leave a hole in its row. The kind never folds; the grade does,
+   below md, taking its separator with it. */
 .spec-suggest .sg-suggest-meta {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   letter-spacing: 0.1em;
+  white-space: nowrap;
   text-transform: uppercase;
   color: var(--color-ink-faint);
 }

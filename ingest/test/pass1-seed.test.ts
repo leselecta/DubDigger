@@ -12,9 +12,13 @@ function release(partial: Partial<ParsedRelease> & { id: number }): ParsedReleas
   return {
     title: `Release ${partial.id}`,
     year: null,
+    released: null,
+    country: null,
     artists: [],
     credits: [],
     labels: [],
+    formats: [],
+    tracks: [],
     styles: [],
     genres: [],
     ...partial,

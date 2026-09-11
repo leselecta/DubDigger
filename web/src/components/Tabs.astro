@@ -34,6 +34,13 @@ interface Props {
 
 const { tabs, active, basePath } = Astro.props;
 
+/*
+ * The results page hands a basePath that already carries the query (`/?q=pole`),
+ * so the separator has to be worked out rather than written down. Everywhere
+ * else basePath is a bare path and this is the `?` it always was.
+ */
+const join = basePath.includes("?") ? "&" : "?";
+
 /**
  * How wide this row wants to be, and therefore whether it needs a scroll hint
  * at all.
@@ -103,7 +110,7 @@ const hint = wants <= 390 ? null : (STEPS.find(([width]) => width >= wants)?.[1]
         const isActive = tab.key === active;
         return (
           <a
-            href={tab.key === tabs[0]!.key ? basePath : `${basePath}?tab=${tab.key}`}
+            href={tab.key === tabs[0]!.key ? basePath : `${basePath}${join}tab=${tab.key}`}
             data-hold-scroll
             aria-current={isActive ? "page" : undefined}
             class:list={[

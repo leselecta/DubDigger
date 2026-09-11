@@ -6,6 +6,11 @@ CREATE TABLE IF NOT EXISTS releases (
   id            INTEGER PRIMARY KEY,
   title         TEXT NOT NULL,
   year          INTEGER,
+  -- The date as the dump writes it: "1994-03-00", "1996", "1997-09-22". year is
+  -- derived from it and is what the corpus is graded on; this is what a sleeve
+  -- prints. Filled by the enrich step, not by the passes.
+  released      TEXT,
+  country       TEXT,
   -- How this release entered the corpus. A collaborator is not the same as a
   -- label-mate, and the UI must be able to show that distinction.
   is_seed       INTEGER NOT NULL DEFAULT 0,
@@ -33,6 +38,34 @@ CREATE TABLE IF NOT EXISTS release_credits (
   artist_id     INTEGER NOT NULL,
   name          TEXT NOT NULL,
   role          TEXT NOT NULL,
+  PRIMARY KEY (release_id, position)
+) WITHOUT ROWID;
+
+-- The tracklist, read for what it prints and nothing more. Tracks are NOT an
+-- entity: no ids, no credits, no pages. The track level's own <artists> and
+-- <extraartists> are still dropped at parse time, which is the whole reason the
+-- subtree was skipped before this table existed.
+CREATE TABLE IF NOT EXISTS release_tracks (
+  release_id    INTEGER NOT NULL,
+  -- Order in the list. position is a printed label ("A1", "B2") and is missing
+  -- on heading rows, so it cannot be the key.
+  seq           INTEGER NOT NULL,
+  position      TEXT,
+  title         TEXT NOT NULL,
+  duration      TEXT,
+  PRIMARY KEY (release_id, seq)
+) WITHOUT ROWID;
+
+-- The carrier. Parts, never a sentence: "Vinyl" + qty 2 + ["12\"", "45 RPM"] is
+-- assembled at display time, the same rule the raw role strings follow.
+CREATE TABLE IF NOT EXISTS release_formats (
+  release_id    INTEGER NOT NULL,
+  position      INTEGER NOT NULL,
+  name          TEXT NOT NULL,
+  qty           INTEGER NOT NULL DEFAULT 1,
+  text          TEXT,
+  -- Newline joined, the way artists.urls is.
+  descriptions  TEXT,
   PRIMARY KEY (release_id, position)
 ) WITHOUT ROWID;
 
@@ -261,7 +294,17 @@ CREATE TABLE IF NOT EXISTS artist_coverage (
   relevance          TEXT NOT NULL DEFAULT 'none',
   -- The tradition that raised it, or NULL: 'roots dub', 'afrobeat',
   -- 'detroit techno'. The editorial rules of the corpus, argued in config.ts.
-  lineage            TEXT
+  lineage            TEXT,
+  -- Set only where `overrides.artists` names this artist. Same job as the label
+  -- column: the grade above was set by hand and this is the published reason.
+  --
+  -- It is also read by the SORT, not only by the page, and that is the whole
+  -- reason it is a column rather than a lookup in the app. `seed_releases` is
+  -- what search ranks on, so promoting the grade of someone the seed scores at
+  -- zero moves the word on the page and nothing else — which is the lineage bug
+  -- of 2026-09-08 exactly, on names picked by hand. `artistPool` floors an
+  -- overridden artist the same way it floors a lineage one.
+  override_reason    TEXT
 );
 
 -- The label grade, on the same five steps as an artist so one word means one
@@ -283,8 +326,47 @@ CREATE TABLE IF NOT EXISTS label_coverage (
   -- The same five words an artist wears, from a measure of the label's own.
   -- 'very high' IS the seed-label rule, which is what keeps the corpus boundary
   -- and the top step of the display one decision.
-  relevance         TEXT NOT NULL DEFAULT 'none'
+  relevance         TEXT NOT NULL DEFAULT 'none',
+  -- What search ranks it on: releases of ITS OWN that are in the seed, counted
+  -- rather than estimated. The ratio above is a share of PEOPLE, and multiplying
+  -- a release count by it answered a question about records with a fact about
+  -- the roster: Planet Rhythm came out at 764 where the true figure is 126,
+  -- and outranked Rhythm & Sound, whose 160 is measured the strict way because
+  -- an artist's always was. The grade still reads the ratio; only the sort
+  -- reads this.
+  seed_releases     INTEGER NOT NULL DEFAULT 0,
+  -- Set only where `overrides.labels` names this label: the grade above was
+  -- decided by hand and this says why, in the slot the computed ratio clause
+  -- would otherwise fill. A graded label with no stated reason is the one thing
+  -- the interface does not ship, and an override has no ratio to fall back on.
+  override_reason   TEXT
 );
+
+-- What a record is worth to a search, precomputed because the search cannot
+-- afford to work it out.
+--
+-- A release has no grade of its own, so its rank is the lead artist's figure
+-- discounted by the lead artist's grade, which the app then halves again: a
+-- record ranks where its maker ranks, one step down. Computed here because the
+-- query that needs it is the one that cannot pay for it: "re" matches about
+-- 200,000 titles, and reaching the artist line and the coverage row for every
+-- one of them cost 103 ms of a 196 ms page against 84 ms before records were
+-- searchable. Ordering against this table instead costs 31 ms.
+--
+-- Deliberately three columns and no title. A wider version carrying the title
+-- and the artist name saves the app a second query and measured 49 ms against
+-- this one's 31, because 60 MB of table touches four times the pages 15 MB
+-- does. The app pays one extra lookup for the 200 rows that survive, which is
+-- the trade the whole architecture already makes: rank on a narrow key, read
+-- the wide row only for what is shown.
+CREATE TABLE IF NOT EXISTS release_rank (
+  release_id INTEGER PRIMARY KEY,
+  -- seed releases of the lead artist, halved once per step down their grade.
+  weight     REAL NOT NULL DEFAULT 0,
+  -- Carried so the tie-break between two pressings is settled here rather than
+  -- by a second read: earliest first, undated last.
+  year       INTEGER
+) WITHOUT ROWID;
 
 -- Search: the entry point to the whole tool is typing a name.
 -- External-content FTS, rebuilt at the end of ingest with:
@@ -294,3 +376,16 @@ CREATE VIRTUAL TABLE IF NOT EXISTS artist_search
 
 CREATE VIRTUAL TABLE IF NOT EXISTS label_search
   USING fts5(name, content='labels', content_rowid='id', tokenize='unicode61');
+
+-- Records became searchable when they became pages. Before the release page a
+-- title was a row that linked out to Discogs, so there was nothing here to find;
+-- now the corpus holds 1,095,302 pages that a search could not reach, and a
+-- digger typing "Biokinetics" got the miss page telling them the corpus is a
+-- slice centred on dub techno. That answer was false.
+--
+-- The title alone, matching the two above, which index a name and nothing else.
+-- Indexing the artist line with it would make "basic channel phylyps" work and
+-- would also make every record by a prolific act match that act's name, which
+-- is a different feature wearing this one's clothes.
+CREATE VIRTUAL TABLE IF NOT EXISTS release_search
+  USING fts5(title, content='releases', content_rowid='id', tokenize='unicode61');

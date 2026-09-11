@@ -85,7 +85,7 @@ const from = c + r * 0.75;
     placeholder={hero
       ? "Basic Channel, Chain Reaction, Maurizio…"
       : "Basic Channel, Chain Reaction…"}
-    aria-label="Search artists and labels"
+    aria-label="Search artists, labels and releases"
     class:list={[
       "text-ink placeholder:text-ink-faint w-full border bg-transparent font-mono outline-none",
       hero
@@ -131,21 +131,74 @@ const from = c + r * 0.75;
   </button>
 
   {/*
-   * The list, empty until something is typed into the box above it.
+   * The panel, empty until something is typed into the box above it.
    *
    * It wears `edge-strong` like the field does, and sits a pixel under it so
    * the two borders overlap and read as one box rather than as a panel that
    * arrived from somewhere else. `z-40` keeps it over the page and under the
    * drawer, which is the one thing that should cover it.
+   *
+   * The tab row is a sibling of the listbox rather than its first child,
+   * because a `listbox` may hold options and nothing else. That is also why the
+   * row is here in static markup while the options arrive from `/suggest`: the
+   * fetch target has to be the listbox alone.
    */}
   <div
-    id={listId}
-    role="listbox"
-    aria-label="Suggestions"
-    data-suggest-list
+    data-suggest-panel
     hidden
-    class="border-edge-strong bg-bg absolute top-full right-0 left-0 z-40 -mt-px max-h-[60vh] overflow-y-auto border"
+    class="border-edge-strong bg-bg absolute top-full right-0 left-0 z-40 -mt-px border"
   >
+    {/*
+     * Which question the four rows answer, in the tab row's own vocabulary.
+     *
+     * The same mono, tracking and underline the page tabs use, at the dropdown's
+     * size. Deliberately not the accent: "View all results" is already an accent
+     * ground three rows below, and two of them in a 250px panel would each stop
+     * marking anything. The current tab is `ink-strong` over a hairline, which
+     * is what the artist and label pages already say for "you are on this one".
+     *
+     * `tabindex="-1"` and a `group` rather than a `tablist`, because focus never
+     * leaves the input: this is a combobox, and `aria-activedescendant` only
+     * works while the box keeps focus. The keys are Left and Right, and only
+     * once the arrows are in the list — see the script.
+     *
+     * It hides itself when there is no choice to make. A query matching only
+     * names has nothing behind Releases, and a tab that is a way in to nothing
+     * is the same thing the release page refuses to draw.
+     */}
+    <div
+      role="group"
+      aria-label="Filter suggestions"
+      data-suggest-tabs
+      hidden
+      class="border-hairline-soft flex gap-5 border-b px-4 pt-3"
+    >
+      {
+        [
+          ["names", "Artists & Labels"],
+          ["releases", "Releases"],
+          ["all", "All"],
+        ].map(([key, label]) => (
+          <button
+            type="button"
+            tabindex="-1"
+            data-suggest-tab={key}
+            class="text-ink-dim aria-[current]:text-ink-strong aria-[current]:border-ink-strong shrink-0 cursor-pointer border-b-[1.5px] border-transparent pb-2 font-mono text-[0.6875rem] tracking-[0.14em] whitespace-nowrap uppercase"
+          >
+            {label}
+          </button>
+        ))
+      }
+    </div>
+
+    <div
+      id={listId}
+      role="listbox"
+      aria-label="Suggestions"
+      data-suggest-list
+      class="max-h-[60vh] overflow-y-auto"
+    >
+    </div>
   </div>
 </form>
 
@@ -162,8 +215,12 @@ const from = c + r * 0.75;
 
   function setUp(form: HTMLFormElement) {
     const input = form.querySelector<HTMLInputElement>("input[name='q']");
+    const panel = form.querySelector<HTMLElement>("[data-suggest-panel]");
     const list = form.querySelector<HTMLElement>("[data-suggest-list]");
-    if (!input || !list) return;
+    const tabRow = form.querySelector<HTMLElement>("[data-suggest-tabs]");
+    if (!input || !panel || !list || !tabRow) return;
+
+    const tabs = [...tabRow.querySelectorAll<HTMLElement>("[data-suggest-tab]")];
 
     /** Set by the server from the same constant the query guards on. */
     const min = Number(form.dataset.suggest);
@@ -211,8 +268,49 @@ const from = c + r * 0.75;
 
     function close() {
       mark(-1);
-      list!.hidden = true;
+      panel!.hidden = true;
       input!.setAttribute("aria-expanded", "false");
+    }
+
+    /**
+     * Shows one group and takes the options from it.
+     *
+     * The rows of the other two stay in the document and go `hidden`, which is
+     * what makes a tab switch cost nothing: all three came back on the one
+     * fetch. `hidden` rather than a class, because it takes them out of the
+     * accessibility tree as well as off the screen, and a listbox that still
+     * announced twelve options while showing four would be lying about its
+     * own length.
+     *
+     * The way out is appended rather than found in order, since it sits outside
+     * the groups and has to stay last however the list above it changes.
+     */
+    function open(key: string) {
+      for (const group of list!.querySelectorAll<HTMLElement>("[data-suggest-group]")) {
+        group.hidden = group.dataset.suggestGroup !== key;
+      }
+
+      for (const tab of tabs) {
+        if (tab.dataset.suggestTab === key) tab.setAttribute("aria-current", "true");
+        else tab.removeAttribute("aria-current");
+      }
+
+      const shown = list!.querySelector<HTMLElement>("[data-suggest-group]:not([hidden])");
+      const out = list!.querySelector<HTMLAnchorElement>("[data-suggest-out]");
+
+      /*
+       * The way out points at the tab you are on. The results page has the same
+       * three, so following the offer at the bottom of Releases has to land on
+       * releases rather than on whatever that page would have opened by itself.
+       * The base is on the element rather than rebuilt here, so the query is
+       * escaped once, by the server, in the one place that knows it.
+       */
+      if (out) out.href = `${out.dataset.outBase}&tab=${key}`;
+
+      options = [
+        ...(shown ? shown.querySelectorAll<HTMLElement>("[data-suggest-option]") : []),
+        ...(out ? [out] : []),
+      ];
     }
 
     async function show(term: string) {
@@ -239,10 +337,31 @@ const from = c + r * 0.75;
       if (input!.value.trim() !== term) return;
 
       list!.innerHTML = html;
-      options = [...list!.querySelectorAll<HTMLElement>("[data-suggest-option]")];
+
+      /*
+       * The server already marked which tab the panel opens on, by leaving one
+       * group unhidden. Reading it back rather than deciding again here is what
+       * keeps one fallback rule in one place: a query matching only records
+       * opens on Releases, and neither side has to know that twice.
+       */
+      const opens =
+        list!.querySelector<HTMLElement>("[data-suggest-group]:not([hidden])")?.dataset
+          .suggestGroup ?? "";
+
+      /*
+       * The row appears only when there is a choice behind it. Both kinds have
+       * to have matched: with names alone, Releases is empty and All is the same
+       * four rows under a different word, which is a control that cannot change
+       * anything dressed as one that can.
+       */
+      const rows = (key: string) =>
+        list!.querySelector(`[data-suggest-group='${key}'] [data-suggest-option]`) !== null;
+      tabRow!.hidden = !(rows("names") && rows("releases"));
+
+      open(opens);
       at = -1;
       input!.removeAttribute("aria-activedescendant");
-      list!.hidden = options.length === 0;
+      panel!.hidden = options.length === 0;
       input!.setAttribute("aria-expanded", String(options.length > 0));
     }
 
@@ -254,7 +373,7 @@ const from = c + r * 0.75;
     });
 
     input.addEventListener("keydown", (event) => {
-      if (list.hidden) {
+      if (panel.hidden) {
         // A shut list has no keys of its own. Escape falls through to the
         // browser, which empties a search field, and that is the second step
         // the combobox pattern asks for anyway.
@@ -277,6 +396,33 @@ const from = c + r * 0.75;
         return;
       }
 
+      /*
+       * Left and right change the tab, and only once the arrows are in the list.
+       *
+       * Those two keys already mean something in a text box, and a search field
+       * is one people back into constantly to fix a letter. Gating on a
+       * highlighted row is what makes the two meanings impossible to confuse:
+       * you cannot be editing the query and walking the list at the same time,
+       * so before the first ArrowDown these keys are the caret's and after it
+       * they are the tab row's. Focus never moves either way, which is what
+       * keeps `aria-activedescendant` pointing at a real row.
+       *
+       * It lands on the first row of the tab it arrives at rather than holding
+       * the position, because a new list read at a glance is read from the top.
+       */
+      if (at >= 0 && !tabRow.hidden && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+        event.preventDefault();
+        const here = tabs.findIndex((t) => t.hasAttribute("aria-current"));
+        const step = event.key === "ArrowRight" ? 1 : -1;
+        const next = tabs[(here + step + tabs.length) % tabs.length];
+        if (next) {
+          mark(-1);
+          open(next.dataset.suggestTab!);
+          mark(0);
+        }
+        return;
+      }
+
       // Enter on a row goes to that page; Enter on the box submits the search,
       // which is what it did before there was a list under it.
       if (event.key === "Enter" && at >= 0) {
@@ -290,9 +436,22 @@ const from = c + r * 0.75;
       if (event.key === "Tab") close();
     });
 
-    // The click has to land before the blur closes the list, and a mousedown
-    // that never takes focus is what keeps the two in that order.
-    list.addEventListener("mousedown", (event) => event.preventDefault());
+    /*
+     * The click has to land before the blur closes the panel, and a mousedown
+     * that never takes focus is what keeps the two in that order. On the whole
+     * panel rather than the list, so a tab takes a pointer without the field
+     * losing focus underneath it: `tabindex="-1"` keeps the buttons out of the
+     * tab order, and this keeps them from stealing focus on the way in.
+     */
+    panel.addEventListener("mousedown", (event) => event.preventDefault());
+
+    tabRow.addEventListener("click", (event) => {
+      const tab = (event.target as HTMLElement).closest<HTMLElement>("[data-suggest-tab]");
+      if (!tab) return;
+      mark(-1);
+      open(tab.dataset.suggestTab!);
+    });
+
     input.addEventListener("blur", close);
   }
 

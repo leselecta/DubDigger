@@ -1,7 +1,9 @@
 import type { Database } from "better-sqlite3";
 
 import { getDb } from "./db";
-import { ALIAS_BAND_FLOOR, CORE_ARTISTS, NAMED_ARTISTS, SCENE_LABELS } from "./scene";
+import { rankCredits } from "./roles";
+import { ALIAS_BAND_FLOOR, ALIAS_BAND_KEEP, CORE_ARTISTS, NAMED_ARTISTS, SCENE_LABELS } from "./scene";
+import { visualCraft } from "./roles";
 
 /**
  * Every query here reads a precomputed table. Nothing is aggregated at request
@@ -41,12 +43,24 @@ export interface Artist {
    * page has to say so instead of claiming work that is not there.
    */
   sceneRelevance: Relevance;
+  /**
+   * Why this grade, when a person set it rather than the measure or a tradition.
+   *
+   * NULL for all but a handful. When set, `overrides.artists` named them and
+   * this is the clause the page prints in place of the measured one.
+   */
+  overrideReason: string | null;
   /** Releases of theirs inside the style seed. */
   seedReleases: number;
   /** That as a share of their whole output, or null if never measured. */
   seedShare: number | null;
   /** The tradition that lifted them: 'roots dub', 'afrobeat', 'detroit techno'. */
   lineage: string | null;
+  /**
+   * "designer", "photographer" or "writer" when the corpus holds them for the
+   * sleeve rather than the record, else null. See `visualCraft`.
+   */
+  craft: "designer" | "photographer" | "writer" | null;
 }
 
 export interface Collaborator {
@@ -92,6 +106,15 @@ export interface Label {
    * the label released, across the whole dump.
    */
   seedRatio: number | null;
+  /**
+   * Why this grade, when a person set it rather than the ratio.
+   *
+   * NULL for almost every label. When it is set, the grade above came from
+   * `overrides.labels` in the ingest config, and this replaces the ratio clause
+   * the page would otherwise print — which would then be describing a
+   * measurement the grade no longer follows.
+   */
+  overrideReason: string | null;
   firstYear: number | null;
   lastYear: number | null;
 }
@@ -107,19 +130,32 @@ export interface RosterEntry {
 export interface SearchHit {
   id: number;
   name: string;
-  kind: "artist" | "label";
-  releaseCount: number;
+  kind: "artist" | "label" | "release";
   /**
-   * How close to the scene, on one scale for both kinds. Shown in results
-   * because breadth is only an asset when a distant act looks distant: Mozart
-   * is genuinely in the corpus, on 85 releases that really do credit someone
-   * here, and saying so is honest where hiding him would not be.
+   * Releases behind the name, and null for a record, which the page prints as
+   * "N/A": a pressing is one thing rather than a body of work, and a count of 1
+   * in that column would be a figure invented to fill it.
+   */
+  releaseCount: number | null;
+  /**
+   * The line under the name, on records only: who made it and when.
    *
-   * An artist is graded on their own work and a label on how much of what it
-   * released is in the cluster. Two measures, five steps, one vocabulary, which
-   * is the only way the column can be scanned as a single column.
+   * Not decoration. "Biokinetics" matches 15 rows and "Phylyps Trak" ten, all
+   * of them the same record pressed again, so a list of bare titles would be
+   * the search offering fifteen identical answers.
+   */
+  detail: string | null;
+  /**
+   * How close to the cluster, on the five steps the whole site reads.
+   *
+   * A name answers for itself. A record inherits, because it has no body of
+   * work of its own to measure and because the ranking already halves it by
+   * exactly this figure: the column was the one part of the page not saying
+   * what the order was built on. `gradedOn` says which of the two answered.
    */
   relevance: Relevance;
+  /** Records only: whether the grade above is the artist's or the label's. */
+  gradedOn: GradedOn | null;
   /** How a "none" artist reached the corpus. A label mate is not a collaborator. */
   connection: "collaborator" | "label mate" | "collaborator + label mate" | null;
 }
@@ -142,6 +178,7 @@ interface ArtistRow {
   channel_b: number;
   relevance: Relevance;
   scene_relevance: Relevance;
+  override_reason: string | null;
   seed_releases: number;
   seed_share: number | null;
   lineage: string | null;
@@ -171,6 +208,7 @@ interface LabelRow {
   release_count: number;
   seed_ratio: number | null;
   relevance: Relevance | null;
+  override_reason: string | null;
   top_artist_releases: number | null;
   first_year: number | null;
   last_year: number | null;
@@ -202,6 +240,7 @@ export function getArtist(id: number): Artist | null {
               coalesce(m.channel_b, 0) AS channel_b,
               coalesce(c.relevance, 'none') AS relevance,
               coalesce(c.scene_relevance, 'none') AS scene_relevance,
+              c.override_reason,
               coalesce(c.seed_releases, 0)  AS seed_releases,
               c.seed_share,
               c.lineage
@@ -213,9 +252,25 @@ export function getArtist(id: number): Artist | null {
     .get(id) as ArtistRow | undefined;
 
   if (!row) return null;
+
+  /*
+   * A second query rather than a join, and only on the artist page: it reads
+   * every credit string this artist holds, which is 1,047 rows for Pole and is
+   * not something the list pages have any use for.
+   */
+  const craftRoles = db
+    .prepare(`SELECT role FROM release_credits WHERE artist_id = ?`)
+    .pluck()
+    .all(id) as string[];
+  const onArtistLine = db
+    .prepare(`SELECT count(DISTINCT release_id) FROM release_artists WHERE artist_id = ?`)
+    .pluck()
+    .get(id) as number;
+
   return {
     id: row.id,
     name: row.name,
+    craft: visualCraft(craftRoles, onArtistLine),
     realName: row.real_name,
     profile: row.profile,
     urls: row.urls ? row.urls.split("\n").filter(Boolean) : [],
@@ -230,6 +285,7 @@ export function getArtist(id: number): Artist | null {
     channelB: row.channel_b === 1,
     relevance: row.relevance,
     sceneRelevance: row.scene_relevance,
+    overrideReason: row.override_reason,
     seedReleases: row.seed_releases,
     seedShare: row.seed_share,
     lineage: row.lineage,
@@ -294,6 +350,7 @@ export function getLabel(id: number): Label | null {
                 AS release_count,
               g.seed_ratio,
               g.relevance,
+              g.override_reason,
               (SELECT max(release_count) FROM label_roster r WHERE r.label_id = l.id)
                 AS top_artist_releases,
               (SELECT min(first_year) FROM label_roster r WHERE r.label_id = l.id) AS first_year,
@@ -305,6 +362,7 @@ export function getLabel(id: number): Label | null {
     .get(id) as LabelRow | undefined;
 
   if (!row) return null;
+
   return {
     id: row.id,
     name: row.name,
@@ -314,6 +372,7 @@ export function getLabel(id: number): Label | null {
     releaseCount: row.release_count,
     relevance: row.relevance ?? "none",
     seedRatio: row.seed_ratio,
+    overrideReason: row.override_reason,
     isImprint: row.release_count > 1 && row.top_artist_releases === row.release_count,
     firstYear: row.first_year,
     lastYear: row.last_year,
@@ -437,6 +496,16 @@ function build(): { artists: TopArtist[]; labels: TopLabel[] } {
   };
   const coreAliases = aliasesOf(CORE_ARTISTS);
   const namedAliases = aliasesOf(NAMED_ARTISTS);
+
+  // The recording names held out of their artist's band, per `ALIAS_BAND_KEEP`.
+  // Read off the same relations, so a name added to the dump is capped with the
+  // rest rather than arriving in the core band on its own.
+  const capped = new Set<number>();
+  for (const [anchor, keep] of Object.entries(ALIAS_BAND_KEEP)) {
+    for (const row of alias.all(Number(anchor), Number(anchor)) as { id: number }[]) {
+      if (!keep.includes(row.id)) capped.add(row.id);
+    }
+  }
   const anchors = [
     ...new Set([...CORE_ARTISTS, ...NAMED_ARTISTS, ...coreAliases, ...namedAliases]),
   ];
@@ -494,6 +563,7 @@ function build(): { artists: TopArtist[]; labels: TopLabel[] } {
     if (CORE_ARTISTS.includes(id)) return "core";
     if (NAMED_ARTISTS.includes(id)) return "named";
     if (scene < ALIAS_BAND_FLOOR) return "found";
+    if (capped.has(id)) return "named";
     if (coreAliases.has(id)) return "core";
     if (namedAliases.has(id)) return "named";
     return "found";
@@ -615,9 +685,31 @@ export interface SearchResults {
   /**
    * Whether the ranking had more to show than the page asked for. Reported
    * rather than inferred from the total, because "40 found" would be stating
-   * the cap as if it were a count.
+   * the cap as if it were a count. Of the open tab, not of the ranking: the
+   * heading counts what is on the page.
    */
   truncated: boolean;
+  /**
+   * How many are behind each tab, counted before the slice.
+   *
+   * The tab row shows all three whichever one is open, which is what makes the
+   * split legible: a query answering nothing under Artists & Labels says so
+   * with a 0 beside the word rather than by looking broken.
+   */
+  counts: Record<SearchKind, number>;
+  /**
+   * Whether a tab's count is really the cap it was measured under.
+   *
+   * The pools are 200 a kind, so a broad query fills them and `counts` stops
+   * being a total: it becomes RANK_POOL wearing a total's clothes. The heading
+   * says "Closest 200" there and "57 found" where the number is real, which is
+   * the same rule `truncated` was written for — never state the cap as if it
+   * were a count. Per kind, because a query can saturate the names pool and
+   * still have four records behind the other tab.
+   */
+  capped: Record<SearchKind, boolean>;
+  /** The tab actually answered, which is what `"auto"` resolved to. */
+  kind: SearchKind;
 }
 
 /**
@@ -673,11 +765,20 @@ const RELEVANCE_ORDER: Record<string, number> = {
  * Typing a name exactly is worth one step of it. Bounded on purpose, because
  * name matching is the same trap as the grade when it gates: ranking exact
  * matches first hands `basic` to five unrelated acts called "Basic (2)". Worth
- * a step, it lifts PAN over Pandit G on `pan` and moves nothing else.
+ * a step, it moves almost nothing else.
  */
 function sceneScore(sceneReleases: number, relevance: Relevance, exactName: boolean): number {
   const step = RELEVANCE_ORDER[relevance] ?? RELEVANCE_ORDER.none!;
-  return sceneReleases / 2 ** Math.max(0, step - (exactName ? 1 : 0));
+  /*
+   * A doubling, not a step taken off the discount, and the difference only
+   * shows at the top of the scale. `step - 1` has nothing to subtract when the
+   * step is already 0, so `very high` was the one grade where typing a name
+   * exactly bought nothing at all — the rule read as one sentence and behaved
+   * as another on every top-step name on the site. At every other grade the two
+   * spellings are the same arithmetic, which is why this changes nothing else:
+   * dividing by 2^(step-1) IS doubling and then dividing by 2^step.
+   */
+  return (sceneReleases / 2 ** step) * (exactName ? 2 : 1);
 }
 
 /**
@@ -713,19 +814,57 @@ function nameRank(query: string, name: string): number {
  */
 const RANK_POOL = 200;
 
+/**
+ * Which of the two answered for a record's grade.
+ *
+ * `artist` on 97.1% of release rows, `label` on the compilations behind the
+ * rest, and `none` where neither has one. A name always answers for itself, so
+ * this is a record's field and nothing else's.
+ */
+export type GradedOn = "artist" | "label" | "none";
+
 interface ScoredRow extends HitRow {
-  kind: "artist" | "label";
+  kind: "artist" | "label" | "release";
   scene_releases: number;
+  /** Records only: see `GradedOn`. */
+  graded_on?: GradedOn;
+  /** Records only, and only for the tie-break below. */
+  year?: number | null;
+  /** Records only: the line the page prints under the title. */
+  detail?: string | null;
+  /** Records only: the lead name, which is what makes two rows the same record. */
+  artist?: string | null;
 }
 
 /** One order for the results page and the dropdown, so one is a shortcut into the other. */
 function rankHits(query: string, rows: ScoredRow[]): ScoredRow[] {
-  const score = (r: ScoredRow) =>
-    sceneScore(r.scene_releases, r.relevance ?? "none", nameRank(query, r.name) === 0);
+  const score = (r: ScoredRow) => {
+    const own = sceneScore(r.scene_releases, r.relevance ?? "none", nameRank(query, r.name) === 0);
+    /*
+     * A record sits one step below the name that made it, which is the same
+     * halving the grade already uses: a step of the scale is worth a doubling
+     * of the work. Without it a record ties with its own artist, and "basic
+     * channel" answers with a pressing before it answers with Basic Channel.
+     */
+    return r.kind === "release" ? own / 2 : own;
+  };
+
+  /*
+   * Undated last, earliest first, and only between two records.
+   *
+   * Ten pressings of Phylyps Trak carry one artist, one label and one title,
+   * so nothing above this line separates them: the artist figure is identical
+   * by construction. The year is the only thing that distinguishes an original
+   * from a repress, and three of those ten have no year at all, which is the
+   * honest reason they sort last rather than first.
+   */
+  const dated = (r: ScoredRow) => r.year ?? Number.POSITIVE_INFINITY;
+
   return rows.sort(
     (a, b) =>
       score(b) - score(a) ||
       nameRank(query, a.name) - nameRank(query, b.name) ||
+      (a.kind === "release" && b.kind === "release" ? dated(a) - dated(b) : 0) ||
       b.release_count - a.release_count,
   );
 }
@@ -747,17 +886,30 @@ function rankHits(query: string, rows: ScoredRow[]): ScoredRow[] {
  * So a tradition scores on the artist's corpus output instead, halved: one step
  * of the same rule the grade uses, paid because the corpus cannot tell which
  * part of that output is the tradition. Floored at `seed_releases`, so it only
- * ever lifts. Full release count was measured and is too strong: it puts Jan
+ * ever lifts.
+ *
+ * **A hand-written override is floored the same way, and for the same reason.**
+ * Naming someone in `overrides.artists` sets the grade, and the grade is only a
+ * discount on this figure: promote an artist the seed scores at zero and zero
+ * is what stays, so the word on the page moves and the search order does not.
+ * That is this exact bug a third time, on names picked deliberately — which
+ * would be the worst version of it, since the whole point of naming someone is
+ * that you want them found. Full release count was measured and is too strong: it puts Jan
  * Delay above Vladislav Delay. Half moves 20 of 105 queries and none the wrong
  * way: Juan Atkins, Carl Craig, Mike Banks, King Tubby, Scientist and Commodo
  * all come first, and `delay` and `prince` are untouched.
+ *
+ * Ported from `main` (`1a414be`), where releases were not yet an entity. The
+ * same blindness reaches `release_rank.weight` in `derive`, which inherits this
+ * figure, and fixing only this half would leave the records of every lifted
+ * artist weighted at nothing. Both are done.
  */
 function artistPool(db: Database, term: string): ScoredRow[] {
   return db
     .prepare(
       `SELECT a.id, a.name, coalesce(c.release_count, 0) AS release_count,
               max(coalesce(c.seed_releases, 0),
-                  CASE WHEN c.lineage IS NOT NULL
+                  CASE WHEN c.lineage IS NOT NULL OR c.override_reason IS NOT NULL
                        THEN coalesce(c.release_count, 0) / 2 ELSE 0 END) AS scene_releases,
               coalesce(m.channel_a, 0) AS channel_a,
               coalesce(m.channel_b, 0) AS channel_b,
@@ -775,23 +927,40 @@ function artistPool(db: Database, term: string): ScoredRow[] {
 }
 
 /**
- * The same for labels, where the scene figure has to be derived: releases on
- * the label, times the share of its roster that is in the cluster. That is the
- * one unit an artist and a label can be compared in, and the reason the count
- * is paid for here rather than deferred.
+ * The same for labels, and the figure is measured rather than estimated.
+ *
+ * It used to be the release count times the roster share, described here as the
+ * one unit an artist and a label could be compared in. It was not one unit. An
+ * artist's `seed_releases` counts releases of theirs actually inside the
+ * cluster; the label figure multiplied a release count by a share of PEOPLE,
+ * which answers a question about records with a fact about the roster. The two
+ * come apart because a seed artist needs only 2% of their own output inside the
+ * seed, so a label can have half its roster in the cluster and almost none of
+ * its own records there.
+ *
+ * Measured: Planet Rhythm Records read 764 against a true 126 and beat Rhythm &
+ * Sound, whose 160 was strict because an artist's always was. Tresor read 27
+ * against 9, Chain Reaction 105 against 80, and a label wholly in the scene
+ * like Rhythm & Sound read 57 against 57 — the inflation scales with catalogue
+ * size and roster share, so it fell hardest on the large labels the second seed
+ * gate was written to admit, and not at all on the pure imprints.
+ *
+ * `label_coverage.seed_releases` is that count, written once in `derive`. The
+ * grade still reads the roster ratio, deliberately: what a label puts out and
+ * who it puts out are different claims, and the grade has always been the
+ * second one.
  */
 function labelPool(db: Database, term: string): ScoredRow[] {
   return db
     .prepare(
       // Wrapped, because the scene figure is built from the release count and
       // SQLite cannot read one select-list alias from another.
-      `SELECT t.id, t.name, t.release_count, t.relevance,
-              cast(t.release_count * t.seed_ratio AS INTEGER) AS scene_releases
+      `SELECT t.id, t.name, t.release_count, t.relevance, t.scene_releases
          FROM (SELECT l.id, l.name,
                       (SELECT count(DISTINCT rl.release_id)
                          FROM release_labels rl WHERE rl.label_id = l.id) AS release_count,
                       coalesce(g.relevance, 'none') AS relevance,
-                      coalesce(g.seed_ratio, 0) AS seed_ratio
+                      coalesce(g.seed_releases, 0) AS scene_releases
                  FROM label_search s
                  JOIN labels l ON l.id = s.rowid
                  LEFT JOIN label_coverage g ON g.label_id = l.id
@@ -803,47 +972,286 @@ function labelPool(db: Database, term: string): ScoredRow[] {
     .map((r) => ({ ...(r as HitRow & { scene_releases: number }), kind: "label" as const }));
 }
 
-export function search(query: string, limit = 40): SearchResults {
+/**
+ * Records matching the term, ranked by the name that made them.
+ *
+ * A release carries no grade and no ratio of its own: a grade measures a body
+ * of work against the cluster, and one pressing is not a body of work. So it
+ * inherits the lead artist's figure and the lead artist's grade, which is also
+ * what makes the order defensible: a record ranks where its maker ranks, one
+ * step down.
+ *
+ * Two queries, and the split is the whole performance story. "re" matches about
+ * 200,000 titles, and reaching the artist line and the coverage row for each of
+ * them to find that figure cost 103 ms — a 196 ms page against the 84 ms that
+ * was the worst case before records were searchable. `release_rank` is that
+ * figure precomputed in `derive`, three columns wide so the ranking pass reads
+ * a 15 MB table instead of the 60 MB one a title and an artist name would make.
+ * The wide row is then read for the 200 that survive, which is the trade the
+ * rest of the architecture already makes.
+ *
+ * The lead name rather than the whole line, matching the release page's own
+ * headline: 133,205 releases credit more than one act, and a search row has no
+ * room for a sentence. `left join`, because a record credited to someone the
+ * corpus never admitted as an artist should still be findable by title.
+ */
+function releasePool(db: Database, term: string): ScoredRow[] {
+  const ids = db
+    .prepare(
+      `SELECT s.rowid AS id
+         FROM release_search s
+         JOIN release_rank k ON k.release_id = s.rowid
+        WHERE release_search MATCH ?
+        ORDER BY k.weight DESC, k.year IS NULL, k.year
+        LIMIT ?`,
+    )
+    .pluck()
+    .all(term, RANK_POOL) as number[];
+
+  if (ids.length === 0) return [];
+
+  /*
+   * The grade a record shows is the lead artist's, and the label's when there
+   * is no artist to ask.
+   *
+   * Inheriting is not a new claim: `rankHits` has always halved a record's
+   * weight by exactly this figure, so the order was already built on it and the
+   * column was the one thing not saying so. Measured over 50 queries, 97.1% of
+   * release rows have an artist grade to inherit.
+   *
+   * The other 2.9% are compilations, every one of them, and the fallback is the
+   * label's own grade on the same five steps. Corpus-wide 108,751 releases,
+   * 9.9%, have a lead with no coverage row; all 108,751 have no artist page at
+   * all and 70,114 are literally named `Various`, which is a record with no
+   * single maker rather than a gap in the data. 96.4% of them do have a graded
+   * label. `graded_on` says which of the two answered, because the column reads
+   * one scale and the reason behind a step is not the same reason twice.
+   *
+   * **It cannot move the ranking, and that was checked rather than assumed.**
+   * `sceneScore` is `scene_releases / 2 ** step`, and a record with no artist
+   * coverage has no `seed_releases` either, so its score is zero whatever the
+   * grade divides it by. The fallback fills a column and touches no order.
+   *
+   * `c.relevance` is NOT NULL in its table, so only a missing row falls through
+   * to the label: an artist genuinely graded `none` keeps `none` and is not
+   * quietly regraded on the room they released in.
+   *
+   * **The scene figure inherits the lead artist's LIFTED figure, not the bare
+   * measure, and this is the third reader of that measure rather than the
+   * first.** `artistPool` above and `release_rank.weight` in `derive` are the
+   * other two. The seed cannot see dub, reggae, dubstep, Detroit, afrobeat or
+   * jazz, so reading `seed_releases` here scored every record by a lineage
+   * artist at nothing: `commodo` answered with Commodore Dub and `scientist`
+   * with Full Moon Scientist, while the artists themselves were already fixed
+   * one function up. Same expression in all three, deliberately, because one
+   * measure read three ways is exactly what caused this.
+   *
+   * The paragraph above still holds: a record with no coverage row has no
+   * lineage to lift it either, so the max() is still zero and the label
+   * fallback still moves no order.
+   *
+   * A hand-written override floors it the same way a tradition does, and that
+   * clause was missing here for a day: `artistPool` got it and these two did
+   * not, so The Dub Sync scored 1 while every record of its own scored 0.25.
+   * Third time this measure has been patched in one reader and left in the
+   * others. All three now spell it identically, which is the only defence.
+   */
+  const rows = db
+    .prepare(
+      `SELECT r.id, r.title AS name, 0 AS release_count, r.year,
+              lead_artist.name AS artist,
+              max(coalesce(c.seed_releases, 0),
+                  CASE WHEN c.lineage IS NOT NULL OR c.override_reason IS NOT NULL
+                       THEN coalesce(c.release_count, 0) / 2 ELSE 0 END) AS scene_releases,
+              coalesce(c.relevance, g.relevance, 'none') AS relevance,
+              CASE WHEN c.relevance IS NOT NULL THEN 'artist'
+                   WHEN g.relevance IS NOT NULL THEN 'label'
+                   ELSE 'none' END AS graded_on
+         FROM releases r
+         LEFT JOIN release_artists lead_artist
+                ON lead_artist.release_id = r.id AND lead_artist.position = 0
+         LEFT JOIN artist_coverage c ON c.artist_id = lead_artist.artist_id
+         LEFT JOIN release_labels rl ON rl.release_id = r.id AND rl.position = 0
+         LEFT JOIN label_coverage g ON g.label_id = rl.label_id
+        WHERE r.id IN (${ids.map(() => "?").join(",")})`,
+    )
+    .all(...ids) as (HitRow & {
+    scene_releases: number;
+    year: number | null;
+    artist: string | null;
+    graded_on: GradedOn;
+  })[];
+
+  /*
+   * Back into the order the first query settled. `IN` returns rows in whatever
+   * order the index hands them over, and the ranking below is stable, so
+   * skipping this would quietly re-sort every tie by release id.
+   */
+  const byId = new Map(rows.map((r) => [r.id, r]));
+
+  return ids
+    .map((id) => byId.get(id))
+    .filter((r): r is (typeof rows)[number] => Boolean(r))
+    .map((r) => ({
+      ...r,
+      kind: "release" as const,
+      artist: r.artist,
+      graded_on: r.graded_on,
+      detail: [r.artist, r.year].filter(Boolean).join(" · ") || null,
+    }));
+}
+
+/**
+ * One row per record, not one per pressing.
+ *
+ * `phylyps` answered with three rows reading "Phylyps Trak · Basic Channel ·
+ * 1993" and `biokinetics` with fifteen, which is one record pressed again and
+ * a list spending every row it has saying so. Ten pressings are ten real rows
+ * in the corpus and each still has its own page, reachable from the artist and
+ * the label; what they are not is ten answers to a question, and this list has
+ * no column for the things that actually tell them apart, since format and
+ * country are on the page rather than in the row.
+ *
+ * Title and artist rather than title alone, because two acts really do use one
+ * title and collapsing those would hide an answer rather than a duplicate. The
+ * ranking has already put the earliest pressing first, so keeping the first one
+ * seen is keeping the original rather than a repress.
+ */
+function oneRowPerRecord(rows: ScoredRow[]): ScoredRow[] {
+  const seen = new Set<string>();
+  return rows.filter((r) => {
+    if (r.kind !== "release") return true;
+    const key = `${r.name}\u0000${r.artist ?? ""}`.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * Which question the results page is answering, same three as the dropdown.
+ *
+ * The page splits rather than filters: these are slices of one ranking, so a
+ * row keeps the position it already had and the tabs cannot disagree with the
+ * order. `names` is the default because it is the question this tool exists to
+ * answer, and because it is the dropdown's default, and a shortcut that lands
+ * you somewhere other than where it was pointing is not a shortcut.
+ */
+export type SearchKind = "names" | "releases" | "all";
+
+/**
+ * Ranks once and answers one tab.
+ *
+ * `"auto"` is the page arriving without a `?tab=`, and it resolves to the
+ * preferred tab unless that one is empty. It has to be settled in here rather
+ * than by the caller, because the fallback needs the counts and the counts need
+ * the ranking: asking for them first would run both pools twice, which on the
+ * worst two-letter prefix in the corpus is 84 ms paid again for an answer
+ * already in hand. The resolved tab comes back on `kind`.
+ */
+export function search(
+  query: string,
+  limit = 40,
+  want: SearchKind | "auto" = "auto",
+): SearchResults {
   const db = getDb();
-  if (!db || query.trim().length === 0) return { hits: [], truncated: false };
+  const empty = {
+    hits: [],
+    truncated: false,
+    counts: { names: 0, releases: 0, all: 0 },
+    capped: { names: false, releases: false, all: false },
+    kind: "names" as SearchKind,
+  };
+  if (!db || query.trim().length === 0) return empty;
 
   const term = matchTerm(query);
   const artists = artistPool(db, term);
   const labels = labelPool(db, term);
+  const releases = releasePool(db, term);
 
   const connection = (r: ScoredRow): SearchHit["connection"] => {
-    if (r.kind === "label") return null;
+    if (r.kind !== "artist") return null;
     if (r.channel_a === 1 && r.channel_b === 1) return "collaborator + label mate";
     if (r.channel_a === 1) return "collaborator";
     if (r.channel_b === 1) return "label mate";
     return null;
   };
 
+  const ranked = oneRowPerRecord(rankHits(query, [...artists, ...labels, ...releases]));
+
+  /*
+   * Counted before the slice, because the tab row has to say how many are
+   * behind each tab and not how many fit on this page. Free, since the pools
+   * had to run to produce the ranking either way.
+   */
+  const names = ranked.filter((r) => r.kind !== "release");
+  const records = ranked.filter((r) => r.kind === "release");
+  const counts = { names: names.length, releases: records.length, all: ranked.length };
+
+  /*
+   * A pool that came back exactly full is a pool that was cut short. Read off
+   * the pools rather than off `counts`, since the record collapse can take a
+   * saturated 200 down to 180 and hide that it was ever clipped.
+   */
+  const fullNames = artists.length === RANK_POOL || labels.length === RANK_POOL;
+  const fullRecords = releases.length === RANK_POOL;
+  const capped = {
+    names: fullNames,
+    releases: fullRecords,
+    all: fullNames || fullRecords,
+  };
+
+  const kind: SearchKind =
+    want !== "auto"
+      ? want
+      : ((["names", "releases", "all"] as const).find((k) => counts[k] > 0) ?? "names");
+
+  const shown = kind === "names" ? names : kind === "releases" ? records : ranked;
+
   return {
-    hits: rankHits(query, [...artists, ...labels])
+    counts,
+    capped,
+    kind,
+    hits: shown
       .slice(0, limit)
       .map((r) => ({
         id: r.id,
         name: r.name,
         kind: r.kind,
-        releaseCount: r.release_count,
+        releaseCount: r.kind === "release" ? null : r.release_count,
+        detail: r.detail ?? null,
         relevance: r.relevance ?? "none",
+        gradedOn: r.kind === "release" ? (r.graded_on ?? "none") : null,
         connection: connection(r),
       })),
-    truncated: artists.length + labels.length > limit,
+    truncated: shown.length > limit,
   };
 }
 
 export interface Suggestion {
   id: number;
   name: string;
-  kind: "artist" | "label";
+  kind: "artist" | "label" | "release";
   /**
-   * The same five steps as everywhere else. A dropdown that ranked names and
-   * said nothing about why would be ordering by a measure it keeps to itself,
-   * which is the one thing this interface does not do.
+   * The grade, on artists and labels and nowhere else.
+   *
+   * It left with the results column it mirrored on 2026-09-08, because a record
+   * has no grade and a third of one merged list had no word to show. The tabs
+   * are what bring it back: on the tab that holds only artists and labels,
+   * every row has one, so the column answers for all of it rather than for
+   * two kinds out of three. `null` on a record, and the row prints the lead
+   * name there instead — the one thing that tells one pressing from another.
    */
-  relevance: Relevance;
+  relevance: Relevance | null;
+  /** Records only: who made it, which is a record's version of the grade. */
+  artist: string | null;
+}
+
+/** The three tabs, each a slice of one ranking rather than a list of its own. */
+export interface SuggestGroups {
+  names: Suggestion[];
+  releases: Suggestion[];
+  all: Suggestion[];
 }
 
 /**
@@ -858,39 +1266,69 @@ export const SUGGEST_MIN_CHARS = 2;
 /**
  * The shortlist under the search box: what you are probably typing.
  *
- * Three rows. A dropdown is read at a glance while the hands are still on the
- * keys, and a list long enough to need scanning is one the reader would be
- * faster submitting. Past the third the ranking starts putting a name nobody
- * typed under one they did. What does not fit belongs on the results page,
- * which is one keystroke away and built for forty of them.
+ * Four rows a tab, and it was three until records became searchable. Three was
+ * the number when every row was a name and the only question was which name;
+ * with records in the list a query answers two questions at once, and the
+ * fourth row is what keeps the second one from pushing the first off the
+ * bottom. Past the fourth the old argument still holds, that the ranking starts
+ * putting a name nobody typed under one they did, and what does not fit belongs
+ * on the results page, one keystroke away and built for forty.
  *
- * The same pools and the same ranking as `search`, sliced shorter. It used to
- * shortlist by grade first and cost the release count on only the three rows
- * that survived, which was cheap and wrong: the count is what puts a label and
- * an artist on one scale, so deferring it meant the shortlist was picked by a
- * measure it could not yet apply. Paying it up front takes the worst two-letter
- * prefix in the corpus, "re", from 39 ms to 84 ms, and an ordinary one from
- * about 23 to 30. That is the same budget that set SUGGEST_MIN_CHARS, where a
- * single letter cost 300 ms and two cost 65, and the answers are cached for
- * five minutes and per keystroke besides.
+ * Three tabs, and they are three slices of ONE ranking rather than three
+ * lists. The order is the results page's order throughout, so this stays a
+ * shortcut into that page and not a second opinion about it: filtering a total
+ * order by kind leaves the survivors in the order they were already in.
  *
- * Ordered exactly as the results page orders the same names, because this list
- * is a shortcut into that page and not a second opinion about it.
+ * All three are costed and returned together, on one fetch. The pools have to
+ * run anyway to know which tabs have anything behind them, so slicing the same
+ * ranked array three ways is free, and it buys a tab switch that costs no
+ * request at all — which is the right price for a control read at a glance
+ * while the hands are still on the keys.
+ *
+ * The same pools and the same ranking as `search`. It used to shortlist by
+ * grade first and cost the release count on only the three rows that survived,
+ * which was cheap and wrong: the count is what puts a label and an artist on
+ * one scale, so deferring it meant the shortlist was picked by a measure it
+ * could not yet apply. Paying it up front takes the worst two-letter prefix in
+ * the corpus, "re", from 39 ms to 84 ms, and an ordinary one from about 23 to
+ * 30. That is the same budget that set SUGGEST_MIN_CHARS, where a single letter
+ * cost 300 ms and two cost 65, and the answers are cached for five minutes and
+ * per keystroke besides.
  */
-export function suggest(query: string, limit = 3): Suggestion[] {
+export function suggest(query: string, limit = 4): SuggestGroups {
   const db = getDb();
-  if (!db || query.trim().length < SUGGEST_MIN_CHARS) return [];
+  const empty = { names: [], releases: [], all: [] };
+  if (!db || query.trim().length < SUGGEST_MIN_CHARS) return empty;
 
   const term = matchTerm(query);
 
-  return rankHits(query, [...artistPool(db, term), ...labelPool(db, term)])
-    .slice(0, limit)
-    .map((r) => ({
-      id: r.id,
-      name: r.name,
-      kind: r.kind,
-      relevance: r.relevance ?? "none",
-    }));
+  const ranked = oneRowPerRecord(
+    rankHits(query, [...artistPool(db, term), ...labelPool(db, term), ...releasePool(db, term)]),
+  );
+
+  const row = (r: ScoredRow): Suggestion => ({
+    id: r.id,
+    name: r.name,
+    kind: r.kind,
+    relevance: r.kind === "release" ? null : (r.relevance ?? "none"),
+    /*
+     * The year is on the results page and not here. A shortlist is read at a
+     * glance in a column the width of the search field, and "Basic Channel ·
+     * 1993" is a line that has to be read rather than seen; what tells one row
+     * from another at that width is the name that made it. The pressings are
+     * collapsed by then anyway, so the year is answering a question the row no
+     * longer raises.
+     */
+    artist: r.kind === "release" ? (r.artist ?? null) : null,
+  });
+
+  const take = (rows: ScoredRow[]) => rows.slice(0, limit).map(row);
+
+  return {
+    names: take(ranked.filter((r) => r.kind !== "release")),
+    releases: take(ranked.filter((r) => r.kind === "release")),
+    all: take(ranked),
+  };
 }
 
 /**
@@ -1002,8 +1440,17 @@ export interface ArtistRelease {
   roles: string[];
 }
 
-/** An artist's releases, newest first, with what they did on each. */
-export function getArtistReleases(artistId: number, limit = 300): ArtistRelease[] {
+/**
+ * An artist's releases, newest first, with what they did on each.
+ *
+ * `exclude` is for the release page's "more from" list, where the record you
+ * are already on is not more of anything.
+ */
+export function getArtistReleases(
+  artistId: number,
+  limit = 300,
+  exclude: number | null = null,
+): ArtistRelease[] {
   const db = getDb();
   if (!db) return [];
 
@@ -1019,11 +1466,12 @@ export function getArtistReleases(artistId: number, limit = 300): ArtistRelease[
                UNION SELECT release_id FROM release_credits WHERE artist_id = ?) mine
            ON mine.release_id = r.id
          LEFT JOIN release_credits c ON c.release_id = r.id AND c.artist_id = ?
+        WHERE r.id <> ?
         GROUP BY r.id
         ORDER BY r.year IS NULL, r.year DESC, r.title
         LIMIT ?`,
     )
-    .all(artistId, artistId, artistId, limit) as {
+    .all(artistId, artistId, artistId, exclude ?? -1, limit) as {
     id: number;
     title: string;
     year: number | null;
@@ -1048,7 +1496,13 @@ export function getArtistReleases(artistId: number, limit = 300): ArtistRelease[
   }));
 }
 
-/** A label's releases, newest first. */
+/**
+ * A label's releases, newest first.
+ *
+ * No `exclude` here, unlike the artist's: the release page's "more from label"
+ * tab was the only caller that needed to drop the record you are on, and that
+ * tab is gone.
+ */
 export function getLabelReleases(labelId: number, limit = 300): ArtistRelease[] {
   const db = getDb();
   if (!db) return [];
@@ -1089,4 +1543,254 @@ export function getLabelReleases(labelId: number, limit = 300): ArtistRelease[] 
     labelId: null,
     roles: r.by_line ? [r.by_line] : [],
   }));
+}
+
+export interface ReleaseArtist {
+  id: number;
+  name: string;
+  joinPhrase: string | null;
+  inCorpus: boolean;
+}
+
+export interface ReleaseLabel {
+  id: number;
+  name: string;
+  catno: string | null;
+}
+
+/** The carrier, in parts. `formatLine` writes the sentence. */
+export interface ReleaseFormatRow {
+  name: string;
+  qty: number;
+  text: string | null;
+  descriptions: string[];
+}
+
+export interface ReleaseTrack {
+  /** "A1", or null on a heading row, which the dump writes as a track. */
+  position: string | null;
+  title: string;
+  duration: string | null;
+}
+
+export interface ReleaseCredit {
+  id: number;
+  name: string;
+  inCorpus: boolean;
+  /** Raw stored strings. `creditLine` names them at display time. */
+  roles: string[];
+}
+
+export interface Release {
+  id: number;
+  title: string;
+  year: number | null;
+  /** The date as the dump wrote it. Often just a year: see `releasedOn`. */
+  released: string | null;
+  country: string | null;
+  artists: ReleaseArtist[];
+  labels: ReleaseLabel[];
+  formats: ReleaseFormatRow[];
+  /**
+   * Titles and positions, and nothing else. A track is not an entity: it has no
+   * id here, no credits and no page, which is the scope line holding.
+   */
+  tracks: ReleaseTrack[];
+  /**
+   * How this record entered the corpus. A fact about the boundary, not a
+   * grade: a single release has no body of work behind it to measure.
+   */
+  isSeed: boolean;
+  channelA: boolean;
+  channelB: boolean;
+}
+
+/**
+ * Whether a credited name has a page to pivot to.
+ *
+ * Most do not: 379,447 of the ids in `release_credits` never became corpus
+ * artists, because `channelAMaxPeopleToAdmit` stops a crowded record admitting
+ * anyone new. The eight Senegalese players on 800% Ndagga are the case that
+ * matters, and a chip that answers with a 404 is the interface claiming a page
+ * it does not hold.
+ *
+ * Artist 355 is excluded by hand. It is Discogs' "UNKNOWN ARTIST" placeholder
+ * and it does have a row, so the join alone would offer a link to a page about
+ * nobody; the corpus already refuses to treat it as a person elsewhere.
+ */
+const HAS_PAGE = `(a.id IS NOT NULL AND a.id <> 355)`;
+
+/** One release: what it is called, who is on the line, and where it came out. */
+export function getRelease(id: number): Release | null {
+  const db = getDb();
+  if (!db) return null;
+
+  const row = db
+    .prepare(
+      `SELECT id, title, year, released, country, is_seed, channel_a, channel_b
+         FROM releases WHERE id = ?`,
+    )
+    .get(id) as
+    | {
+        id: number;
+        title: string;
+        year: number | null;
+        released: string | null;
+        country: string | null;
+        is_seed: number;
+        channel_a: number;
+        channel_b: number;
+      }
+    | undefined;
+
+  if (!row) return null;
+
+  const artists = db
+    .prepare(
+      `SELECT ra.artist_id AS id, ra.name, ra.join_phrase, ${HAS_PAGE} AS in_corpus
+         FROM release_artists ra
+         LEFT JOIN artists a ON a.id = ra.artist_id
+        WHERE ra.release_id = ?
+        ORDER BY ra.position`,
+    )
+    .all(id) as { id: number; name: string; join_phrase: string | null; in_corpus: number }[];
+
+  const labels = db
+    .prepare(
+      // Grouped by label, because a release lists the same one once per
+      // catalogue number variant: Rhythm & Sound 92 is filed as "R-N 092",
+      // "RN92" and "r-n 92" on a single record. Those are three spellings of
+      // one number, so the page shows the first rather than all three.
+      // min(position) picks it, and SQLite takes the bare catno from that row.
+      `SELECT rl.label_id AS id, rl.name, rl.catno, min(rl.position) AS pos
+         FROM release_labels rl
+        WHERE rl.release_id = ?
+        GROUP BY rl.label_id
+        ORDER BY pos`,
+    )
+    .all(id) as { id: number; name: string; catno: string | null; pos: number }[];
+
+  const formats = db
+    .prepare(
+      `SELECT name, qty, text, descriptions FROM release_formats
+        WHERE release_id = ? ORDER BY position`,
+    )
+    .all(id) as { name: string; qty: number; text: string | null; descriptions: string | null }[];
+
+  const tracks = db
+    .prepare(
+      /*
+       * A track with no title is not a track, it is half an entry: 87 rows
+       * across 18 releases carry a printed position and nothing else, and on
+       * the page they render as a number with empty space beside it, which
+       * reads as a broken row rather than as a gap in the data.
+       *
+       * Dropped here rather than at parse time, because the rows are honest
+       * about what the dump holds and re-running `enrich` to remove them costs
+       * a full read of a 100 GB file. Dropping cannot empty a tracklist, since
+       * no release in the corpus is untitled all the way down, and cannot
+       * renumber anything, since `position` is the label printed on the record
+       * rather than an index into this list.
+       */
+      `SELECT position, title, duration FROM release_tracks
+        WHERE release_id = ? AND trim(title) <> '' ORDER BY seq`,
+    )
+    .all(id) as ReleaseTrack[];
+
+  return {
+    id: row.id,
+    title: row.title,
+    year: row.year,
+    released: row.released,
+    country: row.country,
+    artists: artists.map((a) => ({
+      id: a.id,
+      name: a.name,
+      joinPhrase: a.join_phrase,
+      inCorpus: a.in_corpus === 1,
+    })),
+    labels: labels.map((l) => ({ id: l.id, name: l.name, catno: l.catno })),
+    formats: formats.map((f) => ({
+      name: f.name,
+      qty: f.qty,
+      text: f.text,
+      descriptions: f.descriptions ? f.descriptions.split("\n").filter(Boolean) : [],
+    })),
+    tracks,
+    isSeed: row.is_seed === 1,
+    channelA: row.channel_a === 1,
+    channelB: row.channel_b === 1,
+  };
+}
+
+/**
+ * Everyone credited on a release, one row each, ranked by what they did.
+ *
+ * Whole rather than paged, and it can be: the median record carries six
+ * credits and the heaviest in the corpus carries 935. The ranking counts the
+ * roles a row prints, which is a display-time reading of the raw strings, so
+ * it cannot be done in SQL and a LIMIT here would page the wrong set.
+ */
+export function getReleaseCredits(releaseId: number): ReleaseCredit[] {
+  const db = getDb();
+  if (!db) return [];
+
+  const rows = db
+    .prepare(
+      // One row per person, however many credits they hold: Mark Ernestus is
+      // three rows on 800% Ndagga and one line on the page. group_concat can
+      // only join on a comma and a role carries commas of its own, so the
+      // joined string is handed over whole for the credit parser to split.
+      `SELECT rc.artist_id AS id, rc.name, group_concat(rc.role) AS roles,
+              min(rc.position) AS pos, ${HAS_PAGE} AS in_corpus
+         FROM release_credits rc
+         LEFT JOIN artists a ON a.id = rc.artist_id
+        WHERE rc.release_id = ?
+        GROUP BY rc.artist_id
+        ORDER BY pos`,
+    )
+    .all(releaseId) as {
+    id: number;
+    name: string;
+    roles: string | null;
+    pos: number;
+    in_corpus: number;
+  }[];
+
+  return rankCredits(
+    rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      inCorpus: r.in_corpus === 1,
+      roles: r.roles ? [r.roles] : [],
+    })),
+  );
+}
+
+/**
+ * The catalogue numbers for a page of releases, in one query rather than one
+ * per row.
+ *
+ * Grouped for the same reason `getLabelReleases` groups: a release can list one
+ * label several times, once per catalogue number variant, and min(position)
+ * picks the first entry with SQLite taking the bare catno from the row it
+ * matched. A release with no label carries no number and gets no cell.
+ */
+export function getCatnos(releaseIds: readonly number[]): Map<number, string> {
+  const db = getDb();
+  const out = new Map<number, string>();
+  if (!db || releaseIds.length === 0) return out;
+
+  const rows = db
+    .prepare(
+      `SELECT release_id, catno, min(position) AS pos FROM release_labels
+        WHERE release_id IN (${releaseIds.map(() => "?").join(",")})
+        GROUP BY release_id`,
+    )
+    .all(...releaseIds) as { release_id: number; catno: string | null; pos: number }[];
+
+  for (const row of rows) {
+    if (row.catno) out.set(row.release_id, row.catno);
+  }
+  return out;
 }

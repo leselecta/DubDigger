@@ -297,6 +297,9 @@ test("coverage tells 'no credits recorded' apart from 'worked solo'", async () =
     scene_relevance: "none",
     relevance: "none",
     lineage: null,
+    // Nobody has been named by hand, which is the ordinary case and the reason
+    // this reads as an absence rather than a default.
+    override_reason: null,
   } as never);
 
   const solo = db.prepare("SELECT credited_releases, collaborator_count FROM artist_coverage WHERE artist_id = 11").get();
@@ -417,7 +420,13 @@ const coverageOf = (db: Database.Database, id: number) =>
     .prepare(
       "SELECT seed_releases, seed_share, scene_relevance, relevance, lineage FROM artist_coverage WHERE artist_id = ?",
     )
-    .get(id);
+    .get(id) as {
+    seed_releases: number;
+    seed_share: number | null;
+    scene_relevance: string;
+    relevance: string;
+    lineage: string | null;
+  };
 
 test("seed releases are counted for artists the ratio rejected", async () => {
   // King Tubby: on real seed releases, but 0.51% of a reissue-inflated
@@ -599,6 +608,189 @@ test("a tradition needs both the floor and the share", async () => {
 
   assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 16").pluck().get(), null);
   assert.equal(db.prepare("SELECT lineage FROM artist_coverage WHERE artist_id = 17").pluck().get(), null);
+});
+
+test("a label's scene figure counts its own records, not a share of its roster", async () => {
+  // The figure search ranks a label on, and it used to be the release count
+  // times the share of the ROSTER in the cluster. That answered a question
+  // about records with a fact about people, and the two come apart because a
+  // seed artist needs only 2% of their own output inside the seed: Planet
+  // Rhythm read 764 against a true 126 and beat Rhythm & Sound's strictly
+  // counted 160.
+  //
+  // Label 100 puts out four records and one of them is in the seed, while both
+  // acts on its line are seed artists. The roster says 100%, the records say
+  // one, and one is the answer.
+  const db = corpus([
+    { id: 1, artists: [10], labels: [100] },
+    { id: 2, artists: [10], labels: [100], seed: false },
+    { id: 3, artists: [11], labels: [100], seed: false },
+    { id: 4, artists: [11], labels: [100], seed: false },
+  ]);
+  seed(db, [
+    [10, 10, 10],
+    [11, 10, 10],
+  ]);
+  await runDerive(db);
+
+  const row = db
+    .prepare("SELECT seed_ratio, seed_releases FROM label_coverage WHERE label_id = 100")
+    .get() as { seed_ratio: number; seed_releases: number };
+
+  assert.equal(row.seed_ratio, 1);
+  assert.equal(row.seed_releases, 1);
+});
+
+const weightOf = (db: Database.Database, id: number) =>
+  db.prepare("SELECT weight FROM release_rank WHERE release_id = ?").pluck().get(id) as number;
+
+test("a record inherits its lead artist's figure, discounted by their grade", async () => {
+  // Four seed releases at the top step, undiscounted, and the record is worth
+  // what its maker is. The halving that puts a record UNDER its own maker is
+  // the app's, in `score`, not this table's.
+  const db = corpus([1, 2, 3, 4].map((id) => ({ id, artists: [10] })));
+  seed(db, [[10, 20, 20]]);
+  await runDerive(db);
+
+  assert.equal(weightOf(db, 1), 4);
+});
+
+test("a record by a tradition is not weighted at nothing", async () => {
+  // The King Tubby problem, one layer below the one lineage was written for.
+  // The seed scores a Jamaican dub engineer at zero by construction, so his
+  // records inherited that zero and sorted under every namesake: `commodo`
+  // answered with Commodore Dub and `scientist` with Full Moon Scientist.
+  // 18,978 records were weighted zero this way.
+  //
+  // Six releases, none of them seed, lifted to `medium`. Six halved is three,
+  // two steps of the grade divides by four: 0.75, where it used to be 0.
+  const db = corpus(tradition(10, { styles: ["Dub"], genres: ["Reggae"] }));
+  await runDerive(db);
+
+  assert.equal(coverageOf(db, 10).lineage, "roots dub");
+  assert.equal(weightOf(db, 10000), 0.75);
+});
+
+test("a tradition lifts a record's weight and never lowers it", async () => {
+  // The floor, at the layer that reads it. Thirteen releases of which seven are
+  // measured seed work: the halved catalogue is six, so the measurement wins
+  // and the lift does nothing. A tradition says the seed cannot see everything,
+  // never that it is wrong about what it can.
+  const db = corpus([
+    ...tradition(11, { styles: ["Dub"], genres: ["Reggae"] }),
+    ...[500, 501, 502, 503, 504, 505, 506].map((id) => ({ id, artists: [11] })),
+  ]);
+  seed(db, [[11, 61, 77]]);
+  await runDerive(db);
+
+  assert.equal(weightOf(db, 500), 7);
+});
+
+test("the weight is a real, because the app's own scoring is", async () => {
+  // Integer division here against floating point in `sceneScore` made the two
+  // layers disagree about whether a small catalogue was worth ranking at all.
+  // One seed release at `medium` is 1 / 4: zero as an integer, 0.25 as a
+  // number. This is only the pool cut, and it runs first, so the layer saying
+  // "not worth ranking" got the last word over the layer that would have
+  // ranked it.
+  const db = corpus([{ id: 1, artists: [10] }]);
+  seed(db, [[10, 5, 100]]);
+  await runDerive(db);
+
+  assert.equal(coverageOf(db, 10).relevance, "medium");
+  assert.equal(weightOf(db, 1), 0.25);
+});
+
+test("a named exception overrules the grade, and says so", async () => {
+  // The grade is a ratio, and a ratio is right about a population and wrong
+  // about particular members of it. Planet Rhythm clears the broad seed gate
+  // honestly at 48% of its artist line and is still a hard techno label, which
+  // no dial can express without bending the dial to one answer.
+  const db = corpus([
+    { id: 1, artists: [10], labels: [100] },
+    { id: 2, artists: [11], labels: [100] },
+  ]);
+  seed(db, [
+    [10, 10, 10],
+    [11, 10, 10],
+  ]);
+  await runDerive(db, {
+    overrides: {
+      labels: [{ id: 100, name: "Label 100", grade: "medium", reason: "held down by hand" }],
+      artists: [],
+    },
+  });
+
+  const row = db
+    .prepare("SELECT relevance, override_reason, seed_ratio FROM label_coverage WHERE label_id = 100")
+    .get() as { relevance: string; override_reason: string; seed_ratio: number };
+
+  // The measure is untouched underneath: the ratio still says what it said, and
+  // the reason is what the page prints in place of it.
+  assert.equal(row.seed_ratio, 1);
+  assert.equal(row.relevance, "medium");
+  assert.equal(row.override_reason, "held down by hand");
+});
+
+test("an override runs last, so a tradition cannot undo one", async () => {
+  // Three things can set an artist's grade and they are ordered: the seed
+  // measures, a tradition lifts to its floor, a person overrules both. King
+  // Tubby lifts to medium off `roots dub`; naming him puts him where he was
+  // named, and scene_relevance still reports the nothing the seed measured.
+  const db = corpus(tradition(10, { styles: ["Dub"], genres: ["Reggae"] }));
+  await runDerive(db, {
+    overrides: {
+      artists: [{ id: 10, name: "Artist 10", grade: "high", reason: "named by hand" }],
+      labels: [],
+    },
+  });
+
+  const row = coverageOf(db, 10) as {
+    scene_relevance: string;
+    relevance: string;
+    lineage: string;
+  };
+  assert.equal(row.lineage, "roots dub");
+  assert.equal(row.scene_relevance, "none");
+  assert.equal(row.relevance, "high");
+});
+
+test("a record by an overridden artist is floored like a tradition's", async () => {
+  // The third reader of the scene figure, and it was missed for a day when the
+  // override was ported into `artistPool` alone: the artist scored 1 and every
+  // record of theirs scored a quarter of it. Naming someone the seed scores at
+  // nothing and leaving their records on that nothing is the same bug with a
+  // different cause.
+  //
+  // Six releases, none in the seed, named at `high`. Six halved is three, one
+  // step of the grade halves it: 1.5, where the bare measure gives 0.
+  const db = corpus(
+    Array.from({ length: 6 }, (_, i) => ({ id: 700 + i, artists: [10], seed: false })),
+  );
+  await runDerive(db, {
+    overrides: {
+      artists: [{ id: 10, name: "Artist 10", grade: "high", reason: "named by hand" }],
+      labels: [],
+    },
+  });
+
+  assert.equal(weightOf(db, 700), 1.5);
+});
+
+test("an override aimed at nobody is a failure, not a silence", async () => {
+  // A hand-written list rots: an id drifts, a label is merged away, and the
+  // corpus goes on looking curated because a file says it is. Better to stop.
+  const db = corpus([{ id: 1, artists: [10] }]);
+  await assert.rejects(
+    () =>
+      runDerive(db, {
+        overrides: {
+          artists: [{ id: 999, name: "Nobody", grade: "high", reason: "x" }],
+          labels: [],
+        },
+      }),
+    /999/,
+  );
 });
 
 test("a second run replaces the first rather than layering on top of it", async () => {

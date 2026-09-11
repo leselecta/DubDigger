@@ -13,7 +13,14 @@ import { GRADE_SHADE, gradeWord } from "@/lib/view";
  *
  * The listbox itself lives in `SearchField`, so the ARIA relationship between
  * the input and the list is static markup that exists before any of this
- * arrives, and this is only ever its contents.
+ * arrives, and this is only ever its contents. The tab row is static there for
+ * a second reason: a `listbox` may hold options and nothing else, so a control
+ * cannot sit inside one.
+ *
+ * All three tabs come back on one fetch, and only one of them is shown. The
+ * pools have to run anyway to know which tabs have anything behind them, so the
+ * other two are already costed by the time this renders, and sending them makes
+ * a tab switch free. A control read at a glance should not wait on a request.
  *
  * Nothing found returns nothing, and the dropdown stays shut. A shortcut that
  * has nowhere to jump to is not an answer, and the answer for a miss is a real
@@ -24,7 +31,28 @@ import { GRADE_SHADE, gradeWord } from "@/lib/view";
 export const partial = true;
 
 const q = Astro.url.searchParams.get("q") ?? "";
-const hits = suggest(q);
+const groups = suggest(q);
+
+/*
+ * Artists and labels first, and it is the default because it is the question
+ * this tool exists to answer. A record is a thing you find on the way to a
+ * name: `space` returns three Orb records before The Orb, and `chain re` puts
+ * Diana Ross above the label the scene is built on. Ranking cannot fix that on
+ * its own, since a record really is a good answer to `rodent` — so the fix is
+ * to ask which question first, and let the reader say otherwise in one key.
+ *
+ * `all` last rather than first, which is the same call the tab order on an
+ * artist page makes: the specific answers come before the merged one.
+ */
+const tabs = [
+  { key: "names", hits: groups.names },
+  { key: "releases", hits: groups.releases },
+  { key: "all", hits: groups.all },
+];
+
+/** The tab the panel opens on, falling through when the preferred one is empty. */
+const opens = tabs.find((t) => t.hits.length > 0)?.key ?? "";
+const any = opens !== "";
 
 /*
  * Cached at the edge of nothing in particular, but honestly: the database is a
@@ -42,40 +70,79 @@ Astro.response.headers.set("X-Robots-Tag", "noindex");
 ---
 
 {
-  hits.map((hit) => (
-    <a
-      role="option"
-      aria-selected="false"
-      href={`/${hit.kind}/${hit.id}`}
-      data-suggest-option
-      class="group/opt border-hairline-soft text-left data-[active=true]:bg-accent data-[active=true]:text-bg grid cursor-pointer grid-cols-[1fr_3.5rem] items-baseline gap-x-3 border-b px-4 py-2.5 last:border-b-0 md:grid-cols-[1fr_3.5rem_5.5rem]"
-    >
-      <span class="truncate text-[0.9375rem] font-bold tracking-[-0.01em]">{hit.name}</span>
+  tabs.map((tab) => (
+    <div data-suggest-group={tab.key} hidden={tab.key !== opens}>
+      {tab.hits.map((hit) => (
+        <a
+          role="option"
+          aria-selected="false"
+          href={`/${hit.kind}/${hit.id}`}
+          data-suggest-option
+          class="group/opt border-hairline-soft text-left data-[active=true]:bg-accent data-[active=true]:text-bg grid cursor-pointer grid-cols-[1fr_auto] items-baseline gap-x-3 border-b px-4 py-2.5 last:border-b-0"
+        >
+          <span class="truncate text-[0.9375rem] font-bold tracking-[-0.01em]">{hit.name}</span>
 
-      <span class="text-ink-faint group-data-[active=true]/opt:text-bg font-mono text-[0.6875rem] tracking-[0.1em] uppercase group-data-[active=true]/opt:opacity-70">
-        {hit.kind}
-      </span>
+          {/*
+           * What the row is, and then what stands behind it.
+           *
+           * The kind is the half this list cannot do without: Chain Reaction is
+           * a label and two unrelated artists, and it is what a shortlist under
+           * a half-typed word is being asked. So it never folds.
+           *
+           * What follows it is the grade on a name and the maker on a record,
+           * which is the same job done with the only material each kind has. A
+           * grade measures a body of work against the cluster and one pressing
+           * is not a body of work, so a record has none and is not given a
+           * borrowed one: the lead artist's word would be a claim about a
+           * person printed in a row about a record.
+           */}
+          <span class="text-ink-faint group-data-[active=true]/opt:text-bg font-mono text-[0.6875rem] tracking-[0.1em] whitespace-nowrap uppercase group-data-[active=true]/opt:opacity-70">
+            {hit.kind}
 
-      {/*
-       * The grade the results page would show for the same name, in the same
-       * five words and the same shade. A dropdown that ranked names and said
-       * nothing about why would be ordering by a measure it kept to itself.
-       *
-       * It folds away below `md`, where the field is a phone's width and the
-       * name is what a thumb is aiming at. `sr-only` rather than `hidden`, so
-       * the option is still read out with its grade: the row is one control and
-       * cannot say in a heading what its columns are.
-       */}
-      <span
-        class:list={[
-          "font-mono text-[0.6875rem] tracking-[0.1em] uppercase sr-only md:not-sr-only",
-          "group-data-[active=true]/opt:text-bg group-data-[active=true]/opt:opacity-70",
-          GRADE_SHADE[gradeWord(hit.relevance)],
-        ]}
-      >
-        {gradeWord(hit.relevance)}
-      </span>
-    </a>
+            {hit.artist && (
+              <span class="inline-block max-w-[9rem] truncate align-bottom md:max-w-[14rem]">
+                {" · "}
+                {hit.artist}
+              </span>
+            )}
+
+            {/*
+             * The grade the results page used to show, in the same five words
+             * and the same shade, back because the tab it sits on holds only the
+             * two kinds that have one. It went at the root on 2026-09-08 rather
+             * than by patch, and this is not that patch returning: what was
+             * wrong was a column that could answer for two kinds out of three,
+             * and a tab that holds no records has no third kind to fail.
+             *
+             * In the same cell as the kind rather than a column of its own,
+             * which is what keeps a record's row from leaving a hole where a
+             * grade would be. The kind is the half that never folds, since
+             * "which of these" is what a shortlist under a half-typed word is
+             * being asked and Chain Reaction is a label and a record and an act.
+             *
+             * The grade folds away below `md`, where the field is a phone's
+             * width and the name is what a thumb is aiming at. `sr-only` rather
+             * than `hidden`, so the option is still read out with its grade: the
+             * row is one control and cannot say in a heading what its columns
+             * are. It takes the separator with it, since a line ending in a
+             * dangling middot is the row saying something was cut.
+             */}
+            {hit.relevance && (
+              <span
+                class:list={[
+                  "sr-only md:not-sr-only md:whitespace-nowrap",
+                  "group-data-[active=true]/opt:text-bg group-data-[active=true]/opt:opacity-70",
+                  GRADE_SHADE[gradeWord(hit.relevance)],
+                ]}
+              >
+                {" · "}
+                {gradeWord(hit.relevance)}
+              </span>
+            )}
+          </span>
+        </a>
+      ))}
+    </div>
   ))
 }
 
@@ -83,24 +150,32 @@ Astro.response.headers.set("X-Robots-Tag", "noindex");
   /*
    * The way out of the shortlist, and the only row that is not a name.
    *
-   * Three rows is a glance, not an answer, so the list has always ended one
+   * Four rows is a glance, not an answer, so the list has always ended one
    * keystroke from the full results without ever saying so: Enter on the box
    * goes there, and nobody who reached for the arrow keys was told. This is
    * that keystroke written down.
    *
    * It is a real option in the listbox rather than a footer under it, so
-   * arrowing past the third name lands on it and Enter follows it, and the
+   * arrowing past the last name lands on it and Enter follows it, and the
    * script needs no line for any of that. Only rendered when there are names
    * above it: a miss still returns nothing and the dropdown still stays shut,
    * because "view all" of nothing is the shortlist offering to show its own
    * emptiness at greater length.
+   *
+   * It carries the tab you are on, and that reverses the note written here on
+   * 2026-09-09 when the results page had none. It has one now, so a way out
+   * that dropped the tab would land a reader somewhere other than where the
+   * link was pointing: arrowing into Releases and following the offer at the
+   * bottom of them has to arrive at releases. The href below is the opening
+   * tab; the script rewrites it on every switch, since which tab is open is
+   * exactly the thing the server cannot know.
    *
    * The chevron is the tab row's, at the size the tab row draws it. One arrow
    * on the site, pointing the one direction it ever points.
    *
    * It wears the accent as a ground rather than as a grey row of type, which
    * is the one place on the site a link is louder than the names above it.
-   * That is what it is for: the three names are the answer if one of them is
+   * That is what it is for: the four names are the answer if one of them is
    * the answer, and this is the offer if none of them is, so it has to be
    * visible without being read. The accent's own rule allows it, since a
    * ground marks the thing being reached for and nothing on the site is more
@@ -113,24 +188,21 @@ Astro.response.headers.set("X-Robots-Tag", "noindex");
    * other. Hover takes it too, because a pointer is reaching for the same
    * thing the arrows are.
    */
-  hits.length > 0 && (
+  any && (
     <a
       role="option"
       aria-selected="false"
-      href={`/?q=${encodeURIComponent(q)}`}
+      href={`/?q=${encodeURIComponent(q)}&tab=${opens}`}
       data-suggest-option
+      data-suggest-out
+      data-out-base={`/?q=${encodeURIComponent(q)}`}
       class="bg-accent text-bg hover:bg-ink hover:text-bg data-[active=true]:bg-ink data-[active=true]:text-bg flex cursor-pointer items-center justify-between gap-3 px-4 py-3 transition-colors"
     >
       <span class="font-mono text-[0.6875rem] font-medium tracking-[0.1em] uppercase">
         View all results
       </span>
 
-      <svg
-        width="12"
-        height="12"
-        viewBox="0 0 12 12"
-        aria-hidden="true"
-      >
+      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
         <path
           d="M4 2l4 4-4 4"
           stroke="currentColor"

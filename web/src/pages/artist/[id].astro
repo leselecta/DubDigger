@@ -21,6 +21,7 @@ import {
   getArtistReleases,
   type Relation,
 } from "@/lib/queries";
+import { opticalLeft } from "@/lib/optical";
 import { creditLine } from "@/lib/roles";
 import { countLine } from "@/lib/seo";
 import { PAGE_SIZE, gradeTitle, pageSize, years } from "@/lib/view";
@@ -148,14 +149,31 @@ const mainEntity = {
   sameAs: `https://www.discogs.com/artist/${artist.id}`,
 };
 
+/*
+ * How they reached the corpus, and the wording is the claim.
+ *
+ * It read "an occasional collaborator" for channel A until 2026-09-11, which
+ * promoted the thing the channel actually measures into something it does not.
+ * Channel A means a record of theirs also credits a seed artist. That is often
+ * a real collaboration and just as often a jobbing engineer: Iron Maiden is
+ * here because Murray Harris, a mixer with 111 releases and 12.6% of them in
+ * the seed, worked on 36 of their records. The page was telling a reader that
+ * a heavy metal band collaborated with the dub techno cluster, which is the
+ * one claim on this site nobody could check and everybody would disbelieve.
+ *
+ * "Shared credits" is the weaker sentence that is true in both cases: two
+ * names on one record, and no assertion about who met whom. Channel B keeps
+ * its own shape because "label mate" was never the problem — releasing on a
+ * label the cluster uses IS a fact about the artist.
+ */
 const route =
   artist.channelA && artist.channelB
-    ? "an occasional collaborator and label mate"
+    ? "here through one or more shared credits and labels"
     : artist.channelA
-      ? "an occasional collaborator"
+      ? "here through one or more shared credits"
       : artist.channelB
-        ? "an occasional label mate"
-        : "an occasional collaborator or label mate";
+        ? "here through one or more shared labels"
+        : "here through one or more shared credits or labels";
 ---
 
 <Base
@@ -166,8 +184,11 @@ const route =
   breadcrumbs={[{ name: artist.name, href: base }]}
 >
   <div class="column pt-16 pb-16 md:pt-24">
-    <Eyebrow>Artist</Eyebrow>
-    <h1 class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]">
+    <Eyebrow icon="artist">Artist{artist.craft && ` (${artist.craft})`}</Eyebrow>
+    <h1
+      class="text-name text-ink-strong mt-6 leading-[0.92] font-bold tracking-[-0.04em]"
+      style={opticalLeft(artist.name)}
+    >
       {artist.name}
     </h1>
 
@@ -195,27 +216,41 @@ const route =
       <FieldRow label="Date active">{years(artist.firstYear, artist.lastYear) || "—"}</FieldRow>
       <FieldRow label="Relevance" accent={artist.relevance !== "none"}>
         {
-          lifted ? (
+          /*
+           * A named exception is read first, and it prints the grade alone.
+           *
+           * Every other branch here says what the word stands on, because two
+           * different things can put an artist on a step and a bare word claims
+           * cluster work that may not exist. An override is the one case where
+           * the honest clause is editorial rather than measured, and Simone
+           * chose legibility over it on 2026-09-10: the row reads `Very High`
+           * and stops. See the label page for the full argument, which is the
+           * same one.
+           *
+           * The measured half goes with it. Showing `scene_relevance` here
+           * without the reason beside it would be worse than either option —
+           * two grades in a row and nothing saying why they differ.
+           */
+          artist.overrideReason ? (
+            grade
+          ) : lifted ? (
             <>
-              {grade}
-              <span class="text-ink-faint">
-                , {SCENE_REASON[artist.sceneRelevance]}, here because linked to {artist.lineage},{" "}
+              {grade}<span class="text-ink-faint"
+                >, {SCENE_REASON[artist.sceneRelevance]}, here because linked to {artist.lineage},{" "}
                 {LINEAGE_REASON[artist.lineage!]}
               </span>
             </>
           ) : artist.relevance !== "none" ? (
             <>
-              {grade}
-              <span class="text-ink-faint">
-                , {SCENE_REASON[artist.relevance]}
-                {artist.lineage && `, and linked to the ${artist.lineage} sound`}
+              {grade}<span class="text-ink-faint"
+                >, {SCENE_REASON[artist.relevance]}{artist.lineage &&
+                  `, and linked to the ${artist.lineage} sound`}
               </span>
             </>
           ) : (
             <>
-              {grade}
-              <span class="text-ink-faint">
-                , {SCENE_REASON.none} (here as {route})
+              {grade}<span class="text-ink-faint"
+                >, {SCENE_REASON.none} ({route})
               </span>
             </>
           )
@@ -345,17 +380,18 @@ const route =
               {releases.map((r) => (
                 <CreditRow
                   count={r.year ?? "—"}
-                  href={`https://www.discogs.com/release/${r.id}`}
+                  href={`/release/${r.id}`}
                   name={r.title}
-                  external
                   detail={creditLine(r.roles)}
                   meta={r.label}
                   metaLabel="Label"
                 >
                   {/*
-                   * The release title leaves for Discogs, so without this the
-                   * only outbound link on the row is one that ends the dig. The
-                   * label is the pivot that keeps it going.
+                   * Two pivots on one row, and they answer different questions:
+                   * the title opens the record and everyone else on it, the
+                   * label opens the room it came out of. The title used to
+                   * leave for Discogs, which made the label cell the only way
+                   * to keep digging from here.
                    */}
                   {r.labelId && (
                     <a slot="meta" href={`/label/${r.labelId}`} class="link-rule">

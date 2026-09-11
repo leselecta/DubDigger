@@ -191,25 +191,55 @@
           <div>
             <div class="sg-demo">
               <p class="mono-label" style="margin: 0 0 1.5rem">3 found for "chain reaction"</p>
-              <div class="spec-listhead" style="grid-template-columns: 1fr 5.5rem 11rem 5rem">
-                <span>Name</span><span>Releases</span><span class="col3">Relevance</span><span class="col3">Type</span>
+              <!-- The same three tabs as the dropdown, on the same ranking, as ?tab=
+                   in the URL. Every tab is drawn with its count, a 0 included. -->
+              <div class="spec-tabs" style="margin-bottom: 2.5rem">
+                <nav aria-label="Lists">
+                  <a href="#s" aria-current="page">Artists &amp; Labels <em>3</em></a>
+                  <a href="#s">Releases <em>14</em></a>
+                  <a href="#s">All <em>17</em></a>
+                </nav>
+              </div>
+              <div class="spec-listhead" style="grid-template-columns: 1fr 5.5rem 5rem 11rem">
+                <span>Name</span><span>Releases</span><span class="col3">Type</span><span class="col3">Relevance</span>
               </div>
               <ul class="spec-list">
-                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 11rem 5rem">
+                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 5rem 11rem">
                   <div><a href="#s" class="spec-row-name">Chain Reaction</a></div>
                   <span class="count">204</span>
-                  <span class="col3 spec-grades"><span class="g-veryhigh" style="min-width: 0">very high</span></span>
                   <span class="col3" style="color: var(--color-ink); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase">label</span>
+                  <span class="col3 spec-grades"><span class="g-veryhigh" style="min-width: 0">very high</span></span>
                 </li>
-                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 11rem 5rem">
+                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 5rem 11rem">
                   <div><a href="#s" class="spec-row-name">Chain Reaction</a></div>
                   <span class="count">6</span>
-                  <span class="col3 spec-grades"><span class="g-verylow" style="min-width: 0">very low</span></span>
                   <span class="col3" style="color: var(--color-ink); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase">artist</span>
+                  <span class="col3 spec-grades"><span class="g-verylow" style="min-width: 0">very low</span></span>
+                </li>
+                <!-- A record: N/A for a count, and a grade inherited from the lead
+                     artist named on the line below the title. -->
+                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 5rem 11rem">
+                  <div>
+                    <a href="#s" class="spec-row-name">Chain Reaction EP</a>
+                    <div class="spec-row-sub">SND &amp; RTN &middot; 2013</div>
+                  </div>
+                  <span class="count">N/A</span>
+                  <span class="col3" style="color: var(--color-ink); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase">release</span>
+                  <span class="col3 spec-grades"><span class="g-veryhigh" style="min-width: 0">very high</span></span>
+                </li>
+                <!-- A compilation: no single maker, so the grade is the label's. -->
+                <li class="spec-listrow" style="grid-template-columns: 1fr 5.5rem 5rem 11rem">
+                  <div>
+                    <a href="#s" class="spec-row-name">Echocord &middot; Jubilee Comp.</a>
+                    <div class="spec-row-sub">Various &middot; 2011</div>
+                  </div>
+                  <span class="count">N/A</span>
+                  <span class="col3" style="color: var(--color-ink); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase">release</span>
+                  <span class="col3 spec-grades"><span class="g-veryhigh" style="min-width: 0">very high</span></span>
                 </li>
               </ul>
             </div>
-            <pre class="sg-code">const RESULT_GRID = "<b>grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_11rem_5rem]</b>";
+            <pre class="sg-code">const RESULT_GRID = "<b>grid-cols-[1fr_4.5rem] md:grid-cols-[1fr_5.5rem_5rem_11rem]</b>";
 <i>// index.astro only. The tab lists use LIST_GRID, which is a different shape.</i>
 
 <i>h1 on a results page is the count, and a miss takes the accent:</i>
@@ -218,6 +248,54 @@ class:list={["mono-label mb-6", results.hits.length === 0 &amp;&amp; "text-accen
               <b>The search results column is the one place a grade stands alone</b>, with no room
               to say what it stands on. That is a known cost of merging the two axes into one
               scale, not a licence to do it elsewhere.
+            </p>
+            <p class="sg-rule">
+              <b>A record has no grade of its own and inherits one.</b> Not a new claim: the ranking
+              already halves a record's weight by the lead artist's grade, so the order was built on
+              that word and the column was the one part of the page not saying so. 97.1% of release
+              rows have an artist grade to inherit, and the artist is named on the line under the
+              title, so the word sits beside the name it describes.
+            </p>
+            <p class="sg-rule">
+              <b>A compilation takes its label's grade instead.</b> <code>Various</code> is a record
+              with no single maker rather than a hole in the data, so the room it came out on is the
+              next honest thing to ask. It cannot move the order, because a record with no artist
+              coverage has no seed releases either and zero divides to zero. It does mean one column
+              answers from two places, which is the same known cost above getting bigger:
+              <code>gradedOn</code> carries which of the two answered, for a wording to use.
+            </p>
+            <p class="sg-rule">
+              <b>A query ends the hero.</b> One file serves the home page and the results page, and
+              once there is a <code>?q=</code> it stops being the home page: the headline had
+              already gone, and the hero field goes with it while the header's own field is switched
+              on and prefilled. What is left is the shape every other page has — a column, an
+              eyebrow, a <code>text-name</code> title reading "Search results", and the count under
+              it as a <code>mono-label</code> rather than as the <code>&lt;h1&gt;</code> it used to
+              be. Still exactly one <code>&lt;h1&gt;</code>. No accent stop after the title: the
+              miss heading below is what spends the accent here.
+            </p>
+            <p class="sg-rule">
+              <b>The tabs split the page, they do not filter it.</b> Three slices of one ranking, so
+              a row keeps the position it already had and the tabs cannot disagree with the order.
+              <code>?tab=</code> in the URL like every other tab on the site, and the dropdown's
+              "View all results" carries the open one across, so a shortcut lands where it pointed.
+              The page opens on Artists &amp; Labels unless that tab is empty, which is the
+              dropdown's fallback and lives in <code>search</code> because it needs the counts.
+            </p>
+            <p class="sg-rule">
+              <b>It pages with <code>?show=</code> and <code>LoadMore</code>,</b> like every tab
+              list on the site. <code>show</code> carries the tab, so a longer list cannot drop you
+              back onto another one; a tab link carries no <code>show</code>, so switching question
+              starts at forty again. The heading counts the tab rather than the page, and says
+              "Closest N" instead of "N found" where the 200-a-kind pool came back full, because a
+              cap is not a count.
+            </p>
+            <p class="sg-rule">
+              <b>An empty tab is not a miss.</b> Every tab is drawn with its count, a 0 included,
+              because a table has room to answer where four rows at a glance do not. Clicking a 0 is
+              a real address and renders: the heading reads "No releases for …" without the accent,
+              and the corpus paragraph below is withheld, since "legitimately absent" would be false
+              about a query the other tab just answered.
             </p>
             <p class="sg-rule">
               <b>A miss is a real answer, and the copy says why.</b> "This corpus is a slice centred
@@ -312,7 +390,7 @@ class:list={["mono-label mb-6", results.hits.length === 0 &amp;&amp; "text-accen
                 <tbody>
                   <tr><td class="key">column</td><td class="num">1200px / 1.5rem / 3rem md</td><td class="note">The content column utility. Never respell it.</td></tr>
                   <tr><td class="key">LIST_GRID</td><td class="num">1fr 5rem → 1fr 6rem 10rem</td><td class="note">Tab lists, Core pages. From <code>components/list-grid.ts</code>.</td></tr>
-                  <tr><td class="key">RESULT_GRID</td><td class="num">1fr 4.5rem → 1fr 5.5rem 11rem 5rem</td><td class="note">Search results, in <code>index.astro</code>.</td></tr>
+                  <tr><td class="key">RESULT_GRID</td><td class="num">1fr 4.5rem → 1fr 5.5rem 5rem 11rem</td><td class="note">Search results, in <code>index.astro</code>.</td></tr>
                   <tr><td class="key">grid gap-x</td><td class="num">22px</td><td class="note">Both grids, head and rows.</td></tr>
                   <tr><td class="key">page head</td><td class="num">pt-16 pb-16 md:pt-24</td><td class="note">Every page's first band.</td></tr>
                   <tr><td class="key">labelled band</td><td class="num">py-14</td><td class="note">With <code>border-t border-hairline</code>.</td></tr>

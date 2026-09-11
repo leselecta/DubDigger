@@ -12,6 +12,7 @@ import ProfileText from "@/components/ProfileText.astro";
 import OutboundLinks from "@/components/OutboundLinks.astro";
 import CollapsibleText from "@/components/CollapsibleText.astro";
 import { getLabel, getRoster, getProfileNames, getLabelReleases } from "@/lib/queries";
+import { opticalLeft } from "@/lib/optical";
 import { countLine } from "@/lib/seo";
 import { PAGE_SIZE, gradeTitle, pageSize, percent, years } from "@/lib/view";
 
@@ -74,11 +75,32 @@ const mainEntity = {
 
 const grade = gradeTitle(label.relevance);
 
-const reason = label.isImprint
-  ? "artist-run imprint, one artist on every release"
-  : label.seedRatio !== null
-    ? `${percent(label.seedRatio)} of everyone it released is in the dub techno cluster`
-    : "no named artist on its releases, so there is nothing to measure";
+/*
+ * Why the grade beside it says what it says, or nothing at all.
+ *
+ * A named exception prints NO clause, which is the second place on the site
+ * where the grade stands as a bare word and the only one where something could
+ * have been said. Simone took that on 2026-09-10, with the cost stated: an
+ * override is the least self-explanatory grade on the site and now the least
+ * explained. What it buys is a row a reader takes in at a glance, against a
+ * sentence that reads as an apology for the number beside it.
+ *
+ * The alternative was not "print the ratio": that is the one thing this must
+ * never do, since `48% of everyone it released is in the dub techno cluster`
+ * beside a grade that ignores the 48% is the page contradicting itself in a
+ * single row. So the choice was the editorial clause or silence, and silence
+ * won on legibility.
+ *
+ * The reason is not lost, only unpublished. It is still in `config.ts` where it
+ * is argued, still in the database, and still printed by `check-corpus`.
+ */
+const reason = label.overrideReason
+  ? null
+  : label.isImprint
+    ? "artist-run imprint, one artist on every release"
+    : label.seedRatio !== null
+      ? `${percent(label.seedRatio)} of everyone it released is in the dub techno cluster`
+      : "no named artist on its releases, so there is nothing to measure";
 ---
 
 <Base
@@ -89,8 +111,11 @@ const reason = label.isImprint
   breadcrumbs={[{ name: label.name, href: base }]}
 >
   <div class="column pt-16 pb-16 md:pt-24">
-    <Eyebrow>Label</Eyebrow>
-    <h1 class="text-name-label text-ink-strong mt-6 leading-[0.9] font-bold tracking-[-0.045em]">
+    <Eyebrow icon="label">Label</Eyebrow>
+    <h1
+      class="text-name-label text-ink-strong mt-6 leading-[0.9] font-bold tracking-[-0.045em]"
+      style={opticalLeft(label.name)}
+    >
       {label.name}
     </h1>
 
@@ -113,7 +138,7 @@ const reason = label.isImprint
       <FieldRow label="Date active">{years(label.firstYear, label.lastYear) || "—"}</FieldRow>
       <FieldRow label="Relevance" accent={label.relevance !== "none"}>
         {grade}
-        <span class="text-ink-faint">, {reason}</span>
+        {reason && <span class="text-ink-faint">, {reason}</span>}
       </FieldRow>
       <FieldRow label="View on" last>
         <OutboundLinks kind="label" id={label.id} urls={label.urls} />
@@ -164,12 +189,18 @@ const reason = label.isImprint
         <>
           <ListHeader name="Release" count="Year" meta="Cat no." />
           <ul>
+            {/*
+             * The title opens the record rather than leaving for Discogs. On
+             * this page it is the only pivot in the row: the catalogue number
+             * belongs to the label you are already on, and the artists under
+             * the title are a line of text rather than links until you are on
+             * the record itself.
+             */}
             {releases.map((r) => (
               <CreditRow
                 count={r.year ?? "—"}
-                href={`https://www.discogs.com/release/${r.id}`}
+                href={`/release/${r.id}`}
                 name={r.title}
-                external
                 detail={r.roles.join(" · ")}
                 meta={r.label}
                 metaLabel="Cat no."

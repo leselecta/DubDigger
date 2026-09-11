@@ -149,14 +149,31 @@ const mainEntity = {
   sameAs: `https://www.discogs.com/artist/${artist.id}`,
 };
 
+/*
+ * How they reached the corpus, and the wording is the claim.
+ *
+ * It read "an occasional collaborator" for channel A until 2026-09-11, which
+ * promoted the thing the channel actually measures into something it does not.
+ * Channel A means a record of theirs also credits a seed artist. That is often
+ * a real collaboration and just as often a jobbing engineer: Iron Maiden is
+ * here because Murray Harris, a mixer with 111 releases and 12.6% of them in
+ * the seed, worked on 36 of their records. The page was telling a reader that
+ * a heavy metal band collaborated with the dub techno cluster, which is the
+ * one claim on this site nobody could check and everybody would disbelieve.
+ *
+ * "Shared credits" is the weaker sentence that is true in both cases: two
+ * names on one record, and no assertion about who met whom. Channel B keeps
+ * its own shape because "label mate" was never the problem — releasing on a
+ * label the cluster uses IS a fact about the artist.
+ */
 const route =
   artist.channelA && artist.channelB
-    ? "an occasional collaborator and label mate"
+    ? "here through one or more shared credits and labels"
     : artist.channelA
-      ? "an occasional collaborator"
+      ? "here through one or more shared credits"
       : artist.channelB
-        ? "an occasional label mate"
-        : "an occasional collaborator or label mate";
+        ? "here through one or more shared labels"
+        : "here through one or more shared credits or labels";
 ---
 
 <Base
@@ -233,7 +250,7 @@ const route =
           ) : (
             <>
               {grade}<span class="text-ink-faint"
-                >, {SCENE_REASON.none} (here as {route})
+                >, {SCENE_REASON.none} ({route})
               </span>
             </>
           )

@@ -363,24 +363,9 @@ export function getLabel(id: number): Label | null {
 
   if (!row) return null;
 
-  /*
-   * A second query rather than a join, and only on the artist page: it reads
-   * every credit string this artist holds, which is 1,047 rows for Pole and is
-   * not something the list pages have any use for.
-   */
-  const craftRoles = db
-    .prepare(`SELECT role FROM release_credits WHERE artist_id = ?`)
-    .pluck()
-    .all(id) as string[];
-  const onArtistLine = db
-    .prepare(`SELECT count(DISTINCT release_id) FROM release_artists WHERE artist_id = ?`)
-    .pluck()
-    .get(id) as number;
-
   return {
     id: row.id,
     name: row.name,
-    craft: visualCraft(craftRoles, onArtistLine),
     profile: row.profile,
     urls: row.urls ? row.urls.split("\n").filter(Boolean) : [],
     artistCount: row.artist_count,

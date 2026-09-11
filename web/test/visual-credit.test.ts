@@ -20,20 +20,20 @@ import { visualCraft } from "../src/lib/roles.ts";
  * who also draws.
  */
 
-/* Three of each, since fewer than three is below the floor asserted below. */
+/* Three of each, comfortably clear of the two-credit floor asserted below. */
 const three = (role: string) => [role, role, role];
 
 test("a sleeve is visual work, however the dump spells it", () => {
   assert.equal(visualCraft(three("Photography By"), 0), "photographer");
   assert.equal(visualCraft(["Design", "Artwork", "Design [Sleeve]"], 0), "designer");
   assert.equal(visualCraft(three("Illustration"), 0), "designer");
-  assert.equal(visualCraft(three("Sleeve Notes"), 0), "designer");
+  assert.equal(visualCraft(three("Sleeve Notes"), 0), "writer");
   assert.equal(visualCraft(three("Layout"), 0), "designer");
   assert.equal(visualCraft(three("Artwork By [Cover]"), 0), "designer");
 });
 
-test("liner notes are the designer's, by Simone's call on 2026-09-11", () => {
-  assert.equal(visualCraft(["Liner Notes", "Liner Notes", "Liner Notes"], 0), "designer");
+test("liner notes are packaging, and the person who wrote them is a writer", () => {
+  assert.equal(visualCraft(["Liner Notes", "Liner Notes", "Liner Notes"], 0), "writer");
 });
 
 test("photography wins only when it is most of the visual work", () => {
@@ -56,8 +56,18 @@ test("a stray sleeve credit does not make an engineer a designer", () => {
   assert.equal(visualCraft(pole, 0), null);
 });
 
-test("too few credits to tell is not an answer", () => {
-  assert.equal(visualCraft(["Design", "Design"], 0), null);
+test("two credits pointing one way is enough, one is not", () => {
+  /*
+   * Monir Pourataei, the case that set the floor at two. One design credit and
+   * one photography credit is a tie, and a tie takes the broader word, so he
+   * reads designer rather than photographer.
+   */
+  assert.equal(
+    visualCraft(["Design Concept [Visuelles Konzept & Cover Idee]", "Photography By [Alle Fotos]"], 0),
+    "designer",
+  );
+  assert.equal(visualCraft(["Design", "Design"], 0), "designer");
+  assert.equal(visualCraft(["Design"], 0), null);
   assert.equal(visualCraft([], 0), null);
 });
 
@@ -86,4 +96,34 @@ test("John Harten, the case that found them", () => {
     ...Array(2).fill("Band [Cologne Tape]"),
   ];
   assert.equal(visualCraft(harten, 0), "designer");
+});
+
+test("a sleeve note is packaging, but the person who wrote it is a writer", () => {
+  assert.equal(visualCraft(three("Liner Notes"), 0), "writer");
+  assert.equal(visualCraft(three("Sleeve Notes"), 0), "writer");
+  // "Sleeve" is a marker on its own, and a sleeve design is not writing.
+  assert.equal(visualCraft(three("Design [Sleeve]"), 0), "designer");
+});
+
+test("Naomi Klein is below the share floor, and that is the rule working", () => {
+  /*
+   * Four sleeve notes and two lyrics, no releases of her own. Four of six is
+   * 66.7%, under the 80% floor, so she reads plain Artist.
+   *
+   * Lyrics are deliberately not counted as packaging even though she is plainly
+   * a writer. A lyricist is a music credit: counting text work here would put
+   * "writer" on songwriters, which is the opposite of what this is for. She is
+   * the honest edge of a rule that only reads the sleeve.
+   */
+  const klein = [
+    "Liner Notes", "Lyrics By", "Lyrics By",
+    "Liner Notes [Carnet De Viajes - Preface]", "Sleeve Notes",
+    "Liner Notes [Carnet De Viajes - Preface]",
+  ];
+  assert.equal(visualCraft(klein, 0), null);
+});
+
+test("notes are asked before photography, so a writer is never a designer", () => {
+  assert.equal(visualCraft(["Liner Notes", "Liner Notes", "Photography By"], 0), "writer");
+  assert.equal(visualCraft(["Liner Notes", "Photography By", "Photography By"], 0), "photographer");
 });

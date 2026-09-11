@@ -57,10 +57,10 @@ export interface Artist {
   /** The tradition that lifted them: 'roots dub', 'afrobeat', 'detroit techno'. */
   lineage: string | null;
   /**
-   * "designer" or "photographer" when the corpus holds them for the sleeve
-   * rather than the record, else null. See `visualCraft`.
+   * "designer", "photographer" or "writer" when the corpus holds them for the
+   * sleeve rather than the record, else null. See `visualCraft`.
    */
-  craft: "designer" | "photographer" | null;
+  craft: "designer" | "photographer" | "writer" | null;
 }
 
 export interface Collaborator {

@@ -248,9 +248,14 @@ export function rankCredits<T extends { roles: string[] }>(rows: readonly T[]): 
  * Pole reads plain, on one visual credit in 1,047, and so does von Oswald on
  * none in 556.
  *
- * Liner notes count as the designer's rather than a writer's. Simone's call on
- * 2026-09-11, and it follows the packaging list, which has always held them
- * alongside the sleeve they are printed on.
+ * Liner notes are packaging work and get their own word rather than the
+ * designer's. Simone's call on 2026-09-11, in two steps: they belong in the
+ * list, because a sleeve note is made for the sleeve and the list has always
+ * held them; and calling the people who write them designers is wrong, because
+ * they are writers. 1,969 people in this corpus are credited for nothing else,
+ * headed by Toshikazu Ohtaka at 98 and Yusuke Kawamura at 80. Naomi Klein is
+ * the case that settled it: four liner notes, one sleeve note and two lyrics,
+ * no releases of her own, and the page called her a designer.
  */
 const VISUAL_MARKERS = [
   "photograph",
@@ -282,25 +287,53 @@ const VISUAL_MARKERS = [
   "creative director",
 ];
 
-/** Below this there is nothing to be a majority of. */
-const MIN_VISUAL_CREDITS = 3;
+/*
+ * Notes are matched on the whole phrase rather than on the bare word, because
+ * "sleeve" is already a marker above and "Sleeve Design" is not writing.
+ */
+const NOTES_MARKERS = ["liner notes", "sleeve notes"];
+
+/*
+ * Below this there is nothing to be a majority of.
+ *
+ * Two rather than three since 2026-09-11. Monir Pourataei is the case: a design
+ * concept and a photography credit, nothing else, no releases of his own, and
+ * the page called him an artist. Two credits both pointing one way is decent
+ * evidence, and what actually keeps musicians out is the artist-line gate
+ * rather than this count. It takes the labelled from 22,301 to 34,533.
+ *
+ * One is too few and was not taken: 67,722 artists hold a single credit, so a
+ * third of every label would rest on one row.
+ */
+const MIN_VISUAL_CREDITS = 2;
 const MIN_VISUAL_SHARE = 0.8;
 
 export function visualCraft(
   credits: readonly string[],
   releasesOnArtistLine: number,
-): "designer" | "photographer" | null {
+): "designer" | "photographer" | "writer" | null {
   if (releasesOnArtistLine > 0 || credits.length < MIN_VISUAL_CREDITS) return null;
 
   let visual = 0;
   let photography = 0;
+  let notes = 0;
   for (const credit of credits) {
     const lower = credit.toLowerCase();
     if (!VISUAL_MARKERS.some((marker) => lower.includes(marker))) continue;
     visual++;
     if (lower.includes("photograph")) photography++;
+    if (NOTES_MARKERS.some((marker) => lower.includes(marker))) notes++;
   }
 
   if (visual / credits.length < MIN_VISUAL_SHARE) return null;
-  return photography * 2 > visual ? "photographer" : "designer";
+
+  /*
+   * One word, so the majority takes it and a tie falls to the broadest. Notes
+   * are asked first because they are the one kind of packaging work that is not
+   * visual at all, so a writer must not be read as a designer who happens to
+   * write.
+   */
+  if (notes * 2 > visual) return "writer";
+  if (photography * 2 > visual) return "photographer";
+  return "designer";
 }

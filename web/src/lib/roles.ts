@@ -217,3 +217,69 @@ export function rankCredits<T extends { roles: string[] }>(rows: readonly T[]): 
     .sort((a, b) => b.held - a.held || a.i - b.i)
     .map((entry) => entry.row);
 }
+
+/**
+ * Who made the sleeve rather than the record.
+ *
+ * The corpus is a music corpus and reads as one, except for the designers and
+ * photographers who hold Discogs artist ids like everybody else. A page that
+ * calls Timothy Saccenti an artist beside Pole is not wrong about either and is
+ * unhelpful about both, so the eyebrow says which.
+ *
+ * The markers are the seed rule's own `packagingRoles` in `ingest/src/config.ts`,
+ * spelled again here rather than imported, for the reason the rest of this file
+ * is not imported by ingest: the two workspaces do not share types, ingest
+ * writes the database and the app only reads it. Keep the two lists in step.
+ * They exist because of the sentence that rule already makes — a photographer is
+ * not a musician — and this is that sentence said on the page instead of at the
+ * corpus boundary.
+ *
+ * Two gates, both measured on 2026-09-11 against the published file:
+ *
+ * - **80% of their credits**, because almost everyone has cut a sleeve once.
+ *   Will Bankhead is 373 visual of 383 and Ben Drury 237 of 242, so a strict
+ *   "all of them" would miss the two clearest designers in the corpus.
+ * - **Never on an artist line**, which is what keeps Wolfgang Voigt out. He has
+ *   47 visual credits and would trip any share test, and he also released 124
+ *   records of his own: a musician who also draws, not a designer.
+ *
+ * Between them: 13,269 designers and 5,464 photographers, 4.2% of the corpus.
+ * Pole reads plain, on one visual credit in 1,047, and so does von Oswald on
+ * none in 556.
+ *
+ * Liner notes count as the designer's rather than a writer's. Simone's call on
+ * 2026-09-11, and it follows the packaging list, which has always held them
+ * alongside the sleeve they are printed on.
+ */
+const VISUAL_MARKERS = [
+  "photograph",
+  "artwork",
+  "design",
+  "illustration",
+  "layout",
+  "sleeve",
+  "liner notes",
+];
+
+/** Below this there is nothing to be a majority of. */
+const MIN_VISUAL_CREDITS = 3;
+const MIN_VISUAL_SHARE = 0.8;
+
+export function visualCraft(
+  credits: readonly string[],
+  releasesOnArtistLine: number,
+): "designer" | "photographer" | null {
+  if (releasesOnArtistLine > 0 || credits.length < MIN_VISUAL_CREDITS) return null;
+
+  let visual = 0;
+  let photography = 0;
+  for (const credit of credits) {
+    const lower = credit.toLowerCase();
+    if (!VISUAL_MARKERS.some((marker) => lower.includes(marker))) continue;
+    visual++;
+    if (lower.includes("photograph")) photography++;
+  }
+
+  if (visual / credits.length < MIN_VISUAL_SHARE) return null;
+  return photography * 2 > visual ? "photographer" : "designer";
+}

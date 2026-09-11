@@ -3,6 +3,7 @@ import type { Database } from "better-sqlite3";
 import { getDb } from "./db";
 import { rankCredits } from "./roles";
 import { ALIAS_BAND_FLOOR, ALIAS_BAND_KEEP, CORE_ARTISTS, NAMED_ARTISTS, SCENE_LABELS } from "./scene";
+import { visualCraft } from "./roles";
 
 /**
  * Every query here reads a precomputed table. Nothing is aggregated at request
@@ -55,6 +56,11 @@ export interface Artist {
   seedShare: number | null;
   /** The tradition that lifted them: 'roots dub', 'afrobeat', 'detroit techno'. */
   lineage: string | null;
+  /**
+   * "designer" or "photographer" when the corpus holds them for the sleeve
+   * rather than the record, else null. See `visualCraft`.
+   */
+  craft: "designer" | "photographer" | null;
 }
 
 export interface Collaborator {
@@ -246,9 +252,25 @@ export function getArtist(id: number): Artist | null {
     .get(id) as ArtistRow | undefined;
 
   if (!row) return null;
+
+  /*
+   * A second query rather than a join, and only on the artist page: it reads
+   * every credit string this artist holds, which is 1,047 rows for Pole and is
+   * not something the list pages have any use for.
+   */
+  const craftRoles = db
+    .prepare(`SELECT role FROM release_credits WHERE artist_id = ?`)
+    .pluck()
+    .all(id) as string[];
+  const onArtistLine = db
+    .prepare(`SELECT count(DISTINCT release_id) FROM release_artists WHERE artist_id = ?`)
+    .pluck()
+    .get(id) as number;
+
   return {
     id: row.id,
     name: row.name,
+    craft: visualCraft(craftRoles, onArtistLine),
     realName: row.real_name,
     profile: row.profile,
     urls: row.urls ? row.urls.split("\n").filter(Boolean) : [],
@@ -340,9 +362,25 @@ export function getLabel(id: number): Label | null {
     .get(id) as LabelRow | undefined;
 
   if (!row) return null;
+
+  /*
+   * A second query rather than a join, and only on the artist page: it reads
+   * every credit string this artist holds, which is 1,047 rows for Pole and is
+   * not something the list pages have any use for.
+   */
+  const craftRoles = db
+    .prepare(`SELECT role FROM release_credits WHERE artist_id = ?`)
+    .pluck()
+    .all(id) as string[];
+  const onArtistLine = db
+    .prepare(`SELECT count(DISTINCT release_id) FROM release_artists WHERE artist_id = ?`)
+    .pluck()
+    .get(id) as number;
+
   return {
     id: row.id,
     name: row.name,
+    craft: visualCraft(craftRoles, onArtistLine),
     profile: row.profile,
     urls: row.urls ? row.urls.split("\n").filter(Boolean) : [],
     artistCount: row.artist_count,

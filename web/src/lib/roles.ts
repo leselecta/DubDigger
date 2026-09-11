@@ -294,6 +294,17 @@ const VISUAL_MARKERS = [
 const NOTES_MARKERS = ["liner notes", "sleeve notes"];
 
 /*
+ * Text work that is not the sleeve's, and not music either.
+ *
+ * These decide nothing on their own. They exist so the writer path below can
+ * tell a sleeve-note writer from a lyricist, which is the whole difficulty:
+ * `Lyrics By` alone appears 25,511 times and belongs to songwriters, so it can
+ * never be packaging, and Naomi Klein holds two of them beside four sleeve
+ * notes and would otherwise be unreachable.
+ */
+const OTHER_TEXT_MARKERS = ["lyrics", "text by", "translat", "interview", "essay"];
+
+/*
  * Below this there is nothing to be a majority of.
  *
  * Two rather than three since 2026-09-11. Monir Pourataei is the case: a design
@@ -324,6 +335,34 @@ export function visualCraft(
     if (lower.includes("photograph")) photography++;
     if (NOTES_MARKERS.some((marker) => lower.includes(marker))) notes++;
   }
+
+  /*
+   * The writer path, which is not a share test and is the second way in.
+   *
+   * The share test reads the whole credit list, and a sleeve-note writer who
+   * also supplied lyrics fails it: Naomi Klein is four sleeve notes and two
+   * `Lyrics By`, which is 4 of 6 and under the floor. Lyrics cannot simply join
+   * the packaging list, because `Lyrics By` alone appears 25,511 times and is a
+   * songwriter's credit.
+   *
+   * So it asks a different question: no music credits at all, and more sleeve
+   * notes than other text. The second clause is what separates the two — Klein
+   * has four notes against two lyrics, while a songwriter with fifty lyrics and
+   * two sleeve notes fails it. Measured, it reaches 45 people the share test
+   * misses, and they are the right ones: Simon Reynolds on 36 notes, Gareth
+   * Davies on 242, music writers who never made a record.
+   *
+   * It only ever returns "writer", so it cannot disturb the other two words.
+   */
+  let otherText = 0;
+  let music = 0;
+  for (const credit of credits) {
+    const lower = credit.toLowerCase();
+    if (VISUAL_MARKERS.some((marker) => lower.includes(marker))) continue;
+    if (OTHER_TEXT_MARKERS.some((marker) => lower.includes(marker))) otherText++;
+    else music++;
+  }
+  if (notes >= MIN_VISUAL_CREDITS && music === 0 && notes > otherText) return "writer";
 
   if (visual / credits.length < MIN_VISUAL_SHARE) return null;
 

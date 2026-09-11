@@ -105,25 +105,38 @@ test("a sleeve note is packaging, but the person who wrote it is a writer", () =
   assert.equal(visualCraft(three("Design [Sleeve]"), 0), "designer");
 });
 
-test("Naomi Klein is below the share floor, and that is the rule working", () => {
+test("notes are asked before photography, so a writer is never a designer", () => {
+  assert.equal(visualCraft(["Liner Notes", "Liner Notes", "Photography By"], 0), "writer");
+  assert.equal(visualCraft(["Liner Notes", "Photography By", "Photography By"], 0), "photographer");
+});
+
+test("a sleeve-note writer is reachable even with lyrics beside the notes", () => {
   /*
-   * Four sleeve notes and two lyrics, no releases of her own. Four of six is
-   * 66.7%, under the 80% floor, so she reads plain Artist.
-   *
-   * Lyrics are deliberately not counted as packaging even though she is plainly
-   * a writer. A lyricist is a music credit: counting text work here would put
-   * "writer" on songwriters, which is the opposite of what this is for. She is
-   * the honest edge of a rule that only reads the sleeve.
+   * Naomi Klein: four sleeve notes, two lyrics, no releases of her own. She is
+   * 4 of 6 on the share test and under the floor, so the writer path is the
+   * only way to her.
    */
   const klein = [
     "Liner Notes", "Lyrics By", "Lyrics By",
     "Liner Notes [Carnet De Viajes - Preface]", "Sleeve Notes",
     "Liner Notes [Carnet De Viajes - Preface]",
   ];
-  assert.equal(visualCraft(klein, 0), null);
+  assert.equal(visualCraft(klein, 0), "writer");
 });
 
-test("notes are asked before photography, so a writer is never a designer", () => {
-  assert.equal(visualCraft(["Liner Notes", "Liner Notes", "Photography By"], 0), "writer");
-  assert.equal(visualCraft(["Liner Notes", "Photography By", "Photography By"], 0), "photographer");
+test("a songwriter with a couple of sleeve notes is not a writer", () => {
+  // Fifty lyrics against two notes: more other text than notes, so no label.
+  const songwriter = [...Array(50).fill("Lyrics By"), "Liner Notes", "Sleeve Notes"];
+  assert.equal(visualCraft(songwriter, 0), null);
+});
+
+test("one music credit is enough to close the writer path", () => {
+  assert.equal(visualCraft(["Liner Notes", "Liner Notes", "Lyrics By"], 0), "writer");
+  assert.equal(visualCraft(["Liner Notes", "Liner Notes", "Lyrics By", "Guitar"], 0), null);
+});
+
+test("the writer path never reaches the other two words", () => {
+  // All-photography stays photographer; the path only ever returns "writer".
+  assert.equal(visualCraft(three("Photography By"), 0), "photographer");
+  assert.equal(visualCraft(three("Design"), 0), "designer");
 });

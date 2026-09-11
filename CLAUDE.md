@@ -442,9 +442,17 @@ out.
   open, and it can because only one list is ever rendered; switching tab drops
   it, which is right, since that is a different list rather than more of this
   one. Year takes the middle
-  column and format the wide one, which is the sketch's two right-hand columns
-  reversed: the 10rem column is the only one that holds `2× Vinyl, 12", 45 RPM`,
-  and the 6rem one is built for a number.
+  column and the label the wide one, which is the artist page's own release list
+  to the column: two lists answering "what else did they make" must not disagree
+  about what a row says. **This line said `format` until 2026-09-11 and the code
+  had said `Cat no.` for days**, so it was doc drift on top of a decision, and
+  both of those answers were about the object rather than the record. The format
+  is what the 10rem column was originally sized for (`2× Vinyl, 12", 45 RPM`);
+  the catalogue number is the label page's column, where it means something
+  because the room is fixed and the number is what tells two of its records
+  apart. A discography draws its number from a different label on every row,
+  with nothing to index it against. The label is the part that varies, and it is
+  a second pivot besides: the title opens the record, the label opens the room.
 
 **A missing format is not a missing credit, and the page says so by saying
 nothing.** Format and country rows are omitted when the dump has none, rather

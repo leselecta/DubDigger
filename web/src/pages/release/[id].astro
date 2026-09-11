@@ -9,7 +9,6 @@ import Tabs from "@/components/Tabs.astro";
 import {
   getArtist,
   getArtistReleases,
-  getCatnos,
   getRelease,
   getReleaseCredits,
 } from "@/lib/queries";
@@ -104,9 +103,6 @@ const asked = params.get("tab") ?? "";
 const active = tabs.some((t) => t.key === asked) ? asked : (tabs[0]?.key ?? "");
 
 const more = active === "artist" && artist ? getArtistReleases(artist.id, limit, release.id) : [];
-
-/* One query for the whole page of rows, rather than one per row. */
-const catnos = getCatnos(more.map((r) => r.id));
 
 const total = fromArtist;
 
@@ -426,23 +422,36 @@ const mainEntity = {
         {more.length > 0 && (
           <>
             {/*
-             * Year in the middle column and the catalogue number in the wide
-             * one, the same three columns the label page's list carries. The
-             * format was here first and said the least: it describes the object
-             * rather than the record, and a column of "2× Vinyl, 12\"" repeated
-             * down the page is not what anyone is scanning a discography for.
-             * A number is what a digger writes down.
+             * Year in the middle column and the label in the wide one, which is
+             * the artist page's own release list to the column. Two lists
+             * answering "what else did they make" should not disagree about
+             * what a row says.
+             *
+             * The format was here first and said the least: it describes the
+             * object rather than the record. The catalogue number replaced it
+             * and was the label page's column borrowed onto the wrong page —
+             * there the room is fixed and the number is what tells two of its
+             * records apart, where a discography draws one from a different
+             * label on every row and a reader has nothing to index it against.
+             * The label is the part that varies, and it is a pivot besides: the
+             * title opens the record, the label opens the room it came out of.
              */}
-            <ListHeader name="Release" count="Year" meta="Cat no." />
+            <ListHeader name="Release" count="Year" meta="Label" />
             <ul>
               {more.map((r) => (
                 <CreditRow
                   count={r.year ?? "—"}
                   href={`/release/${r.id}`}
                   name={r.title}
-                  meta={catnos.get(r.id) ?? null}
-                  metaLabel="Cat no."
-                />
+                  meta={r.label}
+                  metaLabel="Label"
+                >
+                  {r.labelId && (
+                    <a slot="meta" href={`/label/${r.labelId}`} class="link-rule">
+                      {r.label}
+                    </a>
+                  )}
+                </CreditRow>
               ))}
             </ul>
 

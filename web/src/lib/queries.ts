@@ -1767,30 +1767,3 @@ export function getReleaseCredits(releaseId: number): ReleaseCredit[] {
   );
 }
 
-/**
- * The catalogue numbers for a page of releases, in one query rather than one
- * per row.
- *
- * Grouped for the same reason `getLabelReleases` groups: a release can list one
- * label several times, once per catalogue number variant, and min(position)
- * picks the first entry with SQLite taking the bare catno from the row it
- * matched. A release with no label carries no number and gets no cell.
- */
-export function getCatnos(releaseIds: readonly number[]): Map<number, string> {
-  const db = getDb();
-  const out = new Map<number, string>();
-  if (!db || releaseIds.length === 0) return out;
-
-  const rows = db
-    .prepare(
-      `SELECT release_id, catno, min(position) AS pos FROM release_labels
-        WHERE release_id IN (${releaseIds.map(() => "?").join(",")})
-        GROUP BY release_id`,
-    )
-    .all(...releaseIds) as { release_id: number; catno: string | null; pos: number }[];
-
-  for (const row of rows) {
-    if (row.catno) out.set(row.release_id, row.catno);
-  }
-  return out;
-}

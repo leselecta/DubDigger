@@ -218,7 +218,34 @@ const rows = (results?.hits ?? []).map((hit) => ({ hit, grade: gradeWord(hit.rel
         </>
       ) : (
         <>
-          <h1 class="text-hero text-ink-strong mt-3 leading-[0.92] font-bold tracking-[-0.04em] md:mt-9">
+          {/*
+           * What the index covers, under the line that names it.
+           *
+           * The eyebrow says what this is and the headline says what it does,
+           * and neither says what is in it: "dub techno first" is a claim about
+           * the centre of the corpus and not a list of what a reader will find
+           * once they are in. Four words is the shortest honest answer, and it
+           * belongs on the one page whose job is to say what the tool is.
+           *
+           * It does not lead with dub techno, deliberately. The two lines above
+           * it have said that twice already, and a third time would spend the
+           * widest line on the page repeating the centre rather than naming the
+           * ground around it, which is the half a reader cannot guess.
+           *
+           * The eyebrow's own type, grey instead of accent. Same mono, size and
+           * tracking, because this is the second half of one line rather than a
+           * new kind of thing; the colour is what separates the name from the
+           * gloss, and the accent stays on the name. `ink-muted` is the ramp's
+           * loudest quiet grey, which keeps it readable under a 0.32em track
+           * without pulling against the headline below.
+           */}
+          <p
+            class="text-ink-muted mt-2.5 font-mono text-[0.6875rem] tracking-[0.32em] text-balance uppercase md:text-[0.8125rem]"
+          >
+            Techno · Deep · Ambient · Experimental
+          </p>
+
+          <h1 class="text-hero text-ink-strong mt-5 leading-[0.92] font-bold tracking-[-0.04em] md:mt-12">
             Dig the Extended Scene<span class="text-accent">.</span>
             <br />
             Dub Techno First<span class="text-accent">.</span>

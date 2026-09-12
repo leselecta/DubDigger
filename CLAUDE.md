@@ -14,11 +14,9 @@ The user is a music nerd who reads Discogs pages for fun, not a casual listener.
 
 ## Where it stands
 
-**This is the `v2` branch.** Production is `main`, checked out beside it at `../DubDigger`, and the two are worked on side by side: a fix for the live site is made and deployed from there, and nothing here reaches the VPS until it is merged. The two copies of this file will drift, which is correct, and what gets carried back to `main` is a deliberate decision rather than a merge nobody read.
+**This is `main`, and it is the only copy.** The `v2` worktree was merged (`f0af8db`) and torn down on 2026-09-11, so the side-by-side arrangement is gone and with it the second dev port: `npm run dev` serves on 4321 again. A fix and a feature are now made and deployed from the same place.
 
-**`npm run dev` here serves on 4322 rather than 4321**, so both sites can run at once.
-
-**And since 2026-09-07 this worktree has its own database**, `web/data/dubdigger.sqlite`, 1.21 GB against production's 931 MB. It borrowed production's file for a few hours, read-only through `DUBDIGGER_DB`, and stopped the moment `enrich` added columns the old file does not have. The extra 307 MB is 7,975,876 tracks and 1,127,193 formats. **It must never be a symlink to the live file**, which is the one arrangement that lets `publish` write through onto production. Rebuilding it is `enrich --full` then `publish`, both from this worktree, against the 20260801 dump in `ingest/data/dumps`.
+**The published database is 1.3 GB since `enrich` ran on 2026-09-07**, against the 932 MB the file was before. The extra is 7,975,876 tracks and 1,127,193 formats, 295 MB between the two tables, which is what the release page prints. **It must never be a symlink to the live file**, which is the one arrangement that lets `publish` write through onto production. Rebuilding it is `enrich --full` then `publish`, against the 20260801 dump in `ingest/data/dumps`.
 
 Beta, and the footer says so. The corpus is built, the app is written, and the VPS has served it at dubdigger.com since 2026-08-12. What ships today:
 
@@ -27,8 +25,8 @@ Beta, and the footer says so. The corpus is built, the app is written, and the V
 | Corpus | 1,095,302 releases · 444,723 artists · 114,226 labels · 4,110,875 credits |
 | Seed | 132,571 artists · 18,999 labels |
 | Pages | home and search, artist, label, release, Core Artists, Core Labels, Info, 404 |
-| Ingest database | 5.3 GB, `ingest/data/dubdigger.sqlite` |
-| Published database | 931 MB, `web/data/dubdigger.sqlite` |
+| Ingest database | 5.0 GB, `ingest/data/dubdigger.sqlite` |
+| Published database | 1.3 GB, `web/data/dubdigger.sqlite` |
 
 ## Scope — hold this line
 
